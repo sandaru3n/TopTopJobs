@@ -1,56 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Job Portal Home Page - JobFind</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
-    <style>
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-    </style>
-    <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    colors: {
-                        "primary": "#2b6cee",
-                        "background-light": "#f6f6f8",
-                        "background-dark": "#101622",
-                    },
-                    fontFamily: {
-                        "display": ["Inter", "sans-serif"]
-                    },
-                    borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
-                },
-            },
-        }
-    </script>
-</head>
+<?= view('partials/head', ['title' => 'Job Portal Home Page - JobFind']) ?>
 <body class="font-display bg-background-light dark:bg-background-dark text-[#111318] dark:text-gray-200">
     <div class="relative flex min-h-screen w-full flex-col">
-        <!-- Top Navigation Bar -->
-        <header class="sticky top-0 z-50 w-full bg-white/80 dark:bg-background-dark/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-800">
-            <div class="container mx-auto px-6">
-                <div class="flex h-16 items-center justify-between">
-                    <div class="flex items-center gap-4">
-                        <div class="size-6 text-primary">
-                            <svg fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                                <path clip-rule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fill="currentColor" fill-rule="evenodd"></path>
-                            </svg>
-                        </div>
-                        <h2 class="text-xl font-bold leading-tight tracking-[-0.015em] text-[#111318] dark:text-white">JobFind</h2>
-                    </div>
-                    <a href="/post-job" class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-5 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-colors">
-                        <span class="truncate">Post a Job</span>
-                    </a>
-                </div>
-            </div>
-        </header>
+        <?= view('partials/header') ?>
 
         <main class="flex-grow">
             <!-- Search and Filter Section -->
@@ -153,20 +104,7 @@
             </div>
         </main>
 
-        <!-- Footer -->
-        <footer class="bg-white dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-800 mt-10">
-            <div class="container mx-auto px-6 py-8">
-                <div class="flex flex-col md:flex-row justify-between items-center gap-6">
-                    <p class="text-sm text-gray-500 dark:text-gray-400">© 2024 JobFind. All rights reserved.</p>
-                    <div class="flex gap-6 text-sm">
-                        <a class="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-white transition-colors" href="#">About Us</a>
-                        <a class="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-white transition-colors" href="#">Contact</a>
-                        <a class="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-white transition-colors" href="#">Terms of Service</a>
-                        <a class="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-white transition-colors" href="#">Privacy Policy</a>
-                    </div>
-                </div>
-            </div>
-        </footer>
+        <?= view('partials/footer') ?>
     </div>
 
     <script>
