@@ -202,22 +202,20 @@
             <section class="flex-1 p-4 md:p-6">
                 <!-- Sort and View Controls -->
                 <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
-                    <div class="flex items-center gap-2 flex-wrap">
+                    <!-- Mobile Filter Button (Left on mobile only) -->
+                    <button id="mobileFilterToggle" class="md:hidden flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors cursor-pointer">
+                        <span class="material-symbols-outlined text-lg">tune</span>
+                        <span>Filters</span>
+                    </button>
+                    <!-- Sort Section (Right aligned) -->
+                    <div class="flex items-center gap-2 flex-wrap ml-auto">
                         <span class="text-sm text-gray-600 dark:text-gray-400">Sort:</span>
-                        <select id="sortBy" class="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm px-3 py-2 focus:outline-0 focus:ring-2 focus:ring-primary/50">
+                        <select id="sortBy" class="rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm px-3 py-2 focus:outline-0 focus:ring-2 focus:ring-primary/50 cursor-pointer">
                             <option value="relevant">Relevant</option>
                             <option value="newest">Newest</option>
                             <option value="salary_high">Salary High</option>
                             <option value="popular">Popular</option>
                         </select>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button id="viewGrid" class="flex items-center justify-center size-9 rounded-lg border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                            <span class="material-symbols-outlined text-lg">grid_view</span>
-                        </button>
-                        <button id="viewList" class="flex items-center justify-center size-9 rounded-lg border border-gray-300 dark:border-gray-700 bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-                            <span class="material-symbols-outlined text-lg">view_list</span>
-                        </button>
                     </div>
                 </div>
 

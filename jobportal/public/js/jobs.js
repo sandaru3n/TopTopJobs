@@ -48,7 +48,7 @@ class JobSearch {
             this.filters.q = urlParams.get('q');
         }
 
-        // Filter toggle
+        // Filter toggle (desktop - inside filter panel)
         const filterToggle = document.getElementById('filterToggle');
         if (filterToggle) {
             filterToggle.addEventListener('click', () => {
@@ -56,9 +56,20 @@ class JobSearch {
             });
         }
 
-        document.getElementById('closeFilters').addEventListener('click', () => {
-            this.closeMobileFilters();
-        });
+        // Mobile filter toggle button (visible on mobile)
+        const mobileFilterToggle = document.getElementById('mobileFilterToggle');
+        if (mobileFilterToggle) {
+            mobileFilterToggle.addEventListener('click', () => {
+                this.toggleMobileFilters();
+            });
+        }
+
+        const closeFilters = document.getElementById('closeFilters');
+        if (closeFilters) {
+            closeFilters.addEventListener('click', () => {
+                this.closeMobileFilters();
+            });
+        }
 
         document.getElementById('closeMobileFilters').addEventListener('click', () => {
             this.closeMobileFilters();
@@ -129,15 +140,6 @@ class JobSearch {
         document.getElementById('sortBy').addEventListener('change', (e) => {
             this.sortBy = e.target.value;
             this.resetAndLoad();
-        });
-
-        // View mode
-        document.getElementById('viewGrid').addEventListener('click', () => {
-            this.setViewMode('grid');
-        });
-
-        document.getElementById('viewList').addEventListener('click', () => {
-            this.setViewMode('list');
         });
 
         // Back button removed - search is now in header
@@ -335,34 +337,50 @@ class JobSearch {
     toggleMobileFilters() {
         const sheet = document.getElementById('mobileFilterSheet');
         const overlay = document.getElementById('filterOverlay');
-        sheet.classList.add('show');
-        overlay.classList.add('show');
-        document.body.style.overflow = 'hidden';
+        if (sheet && overlay) {
+            // Sync current filter values to mobile filters
+            this.syncFiltersToMobile();
+            
+            sheet.classList.add('show');
+            overlay.classList.remove('hidden');
+            overlay.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    syncFiltersToMobile() {
+        // Sync salary range
+        const salaryRange = document.getElementById('salaryRange');
+        const salaryRangeMobile = document.getElementById('salaryRangeMobile');
+        if (salaryRange && salaryRangeMobile) {
+            salaryRangeMobile.value = salaryRange.value;
+        }
+
+        // Sync checkboxes
+        ['job_type', 'experience', 'date_posted'].forEach(filterName => {
+            const desktopName = filterName === 'date_posted' ? 'date_posted' : filterName;
+            const mobileName = filterName === 'date_posted' ? 'date_posted_mobile' : 
+                              filterName === 'job_type' ? 'job_type_mobile' : 
+                              filterName === 'experience' ? 'experience_mobile' : filterName;
+            
+            document.querySelectorAll(`input[name="${desktopName}"]`).forEach(desktopCb => {
+                const mobileCb = document.querySelector(`input[name="${mobileName}"][value="${desktopCb.value}"]`);
+                if (mobileCb) {
+                    mobileCb.checked = desktopCb.checked;
+                }
+            });
+        });
     }
 
     closeMobileFilters() {
         const sheet = document.getElementById('mobileFilterSheet');
         const overlay = document.getElementById('filterOverlay');
-        sheet.classList.remove('show');
-        overlay.classList.remove('show');
-        document.body.style.overflow = '';
-    }
-
-    setViewMode(mode) {
-        this.viewMode = mode;
-        const listings = document.getElementById('jobListings');
-        if (mode === 'grid') {
-            listings.classList.add('grid-view-container');
-            listings.classList.remove('list-view-container');
-            document.getElementById('viewGrid').classList.add('bg-primary/10', 'text-primary');
-            document.getElementById('viewList').classList.remove('bg-primary/10', 'text-primary');
-        } else {
-            listings.classList.add('list-view-container');
-            listings.classList.remove('grid-view-container');
-            document.getElementById('viewList').classList.add('bg-primary/10', 'text-primary');
-            document.getElementById('viewGrid').classList.remove('bg-primary/10', 'text-primary');
+        if (sheet && overlay) {
+            sheet.classList.remove('show');
+            overlay.classList.remove('show');
+            overlay.classList.add('hidden');
+            document.body.style.overflow = '';
         }
-        this.renderJobs();
     }
 
     async loadInitialJobs() {
