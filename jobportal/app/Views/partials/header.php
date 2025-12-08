@@ -49,17 +49,17 @@
                 <?php else: ?>
                     <!-- Guest menu -->
                     <div class="flex items-center gap-3">
-                        <a href="<?= base_url('login') ?>" class="px-4 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm font-medium">
-                            Login
+                        <a href="<?= base_url('login') ?>" class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-5 text-sm font-bold leading-normal tracking-[0.015em] transition-colors" style="background-color: white; color: #000000; border: 2px solid #000000;" onmouseover="this.style.backgroundColor='#f5f5f5'" onmouseout="this.style.backgroundColor='white'">
+                            <span class="truncate">Log In</span>
                         </a>
-                        <a href="<?= base_url('signup') ?>" class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-5 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-colors">
+                        <a href="<?= base_url('signup') ?>" class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-5 text-sm font-bold leading-normal tracking-[0.015em] transition-colors" style="background-color: #000000; color: white;" onmouseover="this.style.backgroundColor='#333333'" onmouseout="this.style.backgroundColor='#000000'">
                             <span class="truncate">Sign Up</span>
                         </a>
                     </div>
                 <?php endif; ?>
                 
                 <!-- Post a Job Button -->
-                <a href="/post-job" class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-5 bg-primary text-white text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-colors">
+                <a href="/post-job" class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-5 text-sm font-bold leading-normal tracking-[0.015em] transition-colors" style="background-color: #2bee79; color: #0e2016;" onmouseover="this.style.backgroundColor='#25d46a'" onmouseout="this.style.backgroundColor='#2bee79'">
                     <span class="truncate">Post a Job</span>
                 </a>
                 
@@ -110,7 +110,7 @@
             
             <!-- Mobile Menu Button -->
             <div class="flex md:hidden items-center gap-2">
-                <a href="/post-job" class="flex items-center justify-center size-10 rounded-full bg-primary text-white hover:bg-primary/90 transition-colors">
+                <a href="/post-job" class="flex items-center justify-center size-10 rounded-full transition-colors" style="background-color: #2bee79; color: #0e2016;" onmouseover="this.style.backgroundColor='#25d46a'" onmouseout="this.style.backgroundColor='#2bee79'">
                     <span class="material-symbols-outlined text-xl">add</span>
                 </a>
                 <button 
@@ -269,15 +269,21 @@
                     </a>
                     <a 
                         href="<?= base_url('login') ?>" 
-                        class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        class="flex items-center gap-3 px-4 py-3 rounded-full transition-colors font-bold"
+                        style="background-color: white; color: #000000; border: 2px solid #000000;"
+                        onmouseover="this.style.backgroundColor='#f5f5f5'"
+                        onmouseout="this.style.backgroundColor='white'"
                         onclick="closeMobileMenu()"
                     >
                         <span class="material-symbols-outlined text-xl">login</span>
-                        <span>Login</span>
+                        <span>Log In</span>
                     </a>
                     <a 
                         href="<?= base_url('signup') ?>" 
-                        class="flex items-center gap-3 px-4 py-3 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors"
+                        class="flex items-center gap-3 px-4 py-3 rounded-full transition-colors font-bold"
+                        style="background-color: #000000; color: white;"
+                        onmouseover="this.style.backgroundColor='#333333'"
+                        onmouseout="this.style.backgroundColor='#000000'"
                         onclick="closeMobileMenu()"
                     >
                         <span class="material-symbols-outlined text-xl">person_add</span>
