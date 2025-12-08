@@ -39,7 +39,7 @@ class UserModel extends Model
         'password'   => 'required|min_length[6]',
         'first_name' => 'permit_empty|max_length[100]',
         'last_name'  => 'permit_empty|max_length[100]',
-        'user_type'  => 'required|in_list[job_seeker,employer,admin]',
+        'user_type'  => 'required|in_list[user,admin]',
     ];
 
     protected $validationMessages = [
@@ -100,12 +100,12 @@ class UserModel extends Model
     }
 
     /**
-     * Check if user has specific role
+     * Check if user has specific user type
      */
-    public function hasRole(int $userId, string $role): bool
+    public function hasUserType(int $userId, string $userType): bool
     {
         $user = $this->find($userId);
-        return $user && $user['user_type'] === $role;
+        return $user && $user['user_type'] === $userType;
     }
 }
 

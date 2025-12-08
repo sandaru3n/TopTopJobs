@@ -18,14 +18,12 @@ class GuestFilter implements FilterInterface
         if ($session->get('is_logged_in')) {
             $userType = $session->get('user_type');
             
-            switch ($userType) {
-                case 'admin':
-                    return redirect()->to('/admin/dashboard');
-                case 'employer':
-                    return redirect()->to('/employer/dashboard');
-                default:
-                    return redirect()->to('/');
+            if ($userType === 'admin') {
+                return redirect()->to('/admin/dashboard');
             }
+            
+            // Default redirect to home for regular users
+            return redirect()->to('/');
         }
     }
 

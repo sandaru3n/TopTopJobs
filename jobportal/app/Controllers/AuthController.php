@@ -108,7 +108,6 @@ class AuthController extends BaseController
             'email'      => 'required|valid_email|is_unique[users.email]',
             'password'   => 'required|min_length[6]',
             'confirm_password' => 'required|matches[password]',
-            'user_type' => 'required|in_list[job_seeker,employer]',
         ];
 
         if (!$this->validate($rules)) {
@@ -123,7 +122,7 @@ class AuthController extends BaseController
             'first_name' => $this->request->getPost('first_name'),
             'last_name'  => $this->request->getPost('last_name'),
             'phone'      => $this->request->getPost('phone'),
-            'user_type'  => $this->request->getPost('user_type'),
+            'user_type'  => 'user', // Always 'user' for regular signups
             'status'     => 'active',
         ];
 
@@ -170,21 +169,18 @@ class AuthController extends BaseController
     }
 
     /**
-     * Get redirect URL based on user role
+     * Get redirect URL based on user type
      */
     private function getRedirectUrl(): string
     {
         $userType = $this->session->get('user_type');
 
-        switch ($userType) {
-            case 'admin':
-                return '/admin/dashboard';
-            case 'employer':
-                return '/employer/dashboard';
-            case 'job_seeker':
-            default:
-                return '/';
+        if ($userType === 'admin') {
+            return '/admin/dashboard';
         }
+
+        // Default to home for regular users
+        return '/';
     }
 
     /**

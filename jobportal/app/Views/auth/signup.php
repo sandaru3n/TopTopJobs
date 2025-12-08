@@ -69,42 +69,6 @@
                 <form action="<?= base_url('auth/processSignup') ?>" method="POST" class="space-y-5">
                     <?= csrf_field() ?>
                     
-                    <!-- User Type -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            I am a
-                        </label>
-                        <div class="grid grid-cols-2 gap-3">
-                            <label class="flex items-center p-3 border-2 rounded-lg cursor-pointer transition-colors <?= old('user_type') === 'job_seeker' ? 'border-primary bg-primary/10' : 'border-gray-300 dark:border-gray-700 hover:border-primary/50' ?>">
-                                <input 
-                                    type="radio" 
-                                    name="user_type" 
-                                    value="job_seeker" 
-                                    class="sr-only"
-                                    <?= old('user_type') === 'job_seeker' ? 'checked' : '' ?>
-                                    required
-                                />
-                                <div class="text-center w-full">
-                                    <span class="material-symbols-outlined text-2xl mb-1">person</span>
-                                    <p class="text-sm font-medium">Job Seeker</p>
-                                </div>
-                            </label>
-                            <label class="flex items-center p-3 border-2 rounded-lg cursor-pointer transition-colors <?= old('user_type') === 'employer' ? 'border-primary bg-primary/10' : 'border-gray-300 dark:border-gray-700 hover:border-primary/50' ?>">
-                                <input 
-                                    type="radio" 
-                                    name="user_type" 
-                                    value="employer" 
-                                    class="sr-only"
-                                    <?= old('user_type') === 'employer' ? 'checked' : '' ?>
-                                    required
-                                />
-                                <div class="text-center w-full">
-                                    <span class="material-symbols-outlined text-2xl mb-1">business</span>
-                                    <p class="text-sm font-medium">Employer</p>
-                                </div>
-                            </label>
-                        </div>
-                    </div>
 
                     <!-- Name Fields -->
                     <div class="grid grid-cols-2 gap-4">

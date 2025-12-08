@@ -20,7 +20,7 @@ class AuthFilter implements FilterInterface
                 ->with('error', 'Please login to access this page.');
         }
 
-        // Check role if specified
+        // Check user type if specified
         if (!empty($arguments)) {
             $userType = $session->get('user_type');
             

@@ -25,8 +25,3 @@ $routes->get('logout', 'AuthController::logout', ['filter' => 'auth']);
 $routes->group('admin', ['filter' => 'auth:admin'], function($routes) {
     $routes->get('dashboard', 'AdminController::dashboard');
 });
-
-// Protected Employer Routes
-$routes->group('employer', ['filter' => 'auth:employer'], function($routes) {
-    $routes->get('dashboard', 'EmployerController::dashboard');
-});
