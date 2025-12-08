@@ -15,8 +15,22 @@ class App extends BaseConfig
      * WITH a trailing slash:
      *
      * E.g., http://example.com/
+     * 
+     * If empty, CodeIgniter will auto-detect from the request.
+     * Set this in .env file as: app.baseURL = 'http://toptopjobs.local/'
      */
-    public string $baseURL = 'http://localhost:8080/';
+    public string $baseURL = '';
+    
+    public function __construct()
+    {
+        parent::__construct();
+        
+        // Read baseURL from environment if set
+        $envBaseURL = env('app.baseURL', '');
+        if (!empty($envBaseURL)) {
+            $this->baseURL = $envBaseURL;
+        }
+    }
 
     /**
      * Allowed Hostnames in the Site URL other than the hostname in the baseURL.
@@ -40,7 +54,7 @@ class App extends BaseConfig
      * something else. If you have configured your web server to remove this file
      * from your site URIs, set this variable to an empty string.
      */
-    public string $indexPage = 'index.php';
+    public string $indexPage = '';
 
     /**
      * --------------------------------------------------------------------------

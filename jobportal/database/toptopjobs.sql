@@ -220,6 +220,28 @@ INSERT INTO `job_skills` (`job_id`, `skill_name`, `is_required`) VALUES
 (8, 'REST API', 1);
 
 -- ============================================
+-- Sample Data - Users (Admin & Test Users)
+-- ============================================
+-- Default Admin User (password: admin123)
+INSERT INTO `users` (`id`, `email`, `password`, `first_name`, `last_name`, `user_type`, `status`, `email_verified`, `email_verified_at`, `created_at`) VALUES
+(1, 'admin@toptopjobs.local', '$2y$12$0kml4MBOFbCKs/QHGFodv.N4bsOUSkAaeVKzeOz.6YATTO2ogEOEu', 'Admin', 'User', 'admin', 'active', 1, NOW(), NOW());
+
+-- Test Job Seeker (password: user123)
+INSERT INTO `users` (`id`, `email`, `password`, `first_name`, `last_name`, `user_type`, `status`, `email_verified`, `email_verified_at`, `created_at`) VALUES
+(2, 'user@toptopjobs.local', '$2y$12$n3tFOLSR7DaxKQsX3.LIw.MKOKFdsVfzQXkegLR6JvPZDvRlU0we2', 'John', 'Doe', 'job_seeker', 'active', 1, NOW(), NOW());
+
+-- Test Employer (password: employer123)
+INSERT INTO `users` (`id`, `email`, `password`, `first_name`, `last_name`, `user_type`, `status`, `email_verified`, `email_verified_at`, `created_at`) VALUES
+(3, 'employer@toptopjobs.local', '$2y$12$hR1AxIbEX0p/hT54eCouPuUpPE040P6iUQMXD/bdtBn3zM8Y7R2h2', 'Jane', 'Smith', 'employer', 'active', 1, NOW(), NOW());
+
+-- Default Login Credentials:
+-- Admin: admin@toptopjobs.local / admin123
+-- User: user@toptopjobs.local / user123
+-- Employer: employer@toptopjobs.local / employer123
+-- 
+-- IMPORTANT: Change these passwords after first login!
+
+-- ============================================
 -- Indexes for Performance
 -- ============================================
 -- Additional indexes are already created above with the tables
