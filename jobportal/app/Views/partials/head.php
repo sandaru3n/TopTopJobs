@@ -70,6 +70,36 @@
                 transform: translateY(0);
             }
         }
+        
+        /* Header Scroll Hide/Show */
+        #mainHeader {
+            will-change: transform;
+            transform: translateY(0);
+        }
+        
+        /* Filter Pills Scroll Hide/Show */
+        #filterPillsSection {
+            will-change: transform;
+            transform: translateY(0);
+        }
+        
+        /* Filter Pills - Keep on one line */
+        #filterPillsSection .flex {
+            flex-wrap: nowrap !important;
+        }
+        
+        /* Hide scrollbar for filter pills */
+        #filterPillsSection .overflow-x-auto {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        
+        #filterPillsSection .overflow-x-auto::-webkit-scrollbar {
+            display: none;  /* Chrome, Safari and Opera */
+        }
     </style>
+    <?php if (!empty($css_file)): ?>
+        <link rel="stylesheet" href="<?= base_url($css_file) ?>">
+    <?php endif; ?>
 </head>
 

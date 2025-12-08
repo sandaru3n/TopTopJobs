@@ -3,9 +3,16 @@
 class JobSearch {
     constructor() {
         this.baseUrl = window.baseUrl || '';
-        // Remove trailing slash if present, then add api path
+        // Remove trailing slash if present
         this.baseUrl = this.baseUrl.replace(/\/$/, '');
-        this.apiUrl = `${this.baseUrl}/api/jobs.php`;
+        // Use apiUrl from window if available, otherwise construct it
+        if (window.apiUrl) {
+            this.apiUrl = window.apiUrl;
+        } else if (this.baseUrl) {
+            this.apiUrl = `${this.baseUrl}/api/jobs.php`;
+        } else {
+            this.apiUrl = '/api/jobs.php';
+        }
         this.currentPage = 1;
         this.perPage = 20;
         this.hasMore = true;
@@ -17,8 +24,6 @@ class JobSearch {
             experience: [],
             salary_min: 0,
             date_posted: [],
-            company: '',
-            skills: []
         };
         this.sortBy = 'relevant';
         this.viewMode = 'list'; // 'list' or 'grid'
@@ -37,21 +42,19 @@ class JobSearch {
     }
 
     setupEventListeners() {
-        // Search input
-        const searchInput = document.getElementById('searchInput');
-        let searchTimeout;
-        searchInput.addEventListener('input', (e) => {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                this.filters.q = e.target.value;
-                this.resetAndLoad();
-            }, 500);
-        });
+        // Search is now handled by header search, get query from URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('q')) {
+            this.filters.q = urlParams.get('q');
+        }
 
         // Filter toggle
-        document.getElementById('filterToggle').addEventListener('click', () => {
-            this.toggleMobileFilters();
-        });
+        const filterToggle = document.getElementById('filterToggle');
+        if (filterToggle) {
+            filterToggle.addEventListener('click', () => {
+                this.toggleMobileFilters();
+            });
+        }
 
         document.getElementById('closeFilters').addEventListener('click', () => {
             this.closeMobileFilters();
@@ -109,51 +112,6 @@ class JobSearch {
             });
         });
 
-        // Company filter (desktop and mobile)
-        const companyFilter = document.getElementById('companyFilter');
-        const companyFilterMobile = document.getElementById('companyFilterMobile');
-        let companyTimeout;
-        
-        [companyFilter, companyFilterMobile].forEach(input => {
-            if (input) {
-                input.addEventListener('input', (e) => {
-                    clearTimeout(companyTimeout);
-                    this.filters.company = e.target.value;
-                    // Sync both inputs
-                    if (e.target.id === 'companyFilter') {
-                        companyFilterMobile.value = e.target.value;
-                    } else {
-                        companyFilter.value = e.target.value;
-                    }
-                    companyTimeout = setTimeout(() => {
-                        this.resetAndLoad();
-                    }, 500);
-                });
-            }
-        });
-
-        // Skills filter (desktop and mobile)
-        const skillsFilter = document.getElementById('skillsFilter');
-        const skillsFilterMobile = document.getElementById('skillsFilterMobile');
-        
-        [skillsFilter, skillsFilterMobile].forEach(input => {
-            if (input) {
-                input.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter' && e.target.value.trim()) {
-                        e.preventDefault();
-                        this.addSkill(e.target.value.trim());
-                        e.target.value = '';
-                        // Clear the other input too
-                        if (e.target.id === 'skillsFilter') {
-                            skillsFilterMobile.value = '';
-                        } else {
-                            skillsFilter.value = '';
-                        }
-                    }
-                });
-            }
-        });
-
         // Clear filters (desktop and mobile)
         document.getElementById('clearFilters').addEventListener('click', () => {
             this.clearAllFilters();
@@ -182,10 +140,7 @@ class JobSearch {
             this.setViewMode('list');
         });
 
-        // Back button
-        document.getElementById('backBtn').addEventListener('click', () => {
-            window.history.back();
-        });
+        // Back button removed - search is now in header
 
         // Retry button
         document.getElementById('retryBtn').addEventListener('click', () => {
@@ -330,12 +285,12 @@ class JobSearch {
         
         let displayText;
         if (value === 0) {
-            displayText = '₹0 - ₹50L+';
-        } else if (value >= 5000000) {
-            displayText = '₹50L+';
+            displayText = '$0 - $200K+';
+        } else if (value >= 200000) {
+            displayText = '$200K+';
         } else {
-            const lakhs = (value / 100000).toFixed(0);
-            displayText = `₹${lakhs}L - ₹50L+`;
+            const thousands = (value / 1000).toFixed(0);
+            displayText = `$${thousands}K - $200K+`;
         }
         
         displays.forEach(display => {
@@ -343,37 +298,6 @@ class JobSearch {
         });
     }
 
-    addSkill(skill) {
-        if (!this.filters.skills.includes(skill)) {
-            this.filters.skills.push(skill);
-            this.renderSkillsTags();
-            this.resetAndLoad();
-        }
-    }
-
-    removeSkill(skill) {
-        this.filters.skills = this.filters.skills.filter(s => s !== skill);
-        this.renderSkillsTags();
-        this.resetAndLoad();
-    }
-
-    renderSkillsTags() {
-        const containers = [
-            document.getElementById('skillsTags'),
-            document.getElementById('skillsTagsMobile')
-        ];
-        
-        const tagsHtml = this.filters.skills.map(skill => `
-            <span class="skill-tag">
-                ${skill}
-                <span class="skill-tag-remove" onclick="jobSearch.removeSkill('${skill}')">×</span>
-            </span>
-        `).join('');
-        
-        containers.forEach(container => {
-            if (container) container.innerHTML = tagsHtml;
-        });
-    }
 
     clearAllFilters() {
         this.filters = {
@@ -383,24 +307,14 @@ class JobSearch {
             experience: [],
             salary_min: 0,
             date_posted: [],
-            company: '',
-            skills: []
         };
 
         // Reset UI (desktop and mobile)
-        document.getElementById('searchInput').value = '';
-        const companyFilters = [document.getElementById('companyFilter'), document.getElementById('companyFilterMobile')];
-        companyFilters.forEach(el => { if (el) el.value = ''; });
-        
-        const skillsFilters = [document.getElementById('skillsFilter'), document.getElementById('skillsFilterMobile')];
-        skillsFilters.forEach(el => { if (el) el.value = ''; });
-        
         const salaryRanges = [document.getElementById('salaryRange'), document.getElementById('salaryRangeMobile')];
         salaryRanges.forEach(el => { if (el) el.value = 0; });
         
         document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
         this.updateSalaryDisplay();
-        this.renderSkillsTags();
         this.resetAndLoad();
     }
     
@@ -501,20 +415,23 @@ class JobSearch {
             if (this.filters.date_posted.length > 0) {
                 params.append('date_posted', this.filters.date_posted.join(','));
             }
-            if (this.filters.company) {
-                params.append('company', this.filters.company);
-            }
-            if (this.filters.skills.length > 0) {
-                params.append('skills', this.filters.skills.join(','));
-            }
 
             if (this.userLocation) {
                 params.append('lat', this.userLocation.lat);
                 params.append('lng', this.userLocation.lng);
             }
 
-            const response = await fetch(`${this.apiUrl}?${params.toString()}`);
+            const url = `${this.apiUrl}?${params.toString()}`;
+            console.log('Fetching jobs from:', url);
+            
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
             const data = await response.json();
+            console.log('Jobs data received:', data);
 
             if (data.success) {
                 if (reset) {
@@ -539,6 +456,12 @@ class JobSearch {
             }
         } catch (error) {
             console.error('Error loading jobs:', error);
+            console.error('Error details:', {
+                message: error.message,
+                stack: error.stack,
+                apiUrl: this.apiUrl,
+                baseUrl: this.baseUrl
+            });
             if (reset) {
                 container.innerHTML = '';
                 errorState.classList.remove('hidden');
@@ -562,7 +485,7 @@ class JobSearch {
 
     renderJobCard(job) {
         const isSaved = this.savedJobs.has(job.id);
-        const salary = job.salary ? `₹${this.formatSalary(job.salary)}` : 'Not disclosed';
+        const salary = job.salary ? `$${this.formatSalary(job.salary)}` : 'Not disclosed';
         const distance = job.distance ? `${job.distance} km away` : '';
         const skills = (job.skills || []).slice(0, 3);
         const postedTime = this.getTimeAgo(job.posted_at);
@@ -694,12 +617,12 @@ class JobSearch {
     }
 
     formatSalary(amount) {
-        if (amount >= 10000000) {
-            return `${(amount / 10000000).toFixed(1)}Cr`;
-        } else if (amount >= 100000) {
-            return `${(amount / 100000).toFixed(0)}L`;
+        if (amount >= 1000000) {
+            return `${(amount / 1000000).toFixed(1)}M`;
+        } else if (amount >= 1000) {
+            return `${(amount / 1000).toFixed(0)}K`;
         } else {
-            return amount.toLocaleString('en-IN');
+            return amount.toLocaleString('en-US');
         }
     }
 

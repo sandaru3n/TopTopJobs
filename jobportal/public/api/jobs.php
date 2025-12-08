@@ -19,6 +19,10 @@
  * - per_page: Results per page (default: 20)
  */
 
+// Enable error reporting for debugging (disable in production)
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, OPTIONS');
@@ -38,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 }
 
 // Get query parameters
+try {
 $query = $_GET['q'] ?? '';
 $location = $_GET['loc'] ?? '';
 $jobTypes = isset($_GET['job_type']) ? explode(',', $_GET['job_type']) : [];
@@ -128,12 +133,25 @@ $response = [
 ];
 
 // Cache response
-if (!is_dir(dirname($cacheFile))) {
-    mkdir(dirname($cacheFile), 0755, true);
+$cacheDir = dirname($cacheFile);
+if (!is_dir($cacheDir)) {
+    @mkdir($cacheDir, 0755, true);
 }
-file_put_contents($cacheFile, json_encode($response));
+if (is_dir($cacheDir) && is_writable($cacheDir)) {
+    @file_put_contents($cacheFile, json_encode($response));
+}
 
 echo json_encode($response);
+
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'message' => 'An error occurred while processing your request',
+        'error' => $e->getMessage()
+    ]);
+    exit;
+}
 
 /**
  * Get mock job data
@@ -152,7 +170,7 @@ function getMockJobs() {
             'longitude' => -122.0841,
             'job_type' => 'full-time',
             'experience' => 'senior',
-            'salary' => 15000000,
+            'salary' => 180000,
             'skills' => ['Design', 'UI/UX', 'Figma', 'Prototyping'],
             'description' => "We're looking for a creative and passionate product designer to join our team and help shape the future of our products.",
             'posted_at' => date('Y-m-d H:i:s', strtotime('-2 days')),
@@ -170,7 +188,7 @@ function getMockJobs() {
             'longitude' => -122.1817,
             'job_type' => 'full-time',
             'experience' => 'junior',
-            'salary' => 8000000,
+            'salary' => 96000,
             'skills' => ['PHP', 'MySQL', 'Laravel', 'API'],
             'description' => 'Join our infrastructure team to build and scale the next generation of our platform using PHP 8+ and modern frameworks.',
             'posted_at' => date('Y-m-d H:i:s', strtotime('-5 days')),
@@ -187,7 +205,7 @@ function getMockJobs() {
             'longitude' => -74.0060,
             'job_type' => 'internship',
             'experience' => 'fresher',
-            'salary' => 3000000,
+            'salary' => 36000,
             'skills' => ['Analytics', 'SQL', 'Python'],
             'description' => 'An exciting opportunity for a student or recent graduate to work with our data science team on user behavior analysis.',
             'posted_at' => date('Y-m-d H:i:s', strtotime('-7 days')),
@@ -204,7 +222,7 @@ function getMockJobs() {
             'longitude' => -122.3321,
             'job_type' => 'contract',
             'experience' => 'junior',
-            'salary' => 7000000,
+            'salary' => 84000,
             'skills' => ['Bootstrap 5', 'JavaScript', 'React', 'Frontend'],
             'description' => 'Build beautiful and responsive user interfaces using Bootstrap 5 and modern JavaScript frameworks for AWS services.',
             'posted_at' => date('Y-m-d H:i:s', strtotime('-3 days')),
@@ -221,7 +239,7 @@ function getMockJobs() {
             'longitude' => -122.4194,
             'job_type' => 'full-time',
             'experience' => 'senior',
-            'salary' => 12000000,
+            'salary' => 144000,
             'skills' => ['CI/CD', 'Docker', 'Kubernetes', 'AWS'],
             'description' => 'Help maintain and improve our CI/CD pipelines, ensuring our services are reliable and scalable for millions of users.',
             'posted_at' => date('Y-m-d H:i:s', strtotime('-1 day')),
@@ -239,7 +257,7 @@ function getMockJobs() {
             'longitude' => -75.6972,
             'job_type' => 'part-time',
             'experience' => 'junior',
-            'salary' => 5000000,
+            'salary' => 60000,
             'skills' => ['Marketing', 'SEO', 'Content'],
             'description' => 'Lead our growth marketing initiatives and develop campaigns to attract new merchants to the Shopify platform.',
             'posted_at' => date('Y-m-d H:i:s', strtotime('-8 days')),
@@ -256,7 +274,7 @@ function getMockJobs() {
             'longitude' => null,
             'job_type' => 'remote',
             'experience' => 'senior',
-            'salary' => 14000000,
+            'salary' => 168000,
             'skills' => ['Node.js', 'React', 'TypeScript', 'MongoDB'],
             'description' => 'Build scalable web applications using modern technologies. Work remotely with a global team.',
             'posted_at' => date('Y-m-d H:i:s', strtotime('-12 hours')),
@@ -274,7 +292,7 @@ function getMockJobs() {
             'longitude' => 72.8777,
             'job_type' => 'full-time',
             'experience' => 'junior',
-            'salary' => 6000000,
+            'salary' => 72000,
             'skills' => ['PHP', 'Laravel', 'MySQL', 'REST API'],
             'description' => 'We are looking for a PHP developer with experience in Laravel framework to join our growing team.',
             'posted_at' => date('Y-m-d H:i:s', strtotime('-6 hours')),

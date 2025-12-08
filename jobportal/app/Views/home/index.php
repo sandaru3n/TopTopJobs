@@ -4,83 +4,41 @@
         <?= view('partials/header') ?>
 
         <main class="flex-grow">
-            <!-- Search and Filter Section -->
-            <div class="sticky top-16 z-40 bg-white/90 dark:bg-background-dark/90 backdrop-blur-sm py-6 border-b border-gray-200 dark:border-gray-800">
-                <div class="container mx-auto px-6">
-                    <div class="flex flex-col gap-4">
-                        <div class="flex w-full flex-wrap items-center gap-3">
-                            <label class="relative flex flex-col min-w-40 flex-1">
-                                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">search</span>
-                                <input 
-                                    id="searchJobInput"
-                                    class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-full text-[#111318] dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border-none bg-background-light dark:bg-gray-800 h-14 placeholder:text-[#616f89] dark:placeholder:text-gray-500 pl-12 pr-4 text-base font-normal leading-normal" 
-                                    placeholder="Job title, skill, or company" 
-                                    value=""
-                                />
-                            </label>
-                            <label class="relative flex flex-col min-w-40 flex-1">
-                                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500">location_on</span>
-                                <input 
-                                    id="searchLocationInput"
-                                    class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-full text-[#111318] dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/50 border-none bg-background-light dark:bg-gray-800 h-14 placeholder:text-[#616f89] dark:placeholder:text-gray-500 pl-12 pr-4 text-base font-normal leading-normal" 
-                                    placeholder="City or remote" 
-                                    value=""
-                                />
-                            </label>
-                            <a 
-                                href="/jobs" 
-                                id="searchBtn"
-                                class="flex min-w-[120px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-14 px-6 bg-primary text-white text-base font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-colors"
-                            >
-                                <span class="truncate">Search</span>
-                            </a>
-                        </div>
-                        <div class="flex gap-2 flex-wrap">
-                            <button 
-                                data-filter="full-time" 
-                                class="filter-pill active flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-primary/10 dark:bg-primary/20 px-4 text-primary dark:text-white text-sm font-medium leading-normal hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors"
-                            >
-                                <p>Full-time</p>
-                            </button>
-                            <button 
-                                data-filter="part-time" 
-                                class="filter-pill flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-gray-200/80 dark:bg-gray-800 px-4 text-[#111318] dark:text-gray-300 text-sm font-medium leading-normal hover:bg-gray-300/80 dark:hover:bg-gray-700 transition-colors"
-                            >
-                                <p>Part-time</p>
-                            </button>
-                            <button 
-                                data-filter="remote" 
-                                class="filter-pill flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-gray-200/80 dark:bg-gray-800 px-4 text-[#111318] dark:text-gray-300 text-sm font-medium leading-normal hover:bg-gray-300/80 dark:hover:bg-gray-700 transition-colors"
-                            >
-                                <p>Remote</p>
-                            </button>
-                            <button 
-                                data-filter="contract" 
-                                class="filter-pill flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-gray-200/80 dark:bg-gray-800 px-4 text-[#111318] dark:text-gray-300 text-sm font-medium leading-normal hover:bg-gray-300/80 dark:hover:bg-gray-700 transition-colors"
-                            >
-                                <p>Contract</p>
-                            </button>
-                            <button 
-                                data-filter="internship" 
-                                class="filter-pill flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-gray-200/80 dark:bg-gray-800 px-4 text-[#111318] dark:text-gray-300 text-sm font-medium leading-normal hover:bg-gray-300/80 dark:hover:bg-gray-700 transition-colors"
-                            >
-                                <p>Internship</p>
-                            </button>
-                            <a 
-                                href="/jobs" 
-                                class="flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full border border-gray-300 dark:border-gray-700 px-4 text-[#111318] dark:text-gray-300 text-sm font-medium leading-normal hover:bg-gray-200/50 dark:hover:bg-gray-800 transition-colors"
-                            >
-                                <span class="material-symbols-outlined text-base">tune</span>
-                                <p>All Filters</p>
-                            </a>
-                        </div>
+            <!-- Filter Pills Section -->
+            <div id="filterPillsSection" class="sticky top-14 md:top-16 z-40 bg-white/90 dark:bg-background-dark/90 backdrop-blur-sm py-3 md:py-4 border-b border-gray-200 dark:border-gray-800 transition-transform duration-300 ease-in-out">
+                <div class="container mx-auto px-4 md:px-6">
+                    <div class="flex gap-2 flex-nowrap items-center whitespace-nowrap overflow-x-auto">
+                        <button 
+                            data-filter="full-time" 
+                            class="filter-pill active flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-primary/10 dark:bg-primary/20 px-4 text-primary dark:text-white text-sm font-medium leading-normal hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors whitespace-nowrap"
+                        >
+                            <p class="whitespace-nowrap">Full-time</p>
+                        </button>
+                        <button 
+                            data-filter="part-time" 
+                            class="filter-pill flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-gray-200/80 dark:bg-gray-800 px-4 text-[#111318] dark:text-gray-300 text-sm font-medium leading-normal hover:bg-gray-300/80 dark:hover:bg-gray-700 transition-colors whitespace-nowrap"
+                        >
+                            <p class="whitespace-nowrap">Part-time</p>
+                        </button>
+                        <button 
+                            data-filter="remote" 
+                            class="filter-pill flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-gray-200/80 dark:bg-gray-800 px-4 text-[#111318] dark:text-gray-300 text-sm font-medium leading-normal hover:bg-gray-300/80 dark:hover:bg-gray-700 transition-colors whitespace-nowrap"
+                        >
+                            <p class="whitespace-nowrap">Remote</p>
+                        </button>
+                        <button 
+                            data-filter="internship" 
+                            class="filter-pill flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-gray-200/80 dark:bg-gray-800 px-4 text-[#111318] dark:text-gray-300 text-sm font-medium leading-normal hover:bg-gray-300/80 dark:hover:bg-gray-700 transition-colors whitespace-nowrap"
+                        >
+                            <p class="whitespace-nowrap">Internship</p>
+                        </button>
                     </div>
                 </div>
             </div>
 
             <!-- Job Listings Section -->
-            <div class="container mx-auto px-6 py-10">
-                <div class="flex flex-wrap justify-between gap-4 mb-8 items-baseline">
+            <div class="container mx-auto px-4 md:px-6 py-4 md:py-6">
+                <div class="flex flex-wrap justify-between gap-4 mb-6 items-baseline">
                     <p class="text-[#111318] dark:text-white tracking-light text-[32px] font-bold leading-tight min-w-72">Recent Job Postings</p>
                     <p id="resultsCount" class="text-gray-500 dark:text-gray-400 text-sm">Showing 1-12 of 2,456 results</p>
                 </div>
@@ -88,7 +46,7 @@
                     <!-- Job cards will be loaded here -->
                 </div>
                 <!-- Pagination -->
-                <div class="flex justify-center items-center gap-2 mt-12">
+                <div class="flex justify-center items-center gap-2 mt-8">
                     <button class="pagination-btn flex items-center justify-center size-10 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors">
                         <span class="material-symbols-outlined text-xl">chevron_left</span>
                     </button>
@@ -117,38 +75,24 @@
         });
 
         function setupEventListeners() {
-            // Filter pills
+            // Filter pills - navigate to jobs page with filter
             document.querySelectorAll('.filter-pill').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     e.preventDefault();
                     const filter = btn.dataset.filter;
                     if (filter) {
+                        // Toggle the active state
                         toggleFilter(btn);
-                    }
-                });
-            });
-
-            // Search button
-            document.getElementById('searchBtn').addEventListener('click', (e) => {
-                const job = document.getElementById('searchJobInput').value;
-                const location = document.getElementById('searchLocationInput').value;
-                const activeFilters = Array.from(document.querySelectorAll('.filter-pill.active'))
-                    .map(btn => btn.dataset.filter)
-                    .filter(f => f);
-                
-                let url = '/jobs?';
-                if (job) url += `q=${encodeURIComponent(job)}&`;
-                if (location) url += `loc=${encodeURIComponent(location)}&`;
-                if (activeFilters.length > 0) url += `job_type=${activeFilters.join(',')}&`;
-                
-                window.location.href = url.replace(/&$/, '');
-            });
-
-            // Enter key on search inputs
-            ['searchJobInput', 'searchLocationInput'].forEach(id => {
-                document.getElementById(id).addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') {
-                        document.getElementById('searchBtn').click();
+                        
+                        // Get all active filters
+                        const activeFilters = Array.from(document.querySelectorAll('.filter-pill.active'))
+                            .map(b => b.dataset.filter)
+                            .filter(f => f);
+                        
+                        // Navigate to jobs page with filters
+                        let url = '/jobs?';
+                        if (activeFilters.length > 0) url += `job_type=${activeFilters.join(',')}&`;
+                        window.location.href = url.replace(/&$/, '') || '/jobs';
                     }
                 });
             });
