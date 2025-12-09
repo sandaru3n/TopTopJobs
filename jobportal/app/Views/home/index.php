@@ -70,6 +70,36 @@
                     </button>
                 </div>
             </div>
+
+            <!-- Job Categories Section -->
+            <div class="container mx-auto px-4 md:px-6 py-8 md:py-12">
+                <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+                    <h2 class="text-[#111318] dark:text-white tracking-light text-[32px] font-bold leading-tight">Job Categories</h2>
+                    <div class="flex items-center gap-3">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">Sort by</span>
+                        <select id="categorySort" class="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer">
+                            <option value="name-asc">A to Z</option>
+                            <option value="name-desc">Z to A</option>
+                            <option value="count-desc">Most Jobs</option>
+                            <option value="count-asc">Least Jobs</option>
+                        </select>
+                        <div class="flex items-center gap-2">
+                            <button id="categoryPrevBtn" class="flex items-center justify-center size-10 rounded-full text-gray-400 dark:text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                <span class="material-symbols-outlined text-xl">chevron_left</span>
+                            </button>
+                            <button id="categoryNextBtn" class="flex items-center justify-center size-10 rounded-full text-primary hover:bg-primary/10 dark:hover:bg-primary/20 transition-colors">
+                                <span class="material-symbols-outlined text-xl">chevron_right</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div id="categoryGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    <!-- Categories will be loaded here -->
+                </div>
+                <div id="categoryPagination" class="flex justify-center items-center gap-2">
+                    <!-- Pagination dots will be loaded here -->
+                </div>
+            </div>
         </main>
 
         <?= view('partials/footer') ?>
@@ -78,10 +108,50 @@
     <script>
         const baseUrl = '<?= base_url() ?>';
         
+        // Category state
+        let categoriesData = [];
+        let currentCategoryPage = 1;
+        const categoriesPerPage = 15;
+        let categorySortBy = 'name-asc';
+
         // Load jobs on page load
         document.addEventListener('DOMContentLoaded', () => {
             loadJobs();
+            loadCategories();
             setupEventListeners();
+            
+            // Category navigation event listeners
+            const prevBtn = document.getElementById('categoryPrevBtn');
+            const nextBtn = document.getElementById('categoryNextBtn');
+            const sortSelect = document.getElementById('categorySort');
+
+            if (prevBtn) {
+                prevBtn.addEventListener('click', () => {
+                    if (currentCategoryPage > 1) {
+                        currentCategoryPage--;
+                        renderCategories();
+                    }
+                });
+            }
+
+            if (nextBtn) {
+                nextBtn.addEventListener('click', () => {
+                    const totalPages = Math.ceil(categoriesData.length / categoriesPerPage);
+                    if (currentCategoryPage < totalPages) {
+                        currentCategoryPage++;
+                        renderCategories();
+                    }
+                });
+            }
+
+            if (sortSelect) {
+                sortSelect.addEventListener('change', (e) => {
+                    categorySortBy = e.target.value;
+                    currentCategoryPage = 1;
+                    sortCategories();
+                    renderCategories();
+                });
+            }
         });
 
         function setupEventListeners() {
@@ -209,6 +279,114 @@
             if (diffDays < 365) return `${diffMonths} month${diffMonths > 1 ? 's' : ''} ago`;
             return `${Math.floor(diffDays / 365)} year${Math.floor(diffDays / 365) > 1 ? 's' : ''} ago`;
         }
+
+        // Load categories
+        async function loadCategories() {
+            try {
+                const response = await fetch(`${baseUrl.replace(/\/$/, '')}/api/categories.php`);
+                const data = await response.json();
+
+                if (data.success && data.categories) {
+                    categoriesData = data.categories;
+                    sortCategories();
+                    renderCategories();
+                }
+            } catch (error) {
+                console.error('Error loading categories:', error);
+            }
+        }
+
+        // Sort categories
+        function sortCategories() {
+            const [sortField, sortOrder] = categorySortBy.split('-');
+            
+            categoriesData.sort((a, b) => {
+                if (sortField === 'name') {
+                    return sortOrder === 'asc' 
+                        ? a.name.localeCompare(b.name)
+                        : b.name.localeCompare(a.name);
+                } else {
+                    return sortOrder === 'desc'
+                        ? b.count - a.count
+                        : a.count - b.count;
+                }
+            });
+        }
+
+        // Render categories
+        function renderCategories() {
+            const container = document.getElementById('categoryGrid');
+            const startIndex = (currentCategoryPage - 1) * categoriesPerPage;
+            const endIndex = startIndex + categoriesPerPage;
+            const pageCategories = categoriesData.slice(startIndex, endIndex);
+
+            container.innerHTML = pageCategories.map(category => `
+                <div class="bg-white dark:bg-gray-800/50 rounded-lg p-6 border border-gray-200 dark:border-gray-700/50 hover:shadow-md hover:border-primary/50 dark:hover:border-primary/50 transition-all duration-300 cursor-pointer" onclick="window.location.href='<?= base_url('jobs') ?>?category=${encodeURIComponent(category.name)}'">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-bold text-[#111318] dark:text-white">${category.name}</h3>
+                        <div class="text-right">
+                            <p class="text-2xl font-bold text-[#111318] dark:text-white">${category.count}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Job Posts</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Update pagination
+            updateCategoryPagination();
+            updateCategoryNavigation();
+        }
+
+        // Update category pagination dots
+        function updateCategoryPagination() {
+            const totalPages = Math.ceil(categoriesData.length / categoriesPerPage);
+            const container = document.getElementById('categoryPagination');
+            
+            container.innerHTML = Array.from({ length: totalPages }, (_, i) => {
+                const pageNum = i + 1;
+                const isActive = pageNum === currentCategoryPage;
+                return `
+                    <button 
+                        class="w-2 h-2 rounded-full transition-colors ${isActive ? 'bg-primary' : 'bg-gray-300 dark:bg-gray-600'}"
+                        onclick="goToCategoryPage(${pageNum})"
+                        aria-label="Go to page ${pageNum}"
+                    ></button>
+                `;
+            }).join('');
+        }
+
+        // Update category navigation buttons
+        function updateCategoryNavigation() {
+            const totalPages = Math.ceil(categoriesData.length / categoriesPerPage);
+            const prevBtn = document.getElementById('categoryPrevBtn');
+            const nextBtn = document.getElementById('categoryNextBtn');
+
+            prevBtn.disabled = currentCategoryPage === 1;
+            nextBtn.disabled = currentCategoryPage === totalPages;
+
+            if (currentCategoryPage === 1) {
+                prevBtn.classList.add('text-gray-400', 'dark:text-gray-500');
+                prevBtn.classList.remove('text-primary');
+            } else {
+                prevBtn.classList.remove('text-gray-400', 'dark:text-gray-500');
+                prevBtn.classList.add('text-primary');
+            }
+
+            if (currentCategoryPage === totalPages) {
+                nextBtn.classList.add('text-gray-400', 'dark:text-gray-500');
+                nextBtn.classList.remove('text-primary');
+            } else {
+                nextBtn.classList.remove('text-gray-400', 'dark:text-gray-500');
+                nextBtn.classList.add('text-primary');
+            }
+        }
+
+        // Go to category page
+        function goToCategoryPage(page) {
+            currentCategoryPage = page;
+            renderCategories();
+        }
+
     </script>
 </body>
 </html>

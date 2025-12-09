@@ -117,7 +117,7 @@
                     </a>
                     <a href="<?= base_url('signup') ?>" class="flex min-w-[70px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-3 text-xs font-bold leading-normal tracking-[0.015em] transition-colors" style="background-color: #000000; color: white;" onmouseover="this.style.backgroundColor='#333333'" onmouseout="this.style.backgroundColor='#000000'">
                         <span class="truncate">Sign Up</span>
-                    </a>
+                </a>
                 <?php endif; ?>
                 <button 
                     id="mobileMenuBtn"
