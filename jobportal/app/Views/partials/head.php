@@ -97,6 +97,51 @@
         #filterPillsSection .overflow-x-auto::-webkit-scrollbar {
             display: none;  /* Chrome, Safari and Opera */
         }
+        
+        /* Custom Scrollbar Styles */
+        /* For Webkit browsers (Chrome, Safari, Edge) */
+        ::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        .dark ::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+            border: 2px solid #f1f1f1;
+        }
+        
+        .dark ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border: 2px solid #1f2937;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        .dark ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+        
+        /* For Firefox */
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 #f1f1f1;
+        }
+        
+        .dark * {
+            scrollbar-color: #4b5563 #1f2937;
+        }
     </style>
     <?php if (!empty($css_file)): ?>
         <link rel="stylesheet" href="<?= base_url($css_file) ?>">

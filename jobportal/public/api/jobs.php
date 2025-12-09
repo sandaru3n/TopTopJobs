@@ -228,6 +228,7 @@ $salaryMin = isset($_GET['sal_min']) ? (int)$_GET['sal_min'] : 0;
 $datePosted = isset($_GET['date_posted']) ? explode(',', $_GET['date_posted']) : [];
 $company = $_GET['company'] ?? '';
 $skills = isset($_GET['skills']) ? explode(',', $_GET['skills']) : [];
+$categories = isset($_GET['category']) ? explode(',', $_GET['category']) : [];
 $userLat = isset($_GET['lat']) ? (float)$_GET['lat'] : null;
 $userLng = isset($_GET['lng']) ? (float)$_GET['lng'] : null;
 $sort = $_GET['sort'] ?? 'relevant';
@@ -244,6 +245,7 @@ $cacheKey = md5(serialize([
     'date_posted' => $datePosted,
     'company' => $company,
     'skills' => $skills,
+    'category' => $categories,
     'sort' => $sort,
     'page' => $page
 ]));
@@ -271,6 +273,7 @@ $filteredJobs = filterJobs($allJobs, [
     'date_posted' => $datePosted,
     'company' => $company,
     'skills' => $skills,
+    'categories' => $categories,
     'user_lat' => $userLat,
     'user_lng' => $userLng
 ]);
@@ -752,6 +755,30 @@ function filterJobs($jobs, $filters) {
             $jobSkills = array_map('strtolower', $job['skills']);
             $filterSkills = array_map('strtolower', $filters['skills']);
             return !empty(array_intersect($jobSkills, $filterSkills));
+        });
+    }
+
+    // Category filter
+    if (!empty($filters['categories'])) {
+        $filtered = array_filter($filtered, function($job) use ($filters) {
+            // Get category from job (extracted from skills or company_industry)
+            $categoryList = ['Cashier', 'Data Entry', 'IT/Software', 'Marketing', 'Sales', 'Customer Service', 'Design', 'Engineering', 'Finance', 'Healthcare', 'Education', 'Other'];
+            $jobCategory = 'Other';
+            
+            // Try to extract from skills_required
+            if (!empty($job['skills_required'])) {
+                $parsed = is_string($job['skills_required']) ? explode(',', $job['skills_required']) : $job['skills_required'];
+                if (!empty($parsed) && in_array($parsed[0], $categoryList)) {
+                    $jobCategory = $parsed[0];
+                }
+            }
+            
+            // Fallback to company_industry
+            if ($jobCategory === 'Other' && !empty($job['company_industry'])) {
+                $jobCategory = $job['company_industry'];
+            }
+            
+            return in_array($jobCategory, $filters['categories']);
         });
     }
 

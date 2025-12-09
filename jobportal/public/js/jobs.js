@@ -24,11 +24,14 @@ class JobSearch {
             experience: [],
             salary_min: 0,
             date_posted: [],
+            category: [],
         };
         this.sortBy = 'relevant';
         this.viewMode = 'list'; // 'list' or 'grid'
         this.userLocation = null;
         this.savedJobs = new Set(JSON.parse(localStorage.getItem('savedJobs') || '[]'));
+        this.locationDebounceTimer = null;
+        this.salaryDebounceTimer = null;
 
         this.init();
     }
@@ -79,7 +82,67 @@ class JobSearch {
             this.closeMobileFilters();
         });
 
-        // Job type filters (desktop and mobile)
+        // Filter pill buttons (new UI) - Toggle functionality using event delegation
+        // Use event delegation to handle clicks even if buttons are re-rendered
+        // Store reference to 'this' for use in event handler
+        const self = this;
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('.filter-pill-btn');
+            if (!btn) return;
+            
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const filterType = btn.dataset.filter;
+            const filterValue = btn.dataset.value;
+            
+            if (!filterType || !filterValue) return;
+            
+            const isActive = btn.classList.contains('active');
+            
+            // Special handling for location pills - set text input value
+            if (filterType === 'location') {
+                const locationInput = document.getElementById('locationFilter');
+                const locationInputMobile = document.getElementById('locationFilterMobile');
+                if (isActive) {
+                    // Remove filter - clear location
+                    if (locationInput) locationInput.value = '';
+                    if (locationInputMobile) locationInputMobile.value = '';
+                    self.filters.loc = '';
+                    btn.classList.remove('active');
+                    btn.classList.add('bg-white', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+                } else {
+                    // Add filter - set location
+                    if (locationInput) locationInput.value = filterValue;
+                    if (locationInputMobile) locationInputMobile.value = filterValue;
+                    self.filters.loc = filterValue;
+                    btn.classList.add('active');
+                    btn.classList.remove('bg-white', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+                }
+                // Sync location pills
+                self.syncFilterPills(filterType, filterValue, !isActive);
+                // Auto-apply location filter
+                self.resetAndLoad();
+            } else {
+                // For other filter types (job_type, experience, category, date_posted)
+                if (isActive) {
+                    // Remove filter - deselect button
+                    btn.classList.remove('active');
+                    btn.classList.add('bg-white', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+                    self.updateArrayFilter(filterType, filterValue, false);
+                } else {
+                    // Add filter - select button
+                    btn.classList.add('active');
+                    btn.classList.remove('bg-white', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+                    self.updateArrayFilter(filterType, filterValue, true);
+                }
+                
+                // Sync all buttons with same filter and value (desktop and mobile)
+                self.syncFilterPills(filterType, filterValue, !isActive);
+            }
+        });
+
+        // Legacy checkbox support (if any remain)
         document.querySelectorAll('input[name="job_type"], input[name="job_type_mobile"]').forEach(checkbox => {
             checkbox.addEventListener('change', (e) => {
                 this.updateArrayFilter('job_type', e.target.value, e.target.checked);
@@ -87,12 +150,52 @@ class JobSearch {
             });
         });
 
-        // Experience filters (desktop and mobile)
+        // Legacy checkbox support (if any remain)
         document.querySelectorAll('input[name="experience"], input[name="experience_mobile"]').forEach(checkbox => {
             checkbox.addEventListener('change', (e) => {
                 this.updateArrayFilter('experience', e.target.value, e.target.checked);
                 this.syncCheckboxes('experience', e.target.value, e.target.checked);
             });
+        });
+
+        // Location input (desktop and mobile)
+        const locationFilter = document.getElementById('locationFilter');
+        const locationFilterMobile = document.getElementById('locationFilterMobile');
+        
+        [locationFilter, locationFilterMobile].forEach(input => {
+            if (input) {
+                input.addEventListener('input', (e) => {
+                    this.filters.loc = e.target.value.trim();
+                    // Sync both inputs
+                    if (e.target.id === 'locationFilter') {
+                        if (locationFilterMobile) locationFilterMobile.value = e.target.value;
+                    } else {
+                        if (locationFilter) locationFilter.value = e.target.value;
+                    }
+                    
+                    // Clear location pill buttons if user types custom location
+                    if (this.filters.loc) {
+                        document.querySelectorAll('.filter-pill-btn[data-filter="location"]').forEach(btn => {
+                            btn.classList.remove('active');
+                            // Restore default styles
+                            btn.classList.add('bg-white', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+                        });
+                    }
+                    
+                    // Auto-apply location filter with debounce
+                    clearTimeout(this.locationDebounceTimer);
+                    this.locationDebounceTimer = setTimeout(() => {
+                        this.resetAndLoad();
+                    }, 500); // Wait 500ms after user stops typing
+                });
+                
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        clearTimeout(this.locationDebounceTimer);
+                        this.resetAndLoad();
+                    }
+                });
+            }
         });
 
         // Salary range (desktop and mobile)
@@ -105,17 +208,16 @@ class JobSearch {
                     this.filters.salary_min = parseInt(e.target.value);
                     // Sync both sliders
                     if (e.target.id === 'salaryRange') {
-                        salaryRangeMobile.value = e.target.value;
+                        if (salaryRangeMobile) salaryRangeMobile.value = e.target.value;
                     } else {
-                        salaryRange.value = e.target.value;
+                        if (salaryRange) salaryRange.value = e.target.value;
                     }
                     this.updateSalaryDisplay();
-                    this.debounce(() => this.resetAndLoad(), 300)();
                 });
             }
         });
 
-        // Date posted filters (desktop and mobile)
+        // Legacy checkbox support for date posted (if any remain)
         document.querySelectorAll('input[name="date_posted"], input[name="date_posted_mobile"]').forEach(checkbox => {
             checkbox.addEventListener('change', (e) => {
                 this.updateArrayFilter('date_posted', e.target.value, e.target.checked);
@@ -124,17 +226,19 @@ class JobSearch {
         });
 
         // Clear filters (desktop and mobile)
-        document.getElementById('clearFilters').addEventListener('click', () => {
-            this.clearAllFilters();
-        });
-        
-        const clearFiltersMobile = document.getElementById('clearFiltersMobile');
-        if (clearFiltersMobile) {
-            clearFiltersMobile.addEventListener('click', () => {
+        const clearFiltersBtn = document.getElementById('clearFilters');
+        const clearFiltersMobileBtn = document.getElementById('clearFiltersMobile');
+        if (clearFiltersBtn) {
+            clearFiltersBtn.addEventListener('click', () => {
                 this.clearAllFilters();
-                this.closeMobileFilters();
             });
         }
+        if (clearFiltersMobileBtn) {
+            clearFiltersMobileBtn.addEventListener('click', () => {
+                this.clearAllFilters();
+            });
+        }
+
 
         // Sort
         document.getElementById('sortBy').addEventListener('change', (e) => {
@@ -268,6 +372,11 @@ class JobSearch {
     }
 
     updateArrayFilter(filterName, value, checked) {
+        // Ensure the filter array exists
+        if (!Array.isArray(this.filters[filterName])) {
+            this.filters[filterName] = [];
+        }
+        
         if (checked) {
             if (!this.filters[filterName].includes(value)) {
                 this.filters[filterName].push(value);
@@ -309,19 +418,47 @@ class JobSearch {
             experience: [],
             salary_min: 0,
             date_posted: [],
+            category: [],
         };
 
         // Reset UI (desktop and mobile)
         const salaryRanges = [document.getElementById('salaryRange'), document.getElementById('salaryRangeMobile')];
         salaryRanges.forEach(el => { if (el) el.value = 0; });
         
+        // Reset location inputs
+        const locationInputs = [document.getElementById('locationFilter'), document.getElementById('locationFilterMobile')];
+        locationInputs.forEach(el => { if (el) el.value = ''; });
+        
+        // Reset pill buttons
+        document.querySelectorAll('.filter-pill-btn').forEach(btn => {
+            btn.classList.remove('active');
+            // Restore default styles
+            btn.classList.add('bg-white', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+        });
+        
+        // Reset legacy checkboxes if any
         document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
         this.updateSalaryDisplay();
         this.resetAndLoad();
     }
     
+    syncFilterPills(filterType, filterValue, isActive) {
+        // Sync all pill buttons with same filter type and value (desktop and mobile)
+        document.querySelectorAll(`.filter-pill-btn[data-filter="${filterType}"][data-value="${filterValue}"]`).forEach(btn => {
+            if (isActive) {
+                btn.classList.add('active');
+                // Remove default styles, active class will handle styling via CSS
+                btn.classList.remove('bg-white', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+            } else {
+                btn.classList.remove('active');
+                // Restore default styles
+                btn.classList.add('bg-white', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+            }
+        });
+    }
+    
     syncCheckboxes(filterName, value, checked) {
-        // Sync desktop and mobile checkboxes
+        // Sync desktop and mobile checkboxes (legacy support)
         const desktopName = filterName === 'date_posted' ? 'date_posted' : filterName;
         const mobileName = filterName === 'date_posted' ? 'date_posted_mobile' : 
                           filterName === 'job_type' ? 'job_type_mobile' : 
@@ -432,6 +569,9 @@ class JobSearch {
             }
             if (this.filters.date_posted.length > 0) {
                 params.append('date_posted', this.filters.date_posted.join(','));
+            }
+            if (this.filters.category && this.filters.category.length > 0) {
+                params.append('category', this.filters.category.join(','));
             }
 
             if (this.userLocation) {

@@ -504,6 +504,131 @@ input[type="range"]::-moz-range-thumb {
     }
 }
 
+/* Filter Section Styles */
+.filter-section {
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 1rem;
+}
+
+.dark .filter-section {
+    border-bottom-color: rgba(55, 65, 81, 0.5);
+}
+
+.filter-section-header {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+
+.filter-section-header:hover {
+    opacity: 0.8;
+}
+
+.filter-section-content {
+    display: block;
+}
+
+.filter-caret {
+    transition: transform 0.2s ease;
+}
+
+/* Filter Pill Buttons */
+.filter-pill-btn {
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+/* Job Type - Medium Green */
+.filter-pill-btn[data-filter="job_type"].active {
+    background-color: rgba(16, 185, 129, 0.2) !important;
+    border-color: rgba(16, 185, 129, 0.5) !important;
+    color: #065f46 !important;
+    font-weight: 600;
+}
+
+.dark .filter-pill-btn[data-filter="job_type"].active {
+    background-color: rgba(16, 185, 129, 0.3) !important;
+    border-color: rgba(16, 185, 129, 0.6) !important;
+    color: #d1fae5 !important;
+    font-weight: 600;
+}
+
+/* Experience - Medium Yellow/Amber */
+.filter-pill-btn[data-filter="experience"].active {
+    background-color: rgba(245, 158, 11, 0.2) !important;
+    border-color: rgba(245, 158, 11, 0.5) !important;
+    color: #92400e !important;
+    font-weight: 600;
+}
+
+.dark .filter-pill-btn[data-filter="experience"].active {
+    background-color: rgba(245, 158, 11, 0.3) !important;
+    border-color: rgba(245, 158, 11, 0.6) !important;
+    color: #fef3c7 !important;
+    font-weight: 600;
+}
+
+/* Category - Medium Blue */
+.filter-pill-btn[data-filter="category"].active {
+    background-color: rgba(59, 130, 246, 0.2) !important;
+    border-color: rgba(59, 130, 246, 0.5) !important;
+    color: #1e40af !important;
+    font-weight: 600;
+}
+
+.dark .filter-pill-btn[data-filter="category"].active {
+    background-color: rgba(59, 130, 246, 0.3) !important;
+    border-color: rgba(59, 130, 246, 0.6) !important;
+    color: #dbeafe !important;
+    font-weight: 600;
+}
+
+/* Date Posted - Medium Purple */
+.filter-pill-btn[data-filter="date_posted"].active {
+    background-color: rgba(168, 85, 247, 0.2) !important;
+    border-color: rgba(168, 85, 247, 0.5) !important;
+    color: #6b21a8 !important;
+    font-weight: 600;
+}
+
+.dark .filter-pill-btn[data-filter="date_posted"].active {
+    background-color: rgba(168, 85, 247, 0.3) !important;
+    border-color: rgba(168, 85, 247, 0.6) !important;
+    color: #e9d5ff !important;
+    font-weight: 600;
+}
+
+/* Location - Medium Pink/Red */
+.filter-pill-btn[data-filter="location"].active {
+    background-color: rgba(236, 72, 153, 0.2) !important;
+    border-color: rgba(236, 72, 153, 0.5) !important;
+    color: #9f1239 !important;
+    font-weight: 600;
+}
+
+.dark .filter-pill-btn[data-filter="location"].active {
+    background-color: rgba(236, 72, 153, 0.3) !important;
+    border-color: rgba(236, 72, 153, 0.6) !important;
+    color: #fce7f3 !important;
+    font-weight: 600;
+}
+
+/* Default active state (fallback) */
+.filter-pill-btn.active {
+    background-color: rgba(16, 185, 129, 0.2) !important;
+    border-color: rgba(16, 185, 129, 0.5) !important;
+    color: #065f46 !important;
+    font-weight: 600;
+}
+
+.dark .filter-pill-btn.active {
+    background-color: rgba(16, 185, 129, 0.3) !important;
+    border-color: rgba(16, 185, 129, 0.6) !important;
+    color: #d1fae5 !important;
+    font-weight: 600;
+}
+
 /* Print Styles */
 @media print {
     #filterPanel,
