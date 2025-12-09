@@ -43,6 +43,76 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 
 // Get query parameters
 try {
+// Check if requesting a single job by ID or slug
+$jobId = isset($_GET['id']) ? (int)$_GET['id'] : null;
+$jobSlug = isset($_GET['slug']) ? $_GET['slug'] : null;
+
+if ($jobId || $jobSlug) {
+    $allJobs = getMockJobs();
+    $job = null;
+    
+    if ($jobId) {
+        // Find by ID
+        foreach ($allJobs as $j) {
+            if ($j['id'] == $jobId) {
+                $job = $j;
+                break;
+            }
+        }
+    } elseif ($jobSlug) {
+        // Find by slug (extract ID from slug if needed)
+        // Slug format: company-title-id
+        // Extract ID from end of slug
+        if (preg_match('/-(\d+)$/', $jobSlug, $matches)) {
+            $extractedId = (int)$matches[1];
+            foreach ($allJobs as $j) {
+                if ($j['id'] == $extractedId) {
+                    $job = $j;
+                    break;
+                }
+            }
+        } else {
+            // Try to match by slug directly
+            foreach ($allJobs as $j) {
+                if (isset($j['slug']) && $j['slug'] === $jobSlug) {
+                    $job = $j;
+                    break;
+                }
+            }
+        }
+    }
+    
+    if ($job) {
+        // Ensure slug is set
+        if (!isset($job['slug'])) {
+            $job['slug'] = generateJobSlug($job['company_name'], $job['title'], $job['id']);
+        }
+        
+        // Get company description if available
+        $job['company_description'] = getCompanyDescription($job['company_name']);
+        
+        // Format responsibilities and requirements if they're strings
+        if (isset($job['responsibilities']) && is_string($job['responsibilities'])) {
+            $job['responsibilities'] = array_filter(array_map('trim', explode("\n", $job['responsibilities'])));
+        }
+        if (isset($job['requirements']) && is_string($job['requirements'])) {
+            $job['requirements'] = array_filter(array_map('trim', explode("\n", $job['requirements'])));
+        }
+        
+        echo json_encode([
+            'success' => true,
+            'job' => $job
+        ]);
+    } else {
+        http_response_code(404);
+        echo json_encode([
+            'success' => false,
+            'message' => 'Job not found'
+        ]);
+    }
+    exit;
+}
+
 $query = $_GET['q'] ?? '';
 $location = $_GET['loc'] ?? '';
 $jobTypes = isset($_GET['job_type']) ? explode(',', $_GET['job_type']) : [];
@@ -154,14 +224,37 @@ echo json_encode($response);
 }
 
 /**
+ * Generate slug from text
+ */
+function generateSlug($text) {
+    // Convert to lowercase
+    $text = strtolower($text);
+    // Replace spaces and special characters with hyphens
+    $text = preg_replace('/[^a-z0-9]+/', '-', $text);
+    // Remove leading/trailing hyphens
+    $text = trim($text, '-');
+    return $text;
+}
+
+/**
+ * Generate job slug from company name, title, and ID
+ */
+function generateJobSlug($companyName, $title, $id) {
+    $companySlug = generateSlug($companyName);
+    $titleSlug = generateSlug($title);
+    return $companySlug . '-' . $titleSlug . '-' . $id;
+}
+
+/**
  * Get mock job data
  * Replace this with actual database query
  */
 function getMockJobs() {
-    return [
+    $jobs = [
         [
             'id' => 1,
             'title' => 'Senior Product Designer',
+            'slug' => 'google-senior-product-designer-1',
             'company_name' => 'Google',
             'company_logo' => 'https://lh3.googleusercontent.com/aida-public/AB6AXuB05iY8MHCloko0xXgRy_Jczz3KCqK0j41JrpKtPrLoEFSBFfS3RRHpNwzjo4352pEft_-EM62Omi8fugVrYLNxKrOsfEO5ZP6w9WUGuZZMWAuQs87m3zlh7lr-j_KpkSIAdOUXj7Uyz_BxbAn456x3WlhcmsufhjVi8jlruQLLjoOKsTE-K0ERqPW3aIXAbIXW8nLj0joDAxMs4LQsueuixWEizOvt6Hc_WHFPI-fgqEFcM-OkXqbqruu1W-l7ZNGeaz-xtRB17OU',
             'company_rating' => 4.5,
@@ -170,9 +263,27 @@ function getMockJobs() {
             'longitude' => -122.0841,
             'job_type' => 'full-time',
             'experience' => 'senior',
+            'experience_level' => 'senior',
             'salary' => 180000,
+            'salary_min' => 120000,
+            'salary_max' => 160000,
+            'is_remote' => 0,
             'skills' => ['Design', 'UI/UX', 'Figma', 'Prototyping'],
-            'description' => "We're looking for a creative and passionate product designer to join our team and help shape the future of our products.",
+            'description' => "We are looking for a passionate Senior Product Designer to join our team in San Francisco. You will be responsible for the entire product design lifecycle, from user research and wireframing to creating high-fidelity mockups and prototypes. You'll work closely with product managers, engineers, and other stakeholders to deliver intuitive and beautiful user experiences.",
+            'responsibilities' => [
+                'Conduct user research and usability testing to inform design decisions.',
+                'Create wireframes, storyboards, user flows, process flows, and sitemaps.',
+                'Develop high-fidelity mockups and interactive prototypes for web and mobile.',
+                'Collaborate with product management and engineering to define and implement innovative solutions.',
+                'Establish and promote design guidelines, best practices, and standards.'
+            ],
+            'requirements' => [
+                '5+ years of experience in product design.',
+                'Strong portfolio of design projects.',
+                'Proficiency in Figma, Sketch, or Adobe XD.',
+                'Experience working in an Agile/Scrum development process.',
+                'Excellent visual design skills with a sensitivity to user-system interaction.'
+            ],
             'posted_at' => date('Y-m-d H:i:s', strtotime('-2 days')),
             'badge' => 'New',
             'badge_class' => 'bg-green-100 text-green-800'
@@ -180,6 +291,7 @@ function getMockJobs() {
         [
             'id' => 2,
             'title' => 'Backend Engineer (PHP)',
+            'slug' => 'meta-backend-engineer-php-2',
             'company_name' => 'Meta',
             'company_logo' => 'https://lh3.googleusercontent.com/aida-public/AB6AXuCa4i9YIcvfi-4ogR9bYPtb6EJMcZ8KfKUSIiSqiXRRJ3jCbf5rdnslYZNneZtbu6y43LO2fS3xzUfDQErXrK9H0LaCLOoNVZ5kfDwXVkQYE6KYUyvX77gLNFrVcfKuUnUSDq-m5bzJ1MBZP07bfb7uuDtHjgZZ5o8CjvB1Mj0HChB1AF-HBDsjY-Ecyst_57BtODR9uqGxFLCw6b2Fh-3ydN3CDzDGN34kd7W_uavR3nMaQ-nhElLHY3Q6rkqlv0zlgsIHBn5nvI0',
             'company_rating' => 4.7,
@@ -197,6 +309,7 @@ function getMockJobs() {
         [
             'id' => 3,
             'title' => 'Data Analyst Intern',
+            'slug' => 'spotify-data-analyst-intern-3',
             'company_name' => 'Spotify',
             'company_logo' => 'https://lh3.googleusercontent.com/aida-public/AB6AXuCQsPRlVdF3rN3bKlU8wxZtnvbjdk5DNq4DlRb_JCSH3qOCzaHxtyplssUPOFlQAwvq6pVcnSx1QmYwF68l57sHCFdV84ClRyXCzL0pKb7X2nIOmfcEntKcn8SGFGlJItZ4lKsNSIfAFpikh2D8ogZa-76swsmJK1ck4_XPjdYClAxG0bB29yURje5XPKJspi5wSXAmyDEjhrJ-DrbDKQ6V5_133Ar5VEPEqIBToz7WDCjDd-iWk5iXJyHWiDTzVGp02RQO1Gy-h9M',
             'company_rating' => 4.3,
@@ -214,6 +327,7 @@ function getMockJobs() {
         [
             'id' => 4,
             'title' => 'Frontend Developer',
+            'slug' => 'amazon-frontend-developer-4',
             'company_name' => 'Amazon',
             'company_logo' => 'https://lh3.googleusercontent.com/aida-public/AB6AXuCbPYBEnGDCgg5AuErg8Ad1-82nyneAu2AfDt4vaL-Sb5V6alib6oYn-x2ana1u7rB6knYikdgAICW-02xN1qPS5C1sBWZQR5SbsomyWuq0PWcSLWQngi4oyO_L6zkA0AJ47HG4x1EE_WnZhW0Q5ToBetjzUwBE1aDA9KPpZyR9SWxkTf7bBrTeSXBUpR98uVRt14E4D8NRGanAWd4p6ZOX5ref_jNMLfEiRaxfWXuFWdMN-gfc_BuzwxA9WXt5Og3kwsQxtQM-QyY',
             'company_rating' => 4.2,
@@ -231,6 +345,7 @@ function getMockJobs() {
         [
             'id' => 5,
             'title' => 'DevOps Engineer',
+            'slug' => 'slack-devops-engineer-5',
             'company_name' => 'Slack',
             'company_logo' => 'https://lh3.googleusercontent.com/aida-public/AB6AXuC6dCnph3Osdogd3AI2I8gtmgR4Nyk3QNY8GcxYg2wiseVuZgqpE3tisH3Sj-F1Ks5SAUJYq6FsLBtLWfjOxe2DNPnErv5aDYg5_yDJgNJl0CnKhLdmvpfF8Ss7HTOYPfQlgDTF8S2_cqGsRGp21QnadsR0ev86n3xoJb0v22ME7ilNwWiHMfnPpB_dJ4--1zA_oqVTcBVsTLQOvCA0G1oph0I7KDcRZxCAITomTFMk2reXTFbn8LvjJU51uuKcZZvLFVU8nxRFRfU',
             'company_rating' => 4.6,
@@ -249,6 +364,7 @@ function getMockJobs() {
         [
             'id' => 6,
             'title' => 'Marketing Manager',
+            'slug' => 'shopify-marketing-manager-6',
             'company_name' => 'Shopify',
             'company_logo' => 'https://lh3.googleusercontent.com/aida-public/AB6AXuAPEpuUQWTh6vxomG4Yb6m5TEd75ohHpmHO11hDa3ACXjcdfAyZpafbzUlgzqP0E_MDHfRWDj_wOdhTGFWrVxVRApC1PKZksihRcqNVMYmkMNK3zLdDgv9x2I6ln4e3rxevAYjXaXhWzUSIX2rFUZoxvz9dmXYk6lMWAMQDE-PNJe4GCK_xz85hFMJ0M1hlJxT9JtY5P3mKJ4Y9GJoZz1fbHW1iOMmXtBK_mC99xxfCQjdHoPyNZ0MkxwjbYD_Fn2CzXGtDFRasDq4',
             'company_rating' => 4.4,
@@ -266,6 +382,7 @@ function getMockJobs() {
         [
             'id' => 7,
             'title' => 'Full Stack Developer (Remote)',
+            'slug' => 'microsoft-full-stack-developer-remote-7',
             'company_name' => 'Microsoft',
             'company_logo' => 'https://via.placeholder.com/48',
             'company_rating' => 4.8,
@@ -284,6 +401,7 @@ function getMockJobs() {
         [
             'id' => 8,
             'title' => 'PHP Developer',
+            'slug' => 'techcorp-php-developer-8',
             'company_name' => 'TechCorp',
             'company_logo' => 'https://via.placeholder.com/48',
             'company_rating' => 4.1,
@@ -300,6 +418,16 @@ function getMockJobs() {
             'badge_class' => 'bg-green-100 text-green-800'
         ]
     ];
+    
+    // Ensure all jobs have slugs
+    foreach ($jobs as &$job) {
+        if (!isset($job['slug'])) {
+            $job['slug'] = generateJobSlug($job['company_name'], $job['title'], $job['id']);
+        }
+    }
+    unset($job);
+    
+    return $jobs;
 }
 
 /**
@@ -436,5 +564,23 @@ function calculateDistance($lat1, $lon1, $lat2, $lon2) {
     $distance = $earthRadius * $c;
 
     return $distance;
+}
+
+/**
+ * Get company description
+ */
+function getCompanyDescription($companyName) {
+    $descriptions = [
+        'Google' => 'Google is a multinational technology company specializing in Internet-related services and products. We are on a mission to organize the world\'s information and make it universally accessible and useful.',
+        'Meta' => 'Meta builds technologies that help people connect, find communities, and grow businesses. We\'re moving beyond 2D screens toward immersive experiences in the metaverse.',
+        'Spotify' => 'Spotify is a digital music, podcast, and video service that gives you access to millions of songs and other content from creators all over the world.',
+        'Apple' => 'Apple designs and creates iPhone, iPad, Mac, Apple Watch, and Apple TV, along with software including iOS, macOS, watchOS, and tvOS.',
+        'Microsoft' => 'Microsoft enables digital transformation for the era of an intelligent cloud and an intelligent edge. Our mission is to empower every person and every organization on the planet to achieve more.',
+        'Amazon' => 'Amazon is guided by four principles: customer obsession rather than competitor focus, passion for invention, commitment to operational excellence, and long-term thinking.',
+        'Netflix' => 'Netflix is the world\'s leading streaming entertainment service with over 200 million paid memberships in over 190 countries enjoying TV series, documentaries and feature films.',
+        'Figma' => 'Figma is the leading collaborative design tool, helping teams create, test, and ship better designs from start to finish. We are on a mission to make design accessible to everyone.'
+    ];
+    
+    return $descriptions[$companyName] ?? 'A leading company in the technology industry, committed to innovation and excellence.';
 }
 

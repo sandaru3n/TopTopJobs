@@ -7,6 +7,9 @@ use CodeIgniter\Router\RouteCollection;
  */
 $routes->get('/', 'Home::index');
 $routes->get('/jobs', 'Home::jobs');
+$routes->get('/job/(:segment)', 'Home::jobDetails');
+$routes->get('/job/(:segment)/', 'Home::jobDetails');
+$routes->get('/job-details', 'Home::jobDetails');
 
 // Authentication Routes
 $routes->group('auth', ['filter' => 'guest'], function($routes) {

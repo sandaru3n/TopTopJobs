@@ -126,7 +126,7 @@
         function renderJobs(jobs) {
             const container = document.getElementById('jobGrid');
             container.innerHTML = jobs.map(job => `
-                <div class="bg-white dark:bg-gray-800/50 rounded-lg p-6 flex flex-col gap-4 border border-gray-200 dark:border-gray-700/50 hover:shadow-lg hover:border-primary/50 dark:hover:border-primary/50 transition-all duration-300 cursor-pointer" onclick="window.location.href='/jobs?id=${job.id}'">
+                <div class="bg-white dark:bg-gray-800/50 rounded-lg p-6 flex flex-col gap-4 border border-gray-200 dark:border-gray-700/50 hover:shadow-lg hover:border-primary/50 dark:hover:border-primary/50 transition-all duration-300 cursor-pointer" onclick="window.location.href='<?= base_url('job') ?>/${job.slug || (job.company_name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + job.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + job.id)}/'">
                     <div class="flex items-start justify-between">
                         <div class="flex items-center gap-4">
                             <img class="h-12 w-12 rounded-full object-cover" alt="${job.company_name} logo" src="${job.company_logo || 'https://via.placeholder.com/48'}" onerror="this.src='https://via.placeholder.com/48'"/>

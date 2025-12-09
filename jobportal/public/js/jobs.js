@@ -557,12 +557,25 @@ class JobSearch {
     }
 
     setupJobCardActions() {
-        // Add click handler for job title (quick preview)
-        document.querySelectorAll('.job-card-title').forEach(title => {
-            title.addEventListener('click', (e) => {
-                const jobCard = e.target.closest('.job-card');
-                const jobId = jobCard.dataset.jobId;
-                this.showJobPreview(jobId);
+        // Add click handler for job card to navigate to job details page
+        document.querySelectorAll('.job-card').forEach(card => {
+            card.style.cursor = 'pointer';
+            card.addEventListener('click', (e) => {
+                // Don't navigate if clicking on action buttons
+                if (e.target.closest('.job-card-actions')) {
+                    return;
+                }
+                const jobId = card.dataset.jobId;
+                // Find the job to get its slug
+                const job = this.jobs.find(j => j.id == jobId);
+                if (job && job.slug) {
+                    window.location.href = `${this.baseUrl}/job/${job.slug}/`;
+                } else {
+                    // Fallback: generate slug from company name, title, and ID
+                    const companySlug = (job?.company_name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                    const titleSlug = (job?.title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                    window.location.href = `${this.baseUrl}/job/${companySlug}-${titleSlug}-${jobId}/`;
+                }
             });
         });
     }
