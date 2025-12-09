@@ -90,7 +90,11 @@ class AuthController extends BaseController
     {
         // Redirect if already logged in
         if ($this->session->get('user_id')) {
-            return redirect()->to('/');
+            $userType = $this->session->get('user_type');
+            if ($userType === 'admin') {
+                return redirect()->to('/admin/dashboard');
+            }
+            return redirect()->to('/manage-jobs');
         }
 
         return view('auth/signup');
@@ -144,7 +148,9 @@ class AuthController extends BaseController
                 ];
                 $this->session->set($sessionData);
 
-                return redirect()->to('/')
+                // Redirect to appropriate page based on user type
+                $redirectUrl = $this->getRedirectUrl();
+                return redirect()->to($redirectUrl)
                     ->with('success', 'Account created successfully! Welcome to TopTopJobs!');
             }
         } catch (\Exception $e) {
@@ -181,8 +187,8 @@ class AuthController extends BaseController
             return '/admin/dashboard';
         }
 
-        // Default to home for regular users
-        return '/';
+        // Redirect regular users to manage-jobs
+        return '/manage-jobs';
     }
 
     /**

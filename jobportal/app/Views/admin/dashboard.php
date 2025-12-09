@@ -174,7 +174,7 @@
         <footer class="bg-white dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-800 mt-auto">
             <div class="container mx-auto px-6 py-4">
                 <p class="text-sm text-gray-500 dark:text-gray-400 text-center">
-                    © 2024 TopTopJobs Admin Panel. All rights reserved.
+                    © 2025 TopTopJobs Admin Panel. All rights reserved.
                 </p>
             </div>
         </footer>

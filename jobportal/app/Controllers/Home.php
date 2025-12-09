@@ -22,11 +22,7 @@ class Home extends BaseController
 
     public function index()
     {
-        // If user is logged in, redirect to dashboard
-        if (session()->get('is_logged_in')) {
-            return redirect()->to('/dashboard');
-        }
-        
+        // Allow both logged-in and guest users to access the home page
         return view('home/index');
     }
 
