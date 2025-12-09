@@ -6,6 +6,20 @@
         <main class="flex-grow container mx-auto px-4 md:px-6 py-8 md:py-12">
             <div class="max-w-4xl mx-auto">
                 <h1 class="text-3xl font-bold text-[#111318] dark:text-white mb-8">Profile Settings</h1>
+                
+                <!-- Manage Jobs Link -->
+                <div class="mb-6">
+                    <a 
+                        href="<?= base_url('manage-jobs') ?>" 
+                        class="inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-bold transition-colors"
+                        style="background-color: #2bee79; color: #0e2016;"
+                        onmouseover="this.style.backgroundColor='#25d46a'"
+                        onmouseout="this.style.backgroundColor='#2bee79'"
+                    >
+                        <span class="material-symbols-outlined">work</span>
+                        <span>Manage Jobs</span>
+                    </a>
+                </div>
 
                 <!-- Success/Error Messages -->
                 <?php if (session()->getFlashdata('success')): ?>

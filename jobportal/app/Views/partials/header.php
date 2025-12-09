@@ -114,6 +114,28 @@
                                 </a>
                             </div>
                             
+                            <!-- Manage Jobs -->
+                            <div class="py-1">
+                                <a 
+                                    href="<?= base_url('manage-jobs') ?>" 
+                                    class="flex items-center gap-3 px-4 py-2.5 text-sm text-[#111318] dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                >
+                                    <span class="material-symbols-outlined text-lg">work</span>
+                                    <span>Manage Jobs</span>
+                                </a>
+                            </div>
+                            
+                            <!-- Saved Jobs -->
+                            <div class="py-1">
+                                <a 
+                                    href="<?= base_url('saved-jobs') ?>" 
+                                    class="flex items-center gap-3 px-4 py-2.5 text-sm text-[#111318] dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                >
+                                    <span class="material-symbols-outlined text-lg">bookmark</span>
+                                    <span>Saved Jobs</span>
+                                </a>
+                            </div>
+                            
                             <!-- Sign Out -->
                             <div class="py-1">
                                 <a 
@@ -260,6 +282,22 @@
                     >
                         <span class="material-symbols-outlined text-xl">search</span>
                         <span>Browse Jobs</span>
+                    </a>
+                    <a 
+                        href="<?= base_url('manage-jobs') ?>" 
+                        class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        onclick="closeMobileMenu()"
+                    >
+                        <span class="material-symbols-outlined text-xl">work</span>
+                        <span>Manage Jobs</span>
+                    </a>
+                    <a 
+                        href="<?= base_url('saved-jobs') ?>" 
+                        class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        onclick="closeMobileMenu()"
+                    >
+                        <span class="material-symbols-outlined text-xl">bookmark</span>
+                        <span>Saved Jobs</span>
                     </a>
                     <a 
                         href="<?= base_url('profile') ?>" 

@@ -517,14 +517,8 @@
 
             // Save job button
             const saveBtn = document.getElementById('saveJobBtn');
-            const isSaved = localStorage.getItem(`saved_job_${job.id}`) === 'true';
-            if (isSaved) {
-                saveBtn.innerHTML = '<span class="material-symbols-outlined text-base">bookmark</span><span class="truncate">Saved</span>';
-                saveBtn.style.backgroundColor = '#2bee79';
-                saveBtn.style.color = '#0e2016';
-                saveBtn.onmouseover = function() { this.style.backgroundColor = '#25d46a'; };
-                saveBtn.onmouseout = function() { this.style.backgroundColor = '#2bee79'; };
-            }
+            // Check if job is saved (server-side)
+            checkJobSaved(job.id, saveBtn);
             saveBtn.addEventListener('click', () => toggleSaveJob(job.id, saveBtn));
 
             // Share button
@@ -580,22 +574,68 @@
             return levels[level] || level || 'Not specified';
         }
 
-        function toggleSaveJob(jobId, btn) {
-            const isSaved = localStorage.getItem(`saved_job_${jobId}`) === 'true';
+        // Check if job is saved (server-side)
+        async function checkJobSaved(jobId, btn) {
+            try {
+                const response = await fetch(`${baseUrl.replace(/\/$/, '')}/api/check-saved-job/${jobId}`);
+                const data = await response.json();
+                
+                if (data.success && data.saved) {
+                    updateSaveButton(btn, true);
+                } else {
+                    updateSaveButton(btn, false);
+                }
+            } catch (error) {
+                console.error('Error checking saved job:', error);
+                updateSaveButton(btn, false);
+            }
+        }
+
+        // Update save button appearance
+        function updateSaveButton(btn, isSaved) {
             if (isSaved) {
-                localStorage.removeItem(`saved_job_${jobId}`);
-                btn.innerHTML = '<span class="material-symbols-outlined text-base">bookmark</span><span class="truncate">Save Job</span>';
-                btn.style.backgroundColor = 'rgba(43, 238, 121, 0.5)';
-                btn.style.color = '#111318';
-                btn.onmouseover = function() { this.style.backgroundColor = 'rgba(43, 238, 121, 0.6)'; };
-                btn.onmouseout = function() { this.style.backgroundColor = 'rgba(43, 238, 121, 0.5)'; };
-            } else {
-                localStorage.setItem(`saved_job_${jobId}`, 'true');
                 btn.innerHTML = '<span class="material-symbols-outlined text-base">bookmark</span><span class="truncate">Saved</span>';
                 btn.style.backgroundColor = '#2bee79';
                 btn.style.color = '#0e2016';
                 btn.onmouseover = function() { this.style.backgroundColor = '#25d46a'; };
                 btn.onmouseout = function() { this.style.backgroundColor = '#2bee79'; };
+            } else {
+                btn.innerHTML = '<span class="material-symbols-outlined text-base">bookmark</span><span class="truncate">Save Job</span>';
+                btn.style.backgroundColor = 'rgba(43, 238, 121, 0.5)';
+                btn.style.color = '#111318';
+                btn.onmouseover = function() { this.style.backgroundColor = 'rgba(43, 238, 121, 0.6)'; };
+                btn.onmouseout = function() { this.style.backgroundColor = 'rgba(43, 238, 121, 0.5)'; };
+            }
+        }
+
+        // Toggle save job (server-side)
+        async function toggleSaveJob(jobId, btn) {
+            <?php if (!session()->get('is_logged_in')): ?>
+                // Redirect to login if not logged in
+                window.location.href = '<?= base_url('login?redirect=' . urlencode(current_url())) ?>';
+                return;
+            <?php endif; ?>
+
+            try {
+                const response = await fetch(`${baseUrl.replace(/\/$/, '')}/api/toggle-save-job`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ job_id: jobId })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    updateSaveButton(btn, data.saved);
+                } else {
+                    alert(data.message || 'An error occurred');
+                }
+            } catch (error) {
+                console.error('Error toggling save job:', error);
+                alert('An error occurred. Please try again.');
             }
         }
 

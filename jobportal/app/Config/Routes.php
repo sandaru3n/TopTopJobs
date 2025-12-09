@@ -31,6 +31,17 @@ $routes->get('profile', 'AuthController::profile', ['filter' => 'auth']);
 $routes->post('profile/update', 'AuthController::updateProfile', ['filter' => 'auth']);
 $routes->post('profile/password', 'AuthController::updatePassword', ['filter' => 'auth']);
 
+// Manage Jobs routes (protected)
+$routes->get('manage-jobs', 'Home::manageJobs', ['filter' => 'auth']);
+$routes->get('edit-job/(:num)', 'Home::editJob', ['filter' => 'auth']);
+$routes->post('update-job/(:num)', 'Home::updateJob', ['filter' => 'auth']);
+
+// Saved Jobs routes
+$routes->get('saved-jobs', 'Home::savedJobs', ['filter' => 'auth']);
+$routes->post('api/toggle-save-job', 'Home::toggleSaveJob', ['filter' => 'auth']);
+$routes->get('api/check-saved-job/(:num)', 'Home::checkSavedJob');
+$routes->get('api/check-saved-job', 'Home::checkSavedJob');
+
 // Protected Admin Routes
 $routes->group('admin', ['filter' => 'auth:admin'], function($routes) {
     $routes->get('dashboard', 'AdminController::dashboard');
