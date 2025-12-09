@@ -14,38 +14,6 @@
         <?= view('partials/header') ?>
 
         <main class="flex-grow">
-            <!-- Filter Pills Section -->
-            <div id="filterPillsSection" class="sticky top-14 md:top-16 z-40 bg-white/90 dark:bg-background-dark/90 backdrop-blur-sm py-3 md:py-4 border-b border-gray-200 dark:border-gray-800 transition-transform duration-300 ease-in-out">
-                <div class="container mx-auto px-4 md:px-6">
-                    <div class="flex gap-2 flex-nowrap items-center whitespace-nowrap overflow-x-auto">
-                        <button 
-                            data-filter="full-time" 
-                            class="filter-pill active flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-primary/10 dark:bg-primary/20 px-4 text-primary dark:text-white text-sm font-medium leading-normal hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors whitespace-nowrap"
-                        >
-                            <p class="whitespace-nowrap">Full-time</p>
-                        </button>
-                        <button 
-                            data-filter="part-time" 
-                            class="filter-pill flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-gray-200/80 dark:bg-gray-800 px-4 text-[#111318] dark:text-gray-300 text-sm font-medium leading-normal hover:bg-gray-300/80 dark:hover:bg-gray-700 transition-colors whitespace-nowrap"
-                        >
-                            <p class="whitespace-nowrap">Part-time</p>
-                        </button>
-                        <button 
-                            data-filter="remote" 
-                            class="filter-pill flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-gray-200/80 dark:bg-gray-800 px-4 text-[#111318] dark:text-gray-300 text-sm font-medium leading-normal hover:bg-gray-300/80 dark:hover:bg-gray-700 transition-colors whitespace-nowrap"
-                        >
-                            <p class="whitespace-nowrap">Remote</p>
-                        </button>
-                        <button 
-                            data-filter="internship" 
-                            class="filter-pill flex h-9 shrink-0 items-center justify-center gap-x-2 rounded-full bg-gray-200/80 dark:bg-gray-800 px-4 text-[#111318] dark:text-gray-300 text-sm font-medium leading-normal hover:bg-gray-300/80 dark:hover:bg-gray-700 transition-colors whitespace-nowrap"
-                        >
-                            <p class="whitespace-nowrap">Internship</p>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
             <!-- Job Listings Section -->
             <div class="container mx-auto px-4 md:px-6 py-4 md:py-6">
                 <div class="flex flex-wrap justify-between gap-4 mb-6 items-baseline">
@@ -156,38 +124,7 @@
         });
 
         function setupEventListeners() {
-            // Filter pills - navigate to jobs page with filter
-            document.querySelectorAll('.filter-pill').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const filter = btn.dataset.filter;
-                    if (filter) {
-                        // Toggle the active state
-                        toggleFilter(btn);
-                        
-                        // Get all active filters
-                        const activeFilters = Array.from(document.querySelectorAll('.filter-pill.active'))
-                            .map(b => b.dataset.filter)
-                            .filter(f => f);
-                        
-                        // Navigate to jobs page with filters
-                        let url = '/jobs?';
-                        if (activeFilters.length > 0) url += `job_type=${activeFilters.join(',')}&`;
-                        window.location.href = url.replace(/&$/, '') || '/jobs';
-                    }
-                });
-            });
-        }
-
-        function toggleFilter(btn) {
-            btn.classList.toggle('active');
-            if (btn.classList.contains('active')) {
-                btn.classList.remove('bg-gray-200/80', 'dark:bg-gray-800', 'text-[#111318]', 'dark:text-gray-300');
-                btn.classList.add('bg-primary/10', 'dark:bg-primary/20', 'text-primary', 'dark:text-white');
-            } else {
-                btn.classList.remove('bg-primary/10', 'dark:bg-primary/20', 'text-primary', 'dark:text-white');
-                btn.classList.add('bg-gray-200/80', 'dark:bg-gray-800', 'text-[#111318]', 'dark:text-gray-300');
-            }
+            // Event listeners can be added here if needed
         }
 
         async function loadJobs() {
@@ -235,7 +172,7 @@
                 <div class="bg-white dark:bg-gray-800/50 rounded-lg p-6 flex flex-col gap-4 border border-gray-200 dark:border-gray-700/50 hover:shadow-lg hover:border-primary/50 dark:hover:border-primary/50 transition-all duration-300 cursor-pointer" onclick="window.location.href='<?= base_url('job') ?>/${job.slug || (job.company_name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + job.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + job.id)}/'">
                     <div class="flex items-start justify-between">
                         <div class="flex items-center gap-4">
-                            <img class="h-12 w-12 rounded-full object-cover" alt="${job.company_name} logo" src="${job.company_logo || 'https://via.placeholder.com/48'}" onerror="this.src='https://via.placeholder.com/48'"/>
+                            <img class="h-12 w-12 rounded-full object-cover" alt="${job.company_name} logo" src="${job.company_logo || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgdmlld0JveD0iMCAwIDQ4IDQ4Ij48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIGZpbGw9IiNlNWU3ZWIiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE2IiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj5Mb2dvPC90ZXh0Pjwvc3ZnPg=='}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgdmlld0JveD0iMCAwIDQ4IDQ4Ij48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIGZpbGw9IiNlNWU3ZWIiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE2IiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj5Mb2dvPC90ZXh0Pjwvc3ZnPg=='"/>
                             <div>
                                 <h3 class="text-lg font-bold text-[#111318] dark:text-white">${job.title}</h3>
                                 <p class="text-sm text-gray-600 dark:text-gray-400">${job.company_name}</p>

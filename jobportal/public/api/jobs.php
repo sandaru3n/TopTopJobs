@@ -20,8 +20,17 @@
  */
 
 // Enable error reporting for debugging (disable in production)
+// In production, log errors but don't display them
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+// Set error handler to catch and log errors
+set_error_handler(function($errno, $errstr, $errfile, $errline) {
+    error_log("API Error [$errno]: $errstr in $errfile on line $errline");
+    // Don't output error to client in production
+    return true;
+}, E_ALL);
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -29,48 +38,142 @@ header('Access-Control-Allow-Methods: GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
 /**
+ * Get placeholder image as data URI (no external requests needed)
+ */
+function getPlaceholderImage($size = 48) {
+    $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="' . $size . '" height="' . $size . '" viewBox="0 0 ' . $size . ' ' . $size . '"><rect width="' . $size . '" height="' . $size . '" fill="#e5e7eb"/><text x="50%" y="50%" font-family="Arial, sans-serif" font-size="' . ($size / 3) . '" fill="#9ca3af" text-anchor="middle" dominant-baseline="middle">Logo</text></svg>';
+    return 'data:image/svg+xml;base64,' . base64_encode($svg);
+}
+
+/**
+ * Check and validate image URL
+ * Returns validated URL or placeholder if invalid
+ * 
+ * @param string $url The image URL to check
+ * @param int $placeholderSize Size for placeholder if URL is invalid
+ * @return string Valid image URL or data URI placeholder
+ */
+function checkImageUrl($url, $placeholderSize = 48) {
+    // If empty, return placeholder
+    if (empty($url)) {
+        return getPlaceholderImage($placeholderSize);
+    }
+    
+    // Convert to string to ensure we're working with a string
+    $url = (string)$url;
+    
+    // If it's already a data URI, return as-is
+    if (strpos($url, 'data:') === 0) {
+        return $url;
+    }
+    
+    // If it's a via.placeholder.com URL, replace with data URI
+    if (strpos($url, 'via.placeholder.com') !== false) {
+        return getPlaceholderImage($placeholderSize);
+    }
+    
+    // If it's a local development URL, convert to current domain
+    // Check for both http and https, and handle with or without trailing slash
+    // Also check for toptopjobs.local anywhere in the URL (not just at start)
+    if (stripos($url, 'toptopjobs.local') !== false) {
+        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        // Remove the local domain part using regex
+        $path = preg_replace('#https?://toptopjobs\.local/?#i', '', $url);
+        $path = ltrim($path, '/');
+        $converted = $protocol . '://' . $host . '/' . $path;
+        error_log("URL converted: {$url} -> {$converted}");
+        return $converted;
+    }
+    
+    // If it's a valid absolute URL (http/https), return as-is
+    if (filter_var($url, FILTER_VALIDATE_URL) && (stripos($url, 'http://') === 0 || stripos($url, 'https://') === 0)) {
+        return $url;
+    }
+    
+    // If it's a relative path, convert to absolute URL
+    if (!filter_var($url, FILTER_VALIDATE_URL)) {
+        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $path = ltrim($url, '/');
+        return $protocol . '://' . $host . '/' . $path;
+    }
+    
+    // If we can't determine, return placeholder
+    return getPlaceholderImage($placeholderSize);
+}
+
+/**
  * Get database connection
  */
 function getDBConnection() {
-    // Try to read from env file (CodeIgniter uses 'env' not '.env')
-    $envFile = __DIR__ . '/../env';
+    // Try multiple possible paths for env file (production vs development)
+    $possibleEnvPaths = [
+        __DIR__ . '/../env',           // Development: jobportal/env
+        __DIR__ . '/../../env',        // Alternative structure
+        dirname(__DIR__, 2) . '/env',  // Using dirname for better path resolution
+        dirname(__DIR__, 2) . '/.env', // Also check for .env file
+        __DIR__ . '/../.env',          // Check for .env in jobportal folder
+    ];
+    
     $hostname = 'localhost';
     $username = 'root';
     $password = '';
     $database = 'toptopjobs';
     $port = 3306;
     
-    if (file_exists($envFile)) {
-        $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        foreach ($lines as $line) {
-            $line = trim($line);
-            if (empty($line) || strpos($line, '#') === 0) continue;
-            if (strpos($line, '=') === false) continue;
-            
-            list($key, $value) = explode('=', $line, 2);
-            $key = trim($key);
-            $value = trim($value);
-            // Remove quotes if present
-            $value = trim($value, '"\'');
-            
-            if ($key === 'database.default.hostname') $hostname = $value;
-            elseif ($key === 'database.default.username') $username = $value;
-            elseif ($key === 'database.default.password') $password = $value;
-            elseif ($key === 'database.default.database') $database = $value;
-            elseif ($key === 'database.default.port') $port = (int)$value;
+    // Try to find and read env file
+    $envFile = null;
+    foreach ($possibleEnvPaths as $path) {
+        if (file_exists($path) && is_readable($path)) {
+            $envFile = $path;
+            break;
         }
     }
     
-    $conn = @new mysqli($hostname, $username, $password, $database, $port);
-    
-    if ($conn->connect_error) {
-        // Return null instead of die to allow fallback to mock data
-        error_log('Database connection failed: ' . $conn->connect_error);
-        return null;
+    if ($envFile) {
+        try {
+            $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            if ($lines !== false) {
+                foreach ($lines as $line) {
+                    $line = trim($line);
+                    if (empty($line) || strpos($line, '#') === 0) continue;
+                    if (strpos($line, '=') === false) continue;
+                    
+                    list($key, $value) = explode('=', $line, 2);
+                    $key = trim($key);
+                    $value = trim($value);
+                    // Remove quotes if present
+                    $value = trim($value, '"\'');
+                    
+                    if ($key === 'database.default.hostname') $hostname = $value;
+                    elseif ($key === 'database.default.username') $username = $value;
+                    elseif ($key === 'database.default.password') $password = $value;
+                    elseif ($key === 'database.default.database') $database = $value;
+                    elseif ($key === 'database.default.port') $port = (int)$value;
+                }
+            }
+        } catch (Exception $e) {
+            error_log('Error reading env file: ' . $e->getMessage());
+        }
     }
     
-    $conn->set_charset('utf8mb4');
-    return $conn;
+    // Attempt database connection
+    try {
+        $conn = @new mysqli($hostname, $username, $password, $database, $port);
+        
+        if ($conn->connect_error) {
+            // Return null instead of die to allow fallback to mock data
+            error_log('Database connection failed: ' . $conn->connect_error);
+            return null;
+        }
+        
+        $conn->set_charset('utf8mb4');
+        return $conn;
+    } catch (Exception $e) {
+        error_log('Database connection exception: ' . $e->getMessage());
+        return null;
+    }
 }
 
 // Handle preflight requests
@@ -90,86 +193,192 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 try {
 // Check if requesting a single job by ID or slug
 $jobId = isset($_GET['id']) ? (int)$_GET['id'] : null;
-$jobSlug = isset($_GET['slug']) ? $_GET['slug'] : null;
+$jobSlug = isset($_GET['slug']) ? trim($_GET['slug']) : null;
+
+// Log the request for debugging
+error_log('API Request - ID: ' . ($jobId ?: 'null') . ', Slug: ' . ($jobSlug ?: 'null'));
 
 if ($jobId || $jobSlug) {
     $conn = getDBConnection();
     $job = null;
     
     if ($conn) {
-        if ($jobId) {
-            // Find by ID
-            $stmt = $conn->prepare("
-                SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website, c.industry as company_industry
-                FROM jobs j
-                INNER JOIN companies c ON j.company_id = c.id
-                WHERE j.id = ? AND j.status = 'active'
-            ");
-            $stmt->bind_param('i', $jobId);
-            $stmt->execute();
-            $result = $stmt->get_result();
-            $job = $result->fetch_assoc();
-            $stmt->close();
-        } elseif ($jobSlug) {
-            // Find by slug (extract ID from slug if needed)
-            if (preg_match('/-(\d+)$/', $jobSlug, $matches)) {
-                $extractedId = (int)$matches[1];
+        try {
+            if ($jobId) {
+                // Find by ID
                 $stmt = $conn->prepare("
                     SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website, c.industry as company_industry
                     FROM jobs j
                     INNER JOIN companies c ON j.company_id = c.id
                     WHERE j.id = ? AND j.status = 'active'
                 ");
-                $stmt->bind_param('i', $extractedId);
-                $stmt->execute();
-                $result = $stmt->get_result();
-                $job = $result->fetch_assoc();
-                $stmt->close();
-            } else {
-                // Try to match by slug directly
-                $stmt = $conn->prepare("
-                    SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website, c.industry as company_industry
-                    FROM jobs j
-                    INNER JOIN companies c ON j.company_id = c.id
-                    WHERE j.slug = ? AND j.status = 'active'
-                ");
-                $stmt->bind_param('s', $jobSlug);
-                $stmt->execute();
-                $result = $stmt->get_result();
-                $job = $result->fetch_assoc();
-                $stmt->close();
+                if ($stmt) {
+                    $stmt->bind_param('i', $jobId);
+                    if ($stmt->execute()) {
+                        $result = $stmt->get_result();
+                        $job = $result->fetch_assoc();
+                    } else {
+                        error_log('Query execution failed: ' . $stmt->error);
+                    }
+                    $stmt->close();
+                } else {
+                    error_log('Prepare statement failed: ' . $conn->error);
+                }
+            } elseif ($jobSlug) {
+                error_log('Looking up job by slug: ' . $jobSlug);
+                
+                // Find by slug (extract ID from slug if needed)
+                if (preg_match('/-(\d+)$/', $jobSlug, $matches)) {
+                    $extractedId = (int)$matches[1];
+                    error_log('Extracted ID from slug: ' . $extractedId);
+                    
+                    // First try with active status
+                    $stmt = $conn->prepare("
+                        SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website, c.industry as company_industry
+                        FROM jobs j
+                        INNER JOIN companies c ON j.company_id = c.id
+                        WHERE j.id = ? AND j.status = 'active'
+                    ");
+                    if ($stmt) {
+                        $stmt->bind_param('i', $extractedId);
+                        if ($stmt->execute()) {
+                            $result = $stmt->get_result();
+                            $job = $result->fetch_assoc();
+                            if ($job) {
+                                error_log('Job found by extracted ID: ' . $extractedId);
+                            } else {
+                                error_log('No active job found with ID: ' . $extractedId . ', trying without status filter...');
+                                // Try without status filter as fallback
+                                $stmt->close();
+                                $stmt = $conn->prepare("
+                                    SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website, c.industry as company_industry
+                                    FROM jobs j
+                                    INNER JOIN companies c ON j.company_id = c.id
+                                    WHERE j.id = ?
+                                ");
+                                if ($stmt) {
+                                    $stmt->bind_param('i', $extractedId);
+                                    if ($stmt->execute()) {
+                                        $result = $stmt->get_result();
+                                        $job = $result->fetch_assoc();
+                                        if ($job) {
+                                            error_log('Job found by extracted ID (without status filter): ' . $extractedId);
+                                        }
+                                    }
+                                    $stmt->close();
+                                }
+                            }
+                        } else {
+                            error_log('Query execution failed: ' . $stmt->error);
+                        }
+                        if (!$job) {
+                            $stmt->close();
+                        }
+                    } else {
+                        error_log('Prepare statement failed: ' . $conn->error);
+                    }
+                }
+                
+                // If not found by ID extraction, try to match by slug directly
+                if (!$job) {
+                    error_log('Trying to match by slug directly: ' . $jobSlug);
+                    // First try with active status
+                    $stmt = $conn->prepare("
+                        SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website, c.industry as company_industry
+                        FROM jobs j
+                        INNER JOIN companies c ON j.company_id = c.id
+                        WHERE j.slug = ? AND j.status = 'active'
+                    ");
+                    if ($stmt) {
+                        $stmt->bind_param('s', $jobSlug);
+                        if ($stmt->execute()) {
+                            $result = $stmt->get_result();
+                            $job = $result->fetch_assoc();
+                            if ($job) {
+                                error_log('Job found by slug: ' . $jobSlug);
+                            } else {
+                                error_log('No active job found with slug: ' . $jobSlug . ', trying without status filter...');
+                                // Try without status filter as fallback
+                                $stmt->close();
+                                $stmt = $conn->prepare("
+                                    SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website, c.industry as company_industry
+                                    FROM jobs j
+                                    INNER JOIN companies c ON j.company_id = c.id
+                                    WHERE j.slug = ?
+                                ");
+                                if ($stmt) {
+                                    $stmt->bind_param('s', $jobSlug);
+                                    if ($stmt->execute()) {
+                                        $result = $stmt->get_result();
+                                        $job = $result->fetch_assoc();
+                                        if ($job) {
+                                            error_log('Job found by slug (without status filter): ' . $jobSlug);
+                                        } else {
+                                            error_log('No job found with slug: ' . $jobSlug);
+                                        }
+                                    }
+                                    $stmt->close();
+                                }
+                            }
+                        } else {
+                            error_log('Query execution failed: ' . $stmt->error);
+                        }
+                        if (!$job) {
+                            $stmt->close();
+                        }
+                    } else {
+                        error_log('Prepare statement failed: ' . $conn->error);
+                    }
+                }
+            }
+            $conn->close();
+        } catch (Exception $e) {
+            error_log('Database query error: ' . $e->getMessage());
+            if ($conn) {
+                $conn->close();
             }
         }
-        $conn->close();
     }
     
     // Fallback to mock jobs if DB query failed
     if (!$job) {
+        error_log('Job not found in database, trying mock jobs fallback...');
         $allJobs = getMockJobs();
         if ($jobId) {
+            error_log('Searching mock jobs for ID: ' . $jobId);
             foreach ($allJobs as $j) {
                 if ($j['id'] == $jobId) {
                     $job = $j;
+                    error_log('Job found in mock jobs by ID: ' . $jobId);
                     break;
                 }
             }
         } elseif ($jobSlug) {
+            error_log('Searching mock jobs for slug: ' . $jobSlug);
             if (preg_match('/-(\d+)$/', $jobSlug, $matches)) {
                 $extractedId = (int)$matches[1];
+                error_log('Extracted ID from slug for mock search: ' . $extractedId);
                 foreach ($allJobs as $j) {
                     if ($j['id'] == $extractedId) {
                         $job = $j;
-                        break;
-                    }
-                }
-            } else {
-                foreach ($allJobs as $j) {
-                    if (isset($j['slug']) && $j['slug'] === $jobSlug) {
-                        $job = $j;
+                        error_log('Job found in mock jobs by extracted ID: ' . $extractedId);
                         break;
                     }
                 }
             }
+            // Also try direct slug match
+            if (!$job) {
+                foreach ($allJobs as $j) {
+                    if (isset($j['slug']) && $j['slug'] === $jobSlug) {
+                        $job = $j;
+                        error_log('Job found in mock jobs by slug: ' . $jobSlug);
+                        break;
+                    }
+                }
+            }
+        }
+        if (!$job) {
+            error_log('Job not found in mock jobs either. ID: ' . ($jobId ?: 'null') . ', Slug: ' . ($jobSlug ?: 'null'));
         }
     }
     
@@ -206,15 +415,28 @@ if ($jobId || $jobSlug) {
             $job['skills'] = [];
         }
         
+        error_log('API Success - Job found: ID=' . $job['id'] . ', Slug=' . ($job['slug'] ?? 'N/A'));
         echo json_encode([
             'success' => true,
             'job' => $job
         ]);
     } else {
+        // Log why job wasn't found
+        error_log('API 404 - Job not found. Requested ID: ' . ($jobId ?: 'null') . ', Slug: ' . ($jobSlug ?: 'null'));
+        error_log('API 404 - Database connection: ' . ($conn ? 'connected' : 'failed'));
+        
+        // Return 404 with helpful message
         http_response_code(404);
         echo json_encode([
             'success' => false,
-            'message' => 'Job not found'
+            'message' => 'Job not found',
+            'requested_id' => $jobId,
+            'requested_slug' => $jobSlug,
+            'debug' => [
+                'database_connected' => $conn ? true : false,
+                'id_provided' => $jobId ? true : false,
+                'slug_provided' => $jobSlug ? true : false
+            ]
         ]);
     }
     exit;
@@ -235,8 +457,9 @@ $sort = $_GET['sort'] ?? 'relevant';
 $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 $perPage = isset($_GET['per_page']) ? min(100, max(1, (int)$_GET['per_page'])) : 20;
 
-// Cache key for this search
+// Cache key for this search (include version to invalidate old caches)
 $cacheKey = md5(serialize([
+    'v2', // Version marker - increment to invalidate all caches
     'q' => $query,
     'loc' => $location,
     'job_type' => $jobTypes,
@@ -250,13 +473,30 @@ $cacheKey = md5(serialize([
     'page' => $page
 ]));
 
-// Check cache (5 minutes)
+// Check cache (5 minutes) - but skip cache if it contains old local URLs
 $cacheFile = __DIR__ . '/../writable/cache/jobs_' . $cacheKey . '.json';
 if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < 300) {
     $cached = json_decode(file_get_contents($cacheFile), true);
     if ($cached) {
-        echo json_encode($cached);
-        exit;
+        // Check if cached data contains old local URLs - if so, regenerate
+        $hasOldUrls = false;
+        if (isset($cached['jobs']) && is_array($cached['jobs'])) {
+            foreach ($cached['jobs'] as $job) {
+                if (isset($job['company_logo']) && stripos($job['company_logo'], 'toptopjobs.local') !== false) {
+                    $hasOldUrls = true;
+                    error_log("Cache invalidated: Found old URL in job ID " . ($job['id'] ?? 'unknown') . ": " . $job['company_logo']);
+                    break;
+                }
+            }
+        }
+        
+        if (!$hasOldUrls) {
+            echo json_encode($cached);
+            exit;
+        }
+        // If old URLs found, delete cache and regenerate
+        @unlink($cacheFile);
+        error_log('Cache invalidated due to old local URLs found');
     }
 }
 
@@ -324,11 +564,39 @@ if (is_dir($cacheDir) && is_writable($cacheDir)) {
 echo json_encode($response);
 
 } catch (Exception $e) {
+    // Log the full error for debugging
+    error_log('API Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine());
+    error_log('Stack trace: ' . $e->getTraceAsString());
+    
     http_response_code(500);
+    
+    // In production, don't expose error details to client
+    $errorMessage = 'An error occurred while processing your request';
+    if (ini_get('display_errors')) {
+        // Only show detailed error in development
+        $errorMessage = $e->getMessage();
+    }
+    
     echo json_encode([
         'success' => false,
-        'message' => 'An error occurred while processing your request',
-        'error' => $e->getMessage()
+        'message' => $errorMessage
+    ]);
+    exit;
+} catch (Error $e) {
+    // Catch PHP 7+ errors (TypeError, ParseError, etc.)
+    error_log('API Fatal Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine());
+    error_log('Stack trace: ' . $e->getTraceAsString());
+    
+    http_response_code(500);
+    
+    $errorMessage = 'An error occurred while processing your request';
+    if (ini_get('display_errors')) {
+        $errorMessage = $e->getMessage();
+    }
+    
+    echo json_encode([
+        'success' => false,
+        'message' => $errorMessage
     ]);
     exit;
 }
@@ -458,12 +726,25 @@ function formatJobData($job) {
         $description = trim(explode('--- Application Information ---', $description)[0]);
     }
     
+    // Check and validate company logo URL
+    $originalLogo = $job['company_logo'] ?? null;
+    $companyLogo = checkImageUrl($originalLogo, 48);
+    
+    // Debug: Verify conversion worked
+    if ($originalLogo && stripos($originalLogo, 'toptopjobs.local') !== false) {
+        if (stripos($companyLogo, 'toptopjobs.local') === false) {
+            error_log("✓ URL converted: {$originalLogo} -> {$companyLogo}");
+        } else {
+            error_log("✗ URL conversion FAILED: {$originalLogo} -> {$companyLogo}");
+        }
+    }
+    
     return [
         'id' => (int)$job['id'],
         'title' => $job['title'],
         'slug' => $job['slug'],
         'company_name' => $job['company_name'],
-        'company_logo' => $job['company_logo'] ?: 'https://via.placeholder.com/48',
+        'company_logo' => $companyLogo,
         'company_rating' => !empty($job['company_rating']) ? (float)$job['company_rating'] : null,
         'location' => $job['location'],
         'latitude' => !empty($job['latitude']) ? (float)$job['latitude'] : null,
@@ -630,7 +911,7 @@ function getMockJobs() {
             'title' => 'Full Stack Developer (Remote)',
             'slug' => 'microsoft-full-stack-developer-remote-7',
             'company_name' => 'Microsoft',
-            'company_logo' => 'https://via.placeholder.com/48',
+            'company_logo' => getPlaceholderImage(48),
             'company_rating' => 4.8,
             'location' => 'Remote',
             'latitude' => null,
@@ -649,7 +930,7 @@ function getMockJobs() {
             'title' => 'PHP Developer',
             'slug' => 'techcorp-php-developer-8',
             'company_name' => 'TechCorp',
-            'company_logo' => 'https://via.placeholder.com/48',
+            'company_logo' => getPlaceholderImage(48),
             'company_rating' => 4.1,
             'location' => 'Mumbai, India',
             'latitude' => 19.0760,
@@ -660,6 +941,84 @@ function getMockJobs() {
             'skills' => ['PHP', 'Laravel', 'MySQL', 'REST API'],
             'description' => 'We are looking for a PHP developer with experience in Laravel framework to join our growing team.',
             'posted_at' => date('Y-m-d H:i:s', strtotime('-6 hours')),
+            'badge' => 'New',
+            'badge_class' => 'bg-green-100 text-green-800'
+        ],
+        [
+            'id' => 9,
+            'title' => 'Data Scientist',
+            'slug' => 'tastiorecipes-data-scientist-9',
+            'company_name' => 'Tastiorecipes',
+            'company_logo' => getPlaceholderImage(48),
+            'company_rating' => 4.3,
+            'location' => 'San Francisco, CA',
+            'latitude' => 37.7749,
+            'longitude' => -122.4194,
+            'job_type' => 'full-time',
+            'experience' => 'senior',
+            'experience_level' => 'senior',
+            'salary' => 150000,
+            'salary_min' => 130000,
+            'salary_max' => 170000,
+            'is_remote' => 0,
+            'skills' => ['Python', 'Machine Learning', 'Data Analysis', 'SQL'],
+            'description' => 'Join our data science team to analyze user behavior, build recommendation systems, and improve our recipe platform using advanced machine learning techniques.',
+            'responsibilities' => [
+                'Develop and implement machine learning models for recipe recommendations.',
+                'Analyze large datasets to identify patterns and insights.',
+                'Collaborate with product and engineering teams to deploy models.',
+                'Create data visualizations and reports for stakeholders.',
+                'Maintain and improve existing data pipelines.'
+            ],
+            'requirements' => [
+                '5+ years of experience in data science or machine learning.',
+                'Strong proficiency in Python, SQL, and data analysis tools.',
+                'Experience with machine learning frameworks (TensorFlow, PyTorch, scikit-learn).',
+                'Strong statistical analysis and problem-solving skills.',
+                'Excellent communication skills to present findings to non-technical stakeholders.'
+            ],
+            'posted_at' => date('Y-m-d H:i:s', strtotime('-3 days')),
+            'badge' => null
+        ],
+        [
+            'id' => 10,
+            'title' => 'Senior Software Engineer',
+            'slug' => 'tastiorecipes-com-senior-software-engineer-10',
+            'company_name' => 'Tastiorecipes',
+            'company_logo' => getPlaceholderImage(48),
+            'company_rating' => 4.3,
+            'location' => 'San Francisco, CA',
+            'latitude' => 37.7749,
+            'longitude' => -122.4194,
+            'job_type' => 'full-time',
+            'experience' => 'senior',
+            'experience_level' => 'senior',
+            'salary' => 160000,
+            'salary_min' => 140000,
+            'salary_max' => 180000,
+            'is_remote' => 0,
+            'skills' => ['JavaScript', 'Node.js', 'React', 'TypeScript', 'AWS'],
+            'description' => 'We are seeking a Senior Software Engineer to join our engineering team. You will be responsible for designing, developing, and maintaining scalable web applications that serve millions of users. You will work with cutting-edge technologies and collaborate with cross-functional teams to deliver high-quality software solutions.',
+            'responsibilities' => [
+                'Design and develop scalable, high-performance web applications.',
+                'Write clean, maintainable, and well-documented code.',
+                'Collaborate with product managers, designers, and other engineers.',
+                'Participate in code reviews and technical discussions.',
+                'Mentor junior engineers and contribute to team growth.',
+                'Identify and resolve performance bottlenecks.',
+                'Ensure code quality through testing and best practices.'
+            ],
+            'requirements' => [
+                '5+ years of professional software development experience.',
+                'Strong proficiency in JavaScript, TypeScript, and modern frameworks (React, Node.js).',
+                'Experience with cloud platforms (AWS, GCP, or Azure).',
+                'Solid understanding of database design and optimization.',
+                'Experience with microservices architecture and RESTful APIs.',
+                'Strong problem-solving and debugging skills.',
+                'Excellent communication and collaboration skills.',
+                'Bachelor\'s degree in Computer Science or related field, or equivalent experience.'
+            ],
+            'posted_at' => date('Y-m-d H:i:s', strtotime('-1 day')),
             'badge' => 'New',
             'badge_class' => 'bg-green-100 text-green-800'
         ]

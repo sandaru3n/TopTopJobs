@@ -153,15 +153,6 @@
             
             <!-- Mobile Menu Button -->
             <div class="flex md:hidden items-center gap-2">
-                <?php if (!session()->get('is_logged_in')): ?>
-                    <!-- Guest buttons on mobile -->
-                    <a href="<?= base_url('login') ?>" class="flex min-w-[70px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-3 text-xs font-bold leading-normal tracking-[0.015em] transition-colors" style="background-color: white; color: #000000; border: 2px solid #000000;" onmouseover="this.style.backgroundColor='#f5f5f5'" onmouseout="this.style.backgroundColor='white'">
-                        <span class="truncate">Log In</span>
-                    </a>
-                    <a href="<?= base_url('signup') ?>" class="flex min-w-[70px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-3 text-xs font-bold leading-normal tracking-[0.015em] transition-colors" style="background-color: #000000; color: white;" onmouseover="this.style.backgroundColor='#333333'" onmouseout="this.style.backgroundColor='#000000'">
-                        <span class="truncate">Sign Up</span>
-                </a>
-                <?php endif; ?>
                 <button 
                     id="mobileMenuBtn"
                     type="button"
@@ -348,6 +339,32 @@
                         <span>Browse Jobs</span>
                     </a>
                 </div>
+                
+                <!-- Log In and Sign Up Buttons (Mobile Menu) -->
+                <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 space-y-3">
+                    <a 
+                        href="<?= base_url('login') ?>" 
+                        class="flex items-center justify-center w-full rounded-full h-12 transition-colors font-bold text-sm"
+                        style="background-color: white; color: #000000; border: 2px solid #000000;"
+                        onmouseover="this.style.backgroundColor='#f5f5f5'"
+                        onmouseout="this.style.backgroundColor='white'"
+                        onclick="closeMobileMenu()"
+                    >
+                        <span class="material-symbols-outlined text-xl mr-2">login</span>
+                        <span>Log In</span>
+                    </a>
+                    <a 
+                        href="<?= base_url('signup') ?>" 
+                        class="flex items-center justify-center w-full rounded-full h-12 transition-colors font-bold text-sm"
+                        style="background-color: #000000; color: white;"
+                        onmouseover="this.style.backgroundColor='#333333'"
+                        onmouseout="this.style.backgroundColor='#000000'"
+                        onclick="closeMobileMenu()"
+                    >
+                        <span class="material-symbols-outlined text-xl mr-2">person_add</span>
+                        <span>Sign Up</span>
+                    </a>
+                </div>
             <?php endif; ?>
         </div>
     </div>
@@ -459,7 +476,6 @@
         // Header scroll hide/show functionality
         function initHeaderScroll() {
             const header = document.getElementById('mainHeader');
-            const filterPills = document.getElementById('filterPillsSection');
             
             if (!header) return;
             
@@ -477,17 +493,11 @@
                 }
                 
                 if (scrollTop > lastScrollTop && scrollTop > 100) {
-                    // Scrolling down - hide header and filter pills
+                    // Scrolling down - hide header
                     header.style.transform = 'translateY(-100%)';
-                    if (filterPills) {
-                        filterPills.style.transform = 'translateY(-100%)';
-                    }
                 } else {
-                    // Scrolling up - show header and filter pills
+                    // Scrolling up - show header
                     header.style.transform = 'translateY(0)';
-                    if (filterPills) {
-                        filterPills.style.transform = 'translateY(0)';
-                    }
                 }
                 
                 lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;

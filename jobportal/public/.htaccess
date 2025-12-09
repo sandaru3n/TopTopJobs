@@ -27,6 +27,11 @@ Options -Indexes
 	# RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
 	# RewriteRule ^ http://%1%{REQUEST_URI} [R=301,L]
 
+	# Allow API files and other static files to be served directly (before CodeIgniter routing)
+	# This ensures /api/jobs.php, /api/categories.php, CSS, JS, images are served directly
+	RewriteCond %{REQUEST_FILENAME} -f
+	RewriteRule ^ - [L]
+	
 	# Checks to see if the user is attempting to access a valid file,
 	# such as an image or css document, if this isn't true it sends the
 	# request to the front controller, index.php

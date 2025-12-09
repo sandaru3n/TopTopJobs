@@ -44,7 +44,7 @@
                             <!-- Job Title Card -->
                             <div class="bg-white dark:bg-gray-800/50 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
                                 <div class="flex items-start gap-4 mb-4">
-                                    <div id="companyLogo" class="size-16 bg-center bg-no-repeat aspect-square bg-cover rounded-2xl border border-gray-300 dark:border-gray-600 flex-shrink-0" style="background-color: #f0f0f0;"></div>
+                                    <img id="companyLogo" src="" alt="Company Logo" class="size-16 object-cover rounded-2xl border border-gray-300 dark:border-gray-600 flex-shrink-0" style="background-color: #f0f0f0;" onerror="this.onerror=null; this.src=this.dataset.placeholder || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgdmlld0JveD0iMCAwIDY0IDY0Ij48cmVjdCB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIGZpbGw9IiNlNWU3ZWIiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjIxIiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj5Mb2dvPC90ZXh0Pjwvc3ZnPg==';">
                                     <div class="flex-grow">
                                         <h1 id="jobTitle" class="text-2xl sm:text-3xl font-bold leading-tight tracking-[-0.015em] text-[#111318] dark:text-white mb-3"></h1>
                                         <div class="flex items-center flex-wrap gap-x-3 gap-y-1 text-primary/80 dark:text-primary/60">
@@ -144,7 +144,7 @@
                                     <a id="companyWebsiteLink" href="#" target="_blank" class="absolute top-4 right-4 text-[#111318] dark:text-gray-300 hover:text-primary transition-colors hidden">
                                         <span class="material-symbols-outlined text-xl">arrow_outward</span>
                                     </a>
-                                    <div id="companyLogoCard" class="size-16 bg-center bg-no-repeat aspect-square bg-cover rounded-2xl mb-4 border border-gray-300 dark:border-gray-600" style="background-color: #f0f0f0;"></div>
+                                    <img id="companyLogoCard" src="" alt="Company Logo" class="size-16 object-cover rounded-2xl mb-4 border border-gray-300 dark:border-gray-600" style="background-color: #f0f0f0;" onerror="this.onerror=null; this.src=this.dataset.placeholder || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgdmlld0JveD0iMCAwIDY0IDY0Ij48cmVjdCB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIGZpbGw9IiNlNWU3ZWIiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjIxIiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj5Mb2dvPC90ZXh0Pjwvc3ZnPg==';">
                                     <h4 id="companyNameCard" class="font-bold text-lg text-[#111318] dark:text-white"></h4>
                                     <p id="companyDescriptionCard" class="text-sm text-[#111318] dark:text-gray-300 mt-1"></p>
                                 </div>
@@ -168,37 +168,73 @@
 
     <script>
         // Use current origin to support both www and non-www versions
-        const baseUrl = window.location.origin + '/';
+        // Remove /public/ from pathname if present to get clean base URL
+        let basePath = window.location.pathname;
+        // Remove /public/ if it exists in the path
+        basePath = basePath.replace(/^\/public/, '');
+        // Get the base path (everything before /job/)
+        const pathParts = basePath.split('/job/');
+        const cleanBasePath = pathParts[0] || '/';
+        
+        const baseUrl = window.location.origin + cleanBasePath.replace(/\/$/, '') + '/';
         const apiUrl = baseUrl + 'api/jobs.php';
+        
+        console.log('Base URL:', baseUrl);
+        console.log('API URL:', apiUrl);
+        console.log('Current pathname:', window.location.pathname);
         
         // Extract job ID and slug from URL - support both query param and slug format
         function getJobInfoFromUrl() {
             // Try query parameter first
             const queryId = new URLSearchParams(window.location.search).get('id');
             if (queryId) {
-                return { id: parseInt(queryId), slug: null };
+                const id = parseInt(queryId);
+                if (!isNaN(id) && id > 0) {
+                    console.log('Found job ID from query param:', id);
+                    return { id: id, slug: null };
+                }
             }
             
             // Extract from slug format: /job/company-title-id or /job/company-title-id/
-            const path = window.location.pathname;
+            // Also handle /public/job/company-title-id
+            const path = window.location.pathname.replace(/^\/public/, '');
             const slugMatch = path.match(/\/job\/([^\/]+)/);
             if (slugMatch) {
                 const slug = slugMatch[1];
+                console.log('Found slug from path:', slug);
+                
                 // Extract ID from end of slug (e.g., "google-senior-product-designer-1" -> 1)
                 const idMatch = slug.match(/-(\d+)$/);
                 if (idMatch) {
-                    return { id: parseInt(idMatch[1]), slug: slug };
+                    const id = parseInt(idMatch[1]);
+                    if (!isNaN(id) && id > 0) {
+                        console.log('Extracted job ID from slug:', id);
+                        return { id: id, slug: slug };
+                    }
                 }
                 // If no ID found, return slug only
+                console.log('No ID found in slug, using slug only');
                 return { id: null, slug: slug };
             }
             
+            console.warn('No job ID or slug found in URL');
             return { id: null, slug: null };
         }
         
-        const jobInfo = getJobInfoFromUrl();
-        const jobId = jobInfo.id;
-        const jobSlug = jobInfo.slug;
+        let jobInfo = getJobInfoFromUrl();
+        let jobId = jobInfo.id;
+        let jobSlug = jobInfo.slug;
+        
+        // Validate jobId if present
+        if (jobId !== null && (isNaN(jobId) || jobId <= 0)) {
+            console.error('Invalid job ID:', jobId);
+            jobId = null;
+        }
+        
+        console.log('=== Job Info Extracted ===');
+        console.log('Job ID:', jobId, '(type:', typeof jobId, ')');
+        console.log('Job Slug:', jobSlug);
+        console.log('Is Valid ID:', jobId !== null && !isNaN(jobId) && jobId > 0);
         
         // Handle header hide/show on scroll (override header.php default behavior)
         let lastScrollY = window.scrollY;
@@ -358,63 +394,134 @@
 
         // Load job details
         async function loadJobDetails() {
-            console.log('Loading job details...', { jobId, jobSlug, apiUrl });
+            console.log('=== Loading Job Details ===');
+            console.log('Job ID:', jobId);
+            console.log('Job Slug:', jobSlug);
+            console.log('API URL:', apiUrl);
+            console.log('Full API URL with ID:', jobId ? `${apiUrl}?id=${jobId}` : 'N/A');
+            console.log('Full API URL with Slug:', jobSlug ? `${apiUrl}?slug=${encodeURIComponent(jobSlug)}` : 'N/A');
             
+            // Validate inputs
             if (!jobId && !jobSlug) {
-                console.error('No job ID or slug found in URL');
+                console.error('❌ No job ID or slug found in URL');
+                console.error('Current URL:', window.location.href);
+                console.error('Pathname:', window.location.pathname);
                 showError();
                 return;
             }
+            
+            // Validate jobId if present
+            if (jobId !== null && (isNaN(jobId) || jobId <= 0)) {
+                console.error('❌ Invalid job ID:', jobId);
+                if (jobSlug) {
+                    console.log('Will try slug lookup instead');
+                } else {
+                    showError();
+                    return;
+                }
+            }
 
             try {
-                // Try with ID first if available
-                if (jobId) {
-                    console.log(`Fetching job with ID: ${jobId}`);
-                    const response = await fetch(`${apiUrl}?id=${jobId}`);
+                // Try with ID first if available and valid
+                if (jobId && !isNaN(jobId) && jobId > 0) {
+                    const idUrl = `${apiUrl}?id=${jobId}`;
+                    console.log(`🔍 Fetching job with ID: ${jobId}`);
+                    console.log(`📡 API Request URL: ${idUrl}`);
+                    
+                    const response = await fetch(idUrl);
+                    
+                    console.log('📥 Response status:', response.status, response.statusText);
+                    console.log('📥 Response headers:', Object.fromEntries(response.headers.entries()));
                     
                     if (!response.ok) {
-                        console.error('API response not OK:', response.status, response.statusText);
-                        throw new Error(`API error: ${response.status}`);
-                    }
-                    
-                    const data = await response.json();
-                    console.log('API response:', data);
+                        // Try to get error message from response
+                        let errorMessage = `API error: ${response.status}`;
+                        try {
+                            const errorData = await response.json();
+                            errorMessage = errorData.message || errorMessage;
+                            console.error('❌ API Error Response:', errorData);
+                        } catch (e) {
+                            const errorText = await response.text();
+                            console.error('❌ API Error Text:', errorText);
+                        }
+                        console.error('❌ API response not OK:', response.status, response.statusText);
+                        
+                        // If 404, try slug lookup as fallback
+                        if (response.status === 404 && jobSlug) {
+                            console.log('⚠️ ID lookup returned 404, trying slug lookup...');
+                        } else {
+                            throw new Error(errorMessage);
+                        }
+                    } else {
+                        const data = await response.json();
+                        console.log('✅ API response received:', data);
 
-                    if (data.success && data.job) {
-                        console.log('Job found by ID:', data.job);
-                        displayJobDetails(data.job);
-                        return;
+                        if (data.success && data.job) {
+                            console.log('✅ Job found by ID:', data.job);
+                            displayJobDetails(data.job);
+                            return;
+                        } else {
+                            console.warn('⚠️ ID lookup returned no job:', data);
+                            if (jobSlug) {
+                                console.log('Will try slug lookup...');
+                            }
+                        }
                     }
-                    console.log('ID lookup failed, trying slug lookup...', data);
                 }
                 
                 // Fallback to slug lookup if ID failed or no ID available
                 if (jobSlug) {
-                    console.log(`Fetching job with slug: ${jobSlug}`);
-                    const slugResponse = await fetch(`${apiUrl}?slug=${encodeURIComponent(jobSlug)}`);
+                    const slugUrl = `${apiUrl}?slug=${encodeURIComponent(jobSlug)}`;
+                    console.log(`🔍 Fetching job with slug: ${jobSlug}`);
+                    console.log(`📡 API Request URL: ${slugUrl}`);
+                    
+                    const slugResponse = await fetch(slugUrl);
+                    
+                    console.log('📥 Slug Response status:', slugResponse.status, slugResponse.statusText);
                     
                     if (!slugResponse.ok) {
-                        console.error('Slug API response not OK:', slugResponse.status, slugResponse.statusText);
-                        throw new Error(`Slug API error: ${slugResponse.status}`);
+                        let errorMessage = `Slug API error: ${slugResponse.status}`;
+                        try {
+                            const errorData = await slugResponse.json();
+                            errorMessage = errorData.message || errorMessage;
+                            console.error('❌ Slug API Error Response:', errorData);
+                        } catch (e) {
+                            const errorText = await slugResponse.text();
+                            console.error('❌ Slug API Error Text:', errorText);
+                        }
+                        throw new Error(errorMessage);
                     }
                     
                     const slugData = await slugResponse.json();
-                    console.log('Slug API response:', slugData);
+                    console.log('✅ Slug API response received:', slugData);
                     
                     if (slugData.success && slugData.job) {
-                        console.log('Job found by slug:', slugData.job);
+                        console.log('✅ Job found by slug:', slugData.job);
                         displayJobDetails(slugData.job);
                         return;
+                    } else {
+                        console.error('❌ Slug lookup also failed:', slugData);
                     }
-                    console.error('Slug lookup also failed:', slugData);
                 }
                 
                 // Both lookups failed
-                console.error('Job not found. JobId:', jobId, 'Slug:', jobSlug);
+                console.error('❌ Job not found after all attempts');
+                console.error('JobId:', jobId);
+                console.error('Slug:', jobSlug);
+                console.error('API URL:', apiUrl);
                 showError();
             } catch (error) {
-                console.error('Error loading job details:', error);
-                console.error('Error stack:', error.stack);
+                console.error('❌ Error loading job details:', error);
+                console.error('❌ Error name:', error.name);
+                console.error('❌ Error message:', error.message);
+                console.error('❌ Error stack:', error.stack);
+                
+                // Check if it's a network error
+                if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    console.error('🌐 Network error - API endpoint may be unreachable');
+                    console.error('💡 Check if API URL is correct:', apiUrl);
+                }
+                
                 showError();
             }
         }
@@ -430,10 +537,30 @@
             // Update breadcrumb
             document.getElementById('jobTitleBreadcrumb').textContent = job.title;
 
-            // Company logo
-            const companyLogo = job.company_logo || 'https://via.placeholder.com/80';
-            document.getElementById('companyLogo').style.backgroundImage = `url("${companyLogo}")`;
-            document.getElementById('companyLogoCard').style.backgroundImage = `url("${companyLogo}")`;
+            // Company logo - handle broken images gracefully
+            // Use data URI SVG as placeholder (no external requests needed)
+            const getPlaceholderImage = (size) => {
+                const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><rect width="${size}" height="${size}" fill="#e5e7eb"/><text x="50%" y="50%" font-family="Arial, sans-serif" font-size="${size/3}" fill="#9ca3af" text-anchor="middle" dominant-baseline="middle">Logo</text></svg>`;
+                return 'data:image/svg+xml;base64,' + btoa(svg);
+            };
+            const companyLogo = job.company_logo || getPlaceholderImage(64);
+            const placeholder = getPlaceholderImage(64);
+            
+            // Set logo images with fallback using <img> tags
+            const logoElement = document.getElementById('companyLogo');
+            const logoCardElement = document.getElementById('companyLogoCard');
+            
+            if (logoElement) {
+                logoElement.src = companyLogo;
+                logoElement.alt = `${job.company_name} Logo`;
+                logoElement.dataset.placeholder = placeholder;
+            }
+            
+            if (logoCardElement) {
+                logoCardElement.src = companyLogo;
+                logoCardElement.alt = `${job.company_name} Logo`;
+                logoCardElement.dataset.placeholder = placeholder;
+            }
 
             // Job title and company
             document.getElementById('jobTitle').textContent = job.title;
@@ -444,10 +571,8 @@
             document.getElementById('jobLocation').textContent = job.location;
             document.getElementById('locationText').textContent = job.location;
             
-            // Debug: Log the posted_at value to see what we're receiving
-            console.log('Posted at value:', job.posted_at, 'Type:', typeof job.posted_at);
+            // Calculate and display time ago
             const timeAgo = getTimeAgo(job.posted_at);
-            console.log('Time ago calculated:', timeAgo);
             document.getElementById('postedDate').textContent = `Posted ${timeAgo}`;
 
             // Description
@@ -716,8 +841,8 @@
                         <div class="flex items-start gap-3">
                             <img class="h-12 w-12 rounded-lg object-cover flex-shrink-0" 
                                  alt="${job.company_name} logo" 
-                                 src="${job.company_logo || 'https://via.placeholder.com/48'}" 
-                                 onerror="this.src='https://via.placeholder.com/48'"/>
+                                 src="${job.company_logo || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgdmlld0JveD0iMCAwIDQ4IDQ4Ij48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIGZpbGw9IiNlNWU3ZWIiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE2IiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj5Mb2dvPC90ZXh0Pjwvc3ZnPg=='}" 
+                                 onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgdmlld0JveD0iMCAwIDQ4IDQ4Ij48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIGZpbGw9IiNlNWU3ZWIiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE2IiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj5Mb2dvPC90ZXh0Pjwvc3ZnPg=='"/>
                             <div class="flex-grow min-w-0">
                                 <h4 class="text-sm font-bold text-[#111318] dark:text-white mb-1 line-clamp-2">${job.title}</h4>
                                 <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">${job.company_name}</p>
@@ -853,7 +978,15 @@
             }
 
             if (job.company_logo) {
-                hiringOrganization.logo = job.company_logo;
+                // Ensure logo URL is absolute
+                let logoUrl = job.company_logo;
+                if (!logoUrl.match(/^https?:\/\//i)) {
+                    // Convert relative URL to absolute
+                    logoUrl = window.location.origin + '/' + logoUrl.replace(/^\//, '');
+                }
+                // Replace local development URLs
+                logoUrl = logoUrl.replace(/^https?:\/\/toptopjobs\.local/, window.location.origin);
+                hiringOrganization.logo = logoUrl;
             }
 
             // Build job location

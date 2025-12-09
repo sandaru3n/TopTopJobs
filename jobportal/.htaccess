@@ -12,17 +12,25 @@ Options -Indexes
     
     # Redirect /public/ URLs to clean URLs (remove /public/ from URL)
     # This ensures URLs like https://toptopjobs.com/public/login redirect to https://toptopjobs.com/login
-    RewriteCond %{THE_REQUEST} \s/public/([^\s?]*) [NC]
-    RewriteRule ^ /%1 [R=301,L]
+    # Also handles /public/api/jobs.php -> /api/jobs.php
+    RewriteCond %{THE_REQUEST} \s/+(.+?/)?public/([^\s?]*) [NC]
+    RewriteRule ^ /%2 [R=301,L]
     
     # If accessing root directory, redirect to public
     RewriteCond %{REQUEST_URI} ^/$
     RewriteRule ^(.*)$ public/ [L]
     
-    # If the request is for a file that exists in root, serve it (like .htaccess itself)
-    # Otherwise, rewrite to public folder
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
+    # If the request is for a file that exists in root, serve it directly (like .htaccess itself)
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteRule ^ - [L]
+    
+    # If the request is for a directory that exists in root, serve it directly
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+    
+    # Rewrite all requests to public folder (let public/.htaccess handle file serving)
+    # This handles /api/jobs.php -> /public/api/jobs.php (internally)
+    # The public/.htaccess will serve existing files directly
     RewriteCond %{REQUEST_URI} !^/public/
     RewriteRule ^(.*)$ public/$1 [L]
 </IfModule>
