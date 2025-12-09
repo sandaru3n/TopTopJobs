@@ -70,12 +70,22 @@
                         <button 
                             id="profileMenuBtn"
                             type="button"
-                            class="flex items-center justify-center size-10 rounded-full bg-primary text-white hover:bg-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer z-50 relative"
+                            class="flex items-center justify-center size-10 rounded-full bg-primary text-white hover:bg-primary/90 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer z-50 relative overflow-hidden"
                             aria-label="User menu"
                             aria-expanded="false"
                             style="pointer-events: auto;"
                         >
-                            <span class="material-symbols-outlined text-xl pointer-events-none">person</span>
+                            <?php if (session()->get('profile_picture')): ?>
+                                <img 
+                                    src="<?= esc(session()->get('profile_picture')) ?>" 
+                                    alt="Profile" 
+                                    class="w-full h-full object-cover pointer-events-none"
+                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
+                                />
+                                <span class="material-symbols-outlined text-xl pointer-events-none" style="display: none;">person</span>
+                            <?php else: ?>
+                                <span class="material-symbols-outlined text-xl pointer-events-none">person</span>
+                            <?php endif; ?>
                         </button>
                         
                         <!-- Dropdown Menu -->
@@ -91,6 +101,17 @@
                                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-1 truncate">
                                     <?= esc(session()->get('email')) ?>
                                 </p>
+                            </div>
+                            
+                            <!-- Profile -->
+                            <div class="py-1">
+                                <a 
+                                    href="<?= base_url('profile') ?>" 
+                                    class="flex items-center gap-3 px-4 py-2.5 text-sm text-[#111318] dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                >
+                                    <span class="material-symbols-outlined text-lg">person</span>
+                                    <span>Profile</span>
+                                </a>
                             </div>
                             
                             <!-- Sign Out -->

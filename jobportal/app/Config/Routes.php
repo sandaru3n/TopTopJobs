@@ -26,6 +26,11 @@ $routes->get('login', 'AuthController::login', ['filter' => 'guest']);
 $routes->get('signup', 'AuthController::signup', ['filter' => 'guest']);
 $routes->get('logout', 'AuthController::logout', ['filter' => 'auth']);
 
+// Profile routes (protected)
+$routes->get('profile', 'AuthController::profile', ['filter' => 'auth']);
+$routes->post('profile/update', 'AuthController::updateProfile', ['filter' => 'auth']);
+$routes->post('profile/password', 'AuthController::updatePassword', ['filter' => 'auth']);
+
 // Protected Admin Routes
 $routes->group('admin', ['filter' => 'auth:admin'], function($routes) {
     $routes->get('dashboard', 'AdminController::dashboard');
