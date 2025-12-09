@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Sign Up - JobFind</title>
+    <title>Sign Up - TopTopJobs</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -42,7 +42,7 @@
                             <path clip-rule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fill="currentColor" fill-rule="evenodd"></path>
                         </svg>
                     </div>
-                    <h1 class="text-2xl font-bold text-[#111318] dark:text-white">JobFind</h1>
+                    <h1 class="text-2xl font-bold text-[#111318] dark:text-white">TopTopJobs</h1>
                 </div>
                 <h2 class="text-xl font-semibold text-[#111318] dark:text-white mb-2">Create Account</h2>
                 <p class="text-sm text-gray-600 dark:text-gray-400">Sign up to start your journey</p>

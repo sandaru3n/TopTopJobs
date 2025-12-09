@@ -10,7 +10,7 @@
                             <path clip-rule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fill="currentColor" fill-rule="evenodd"></path>
                         </svg>
                     </div>
-                    <h2 class="text-lg md:text-xl font-bold leading-tight tracking-[-0.015em] text-[#111318] dark:text-white">JobFind</h2>
+                    <h2 class="text-lg md:text-xl font-bold leading-tight tracking-[-0.015em] text-[#111318] dark:text-white">TopTopJobs</h2>
                 </a>
             </div>
             

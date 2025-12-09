@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title><?= esc($title) ?> - JobFind</title>
+    <title><?= esc($title) ?> - TopTopJobs</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -43,7 +43,7 @@
                                 <path clip-rule="evenodd" d="M24 4H42V17.3333V30.6667H24V44H6V30.6667V17.3333H24V4Z" fill="currentColor" fill-rule="evenodd"></path>
                             </svg>
                         </div>
-                        <h2 class="text-xl font-bold leading-tight tracking-[-0.015em] text-[#111318] dark:text-white">JobFind Admin</h2>
+                        <h2 class="text-xl font-bold leading-tight tracking-[-0.015em] text-[#111318] dark:text-white">TopTopJobs Admin</h2>
                     </div>
                     <div class="flex items-center gap-4">
                         <!-- User Info -->
@@ -174,7 +174,7 @@
         <footer class="bg-white dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-800 mt-auto">
             <div class="container mx-auto px-6 py-4">
                 <p class="text-sm text-gray-500 dark:text-gray-400 text-center">
-                    © 2024 JobFind Admin Panel. All rights reserved.
+                    © 2024 TopTopJobs Admin Panel. All rights reserved.
                 </p>
             </div>
         </footer>

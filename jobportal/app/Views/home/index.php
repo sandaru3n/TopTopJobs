@@ -1,4 +1,4 @@
-<?= view('partials/head', ['title' => 'Job Portal Home Page - JobFind']) ?>
+<?= view('partials/head', ['title' => 'Job Portal Home Page - TopTopJobs']) ?>
 <style>
     /* Ensure line-clamp-3 works for job descriptions */
     .line-clamp-3 {
@@ -50,24 +50,14 @@
             <div class="container mx-auto px-4 md:px-6 py-4 md:py-6">
                 <div class="flex flex-wrap justify-between gap-4 mb-6 items-baseline">
                     <p class="text-[#111318] dark:text-white tracking-light text-[32px] font-bold leading-tight min-w-72">Recent Job Postings</p>
-                    <p id="resultsCount" class="text-gray-500 dark:text-gray-400 text-sm">Showing 1-12 of 2,456 results</p>
+                    <p id="resultsCount" class="text-gray-500 dark:text-gray-400 text-sm">Loading...</p>
                 </div>
                 <div id="jobGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <!-- Job cards will be loaded here -->
                 </div>
                 <!-- Pagination -->
-                <div class="flex justify-center items-center gap-2 mt-8">
-                    <button class="pagination-btn flex items-center justify-center size-10 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors">
-                        <span class="material-symbols-outlined text-xl">chevron_left</span>
-                    </button>
-                    <button class="pagination-btn active flex items-center justify-center size-10 rounded-full text-white bg-primary">1</button>
-                    <button class="pagination-btn flex items-center justify-center size-10 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors">2</button>
-                    <button class="pagination-btn flex items-center justify-center size-10 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors">3</button>
-                    <span class="text-gray-500 dark:text-gray-400">...</span>
-                    <button class="pagination-btn flex items-center justify-center size-10 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors">10</button>
-                    <button class="pagination-btn flex items-center justify-center size-10 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors">
-                        <span class="material-symbols-outlined text-xl">chevron_right</span>
-                    </button>
+                <div id="paginationContainer" class="flex justify-center items-center gap-2 mt-8">
+                    <!-- Pagination buttons will be loaded here -->
                 </div>
             </div>
 
@@ -114,8 +104,18 @@
         const categoriesPerPage = 15;
         let categorySortBy = 'name-asc';
 
+        // Job pagination state
+        let currentJobPage = 1;
+        const jobsPerPage = 21;
+        let totalJobs = 0;
+        let totalJobPages = 1;
+
         // Load jobs on page load
         document.addEventListener('DOMContentLoaded', () => {
+            // Get page from URL parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            currentJobPage = parseInt(urlParams.get('page')) || 1;
+            
             loadJobs();
             loadCategories();
             setupEventListeners();
@@ -191,12 +191,15 @@
 
         async function loadJobs() {
             try {
-                const response = await fetch(`${baseUrl.replace(/\/$/, '')}/api/jobs.php?page=1&per_page=12`);
+                const response = await fetch(`${baseUrl.replace(/\/$/, '')}/api/jobs.php?page=${currentJobPage}&per_page=${jobsPerPage}`);
                 const data = await response.json();
 
                 if (data.success && data.jobs) {
+                    totalJobs = data.total || 0;
+                    totalJobPages = Math.ceil(totalJobs / jobsPerPage);
                     renderJobs(data.jobs);
-                    updateResultsCount(data.total);
+                    updateResultsCount();
+                    renderPagination();
                 }
             } catch (error) {
                 console.error('Error loading jobs:', error);
@@ -256,8 +259,119 @@
             `).join('');
         }
 
-        function updateResultsCount(total) {
-            document.getElementById('resultsCount').textContent = `Showing 1-12 of ${total.toLocaleString()} results`;
+        function updateResultsCount() {
+            const start = ((currentJobPage - 1) * jobsPerPage) + 1;
+            const end = Math.min(currentJobPage * jobsPerPage, totalJobs);
+            const countEl = document.getElementById('resultsCount');
+            if (countEl) {
+                countEl.textContent = `Showing ${start}-${end} of ${totalJobs.toLocaleString()} results`;
+            }
+        }
+
+        function renderPagination() {
+            const container = document.getElementById('paginationContainer');
+            if (!container) return;
+
+            if (totalJobPages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let paginationHTML = '';
+
+            // Previous button
+            paginationHTML += `
+                <button 
+                    id="prevPageBtn"
+                    class="pagination-btn flex items-center justify-center size-10 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors ${currentJobPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}"
+                    ${currentJobPage === 1 ? 'disabled' : ''}
+                    onclick="goToPage(${currentJobPage - 1})"
+                >
+                    <span class="material-symbols-outlined text-xl">chevron_left</span>
+                </button>
+            `;
+
+            // Page numbers
+            const maxVisiblePages = 7;
+            let startPage = Math.max(1, currentJobPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalJobPages, startPage + maxVisiblePages - 1);
+
+            if (endPage - startPage < maxVisiblePages - 1) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+
+            if (startPage > 1) {
+                paginationHTML += `
+                    <button 
+                        class="pagination-btn flex items-center justify-center size-10 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors"
+                        onclick="goToPage(1)"
+                    >1</button>
+                `;
+                if (startPage > 2) {
+                    paginationHTML += `<span class="text-gray-500 dark:text-gray-400">...</span>`;
+                }
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                const isActive = i === currentJobPage;
+                paginationHTML += `
+                    <button 
+                        class="pagination-btn flex items-center justify-center size-10 rounded-full transition-colors ${
+                            isActive 
+                                ? 'text-white bg-primary' 
+                                : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800'
+                        }"
+                        onclick="goToPage(${i})"
+                    >${i}</button>
+                `;
+            }
+
+            if (endPage < totalJobPages) {
+                if (endPage < totalJobPages - 1) {
+                    paginationHTML += `<span class="text-gray-500 dark:text-gray-400">...</span>`;
+                }
+                paginationHTML += `
+                    <button 
+                        class="pagination-btn flex items-center justify-center size-10 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors"
+                        onclick="goToPage(${totalJobPages})"
+                    >${totalJobPages}</button>
+                `;
+            }
+
+            // Next button
+            paginationHTML += `
+                <button 
+                    id="nextPageBtn"
+                    class="pagination-btn flex items-center justify-center size-10 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors ${currentJobPage === totalJobPages ? 'opacity-50 cursor-not-allowed' : ''}"
+                    ${currentJobPage === totalJobPages ? 'disabled' : ''}
+                    onclick="goToPage(${currentJobPage + 1})"
+                >
+                    <span class="material-symbols-outlined text-xl">chevron_right</span>
+                </button>
+            `;
+
+            container.innerHTML = paginationHTML;
+        }
+
+        function goToPage(page) {
+            if (page < 1 || page > totalJobPages || page === currentJobPage) return;
+            
+            currentJobPage = page;
+            
+            // Update URL without reload
+            const url = new URL(window.location);
+            if (page === 1) {
+                url.searchParams.delete('page');
+            } else {
+                url.searchParams.set('page', page);
+            }
+            window.history.pushState({ page }, '', url);
+            
+            // Scroll to top of job listings
+            document.getElementById('jobGrid')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            
+            // Load jobs for the new page
+            loadJobs();
         }
 
         function getTimeAgo(dateString) {

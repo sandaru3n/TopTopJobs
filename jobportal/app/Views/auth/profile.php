@@ -1,4 +1,4 @@
-<?= view('partials/head', ['title' => 'Profile - JobFind']) ?>
+<?= view('partials/head', ['title' => 'Profile - TopTopJobs']) ?>
 <body class="font-display bg-background-light dark:bg-background-dark text-[#111318] dark:text-gray-200">
     <div class="relative flex min-h-screen w-full flex-col">
         <?= view('partials/header') ?>

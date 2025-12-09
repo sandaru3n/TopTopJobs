@@ -1,4 +1,4 @@
-<?= view('partials/head', ['title' => 'Job Details - JobFind']) ?>
+<?= view('partials/head', ['title' => 'Job Details - TopTopJobs']) ?>
 <style>
     /* Hide header on scroll down */
     #mainHeader.header-hidden {
@@ -424,7 +424,7 @@
             document.getElementById('jobDetailsContent').classList.remove('hidden');
 
             // Update page title for SEO
-            document.title = `${job.title} at ${job.company_name} - JobFind`;
+            document.title = `${job.title} at ${job.company_name} - TopTopJobs`;
 
             // Update breadcrumb
             document.getElementById('jobTitleBreadcrumb').textContent = job.title;
