@@ -28,6 +28,51 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
 
+/**
+ * Get database connection
+ */
+function getDBConnection() {
+    // Try to read from env file (CodeIgniter uses 'env' not '.env')
+    $envFile = __DIR__ . '/../env';
+    $hostname = 'localhost';
+    $username = 'root';
+    $password = '';
+    $database = 'toptopjobs';
+    $port = 3306;
+    
+    if (file_exists($envFile)) {
+        $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (empty($line) || strpos($line, '#') === 0) continue;
+            if (strpos($line, '=') === false) continue;
+            
+            list($key, $value) = explode('=', $line, 2);
+            $key = trim($key);
+            $value = trim($value);
+            // Remove quotes if present
+            $value = trim($value, '"\'');
+            
+            if ($key === 'database.default.hostname') $hostname = $value;
+            elseif ($key === 'database.default.username') $username = $value;
+            elseif ($key === 'database.default.password') $password = $value;
+            elseif ($key === 'database.default.database') $database = $value;
+            elseif ($key === 'database.default.port') $port = (int)$value;
+        }
+    }
+    
+    $conn = @new mysqli($hostname, $username, $password, $database, $port);
+    
+    if ($conn->connect_error) {
+        // Return null instead of die to allow fallback to mock data
+        error_log('Database connection failed: ' . $conn->connect_error);
+        return null;
+    }
+    
+    $conn->set_charset('utf8mb4');
+    return $conn;
+}
+
 // Handle preflight requests
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -48,48 +93,101 @@ $jobId = isset($_GET['id']) ? (int)$_GET['id'] : null;
 $jobSlug = isset($_GET['slug']) ? $_GET['slug'] : null;
 
 if ($jobId || $jobSlug) {
-    $allJobs = getMockJobs();
+    $conn = getDBConnection();
     $job = null;
     
-    if ($jobId) {
-        // Find by ID
-        foreach ($allJobs as $j) {
-            if ($j['id'] == $jobId) {
-                $job = $j;
-                break;
+    if ($conn) {
+        if ($jobId) {
+            // Find by ID
+            $stmt = $conn->prepare("
+                SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website
+                FROM jobs j
+                INNER JOIN companies c ON j.company_id = c.id
+                WHERE j.id = ? AND j.status = 'active'
+            ");
+            $stmt->bind_param('i', $jobId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $job = $result->fetch_assoc();
+            $stmt->close();
+        } elseif ($jobSlug) {
+            // Find by slug (extract ID from slug if needed)
+            if (preg_match('/-(\d+)$/', $jobSlug, $matches)) {
+                $extractedId = (int)$matches[1];
+                $stmt = $conn->prepare("
+                    SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website
+                    FROM jobs j
+                    INNER JOIN companies c ON j.company_id = c.id
+                    WHERE j.id = ? AND j.status = 'active'
+                ");
+                $stmt->bind_param('i', $extractedId);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $job = $result->fetch_assoc();
+                $stmt->close();
+            } else {
+                // Try to match by slug directly
+                $stmt = $conn->prepare("
+                    SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website
+                    FROM jobs j
+                    INNER JOIN companies c ON j.company_id = c.id
+                    WHERE j.slug = ? AND j.status = 'active'
+                ");
+                $stmt->bind_param('s', $jobSlug);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $job = $result->fetch_assoc();
+                $stmt->close();
             }
         }
-    } elseif ($jobSlug) {
-        // Find by slug (extract ID from slug if needed)
-        // Slug format: company-title-id
-        // Extract ID from end of slug
-        if (preg_match('/-(\d+)$/', $jobSlug, $matches)) {
-            $extractedId = (int)$matches[1];
+        $conn->close();
+    }
+    
+    // Fallback to mock jobs if DB query failed
+    if (!$job) {
+        $allJobs = getMockJobs();
+        if ($jobId) {
             foreach ($allJobs as $j) {
-                if ($j['id'] == $extractedId) {
+                if ($j['id'] == $jobId) {
                     $job = $j;
                     break;
                 }
             }
-        } else {
-            // Try to match by slug directly
-            foreach ($allJobs as $j) {
-                if (isset($j['slug']) && $j['slug'] === $jobSlug) {
-                    $job = $j;
-                    break;
+        } elseif ($jobSlug) {
+            if (preg_match('/-(\d+)$/', $jobSlug, $matches)) {
+                $extractedId = (int)$matches[1];
+                foreach ($allJobs as $j) {
+                    if ($j['id'] == $extractedId) {
+                        $job = $j;
+                        break;
+                    }
+                }
+            } else {
+                foreach ($allJobs as $j) {
+                    if (isset($j['slug']) && $j['slug'] === $jobSlug) {
+                        $job = $j;
+                        break;
+                    }
                 }
             }
         }
     }
     
     if ($job) {
+        // Format job data if from database
+        if (isset($job['company_name'])) {
+            $job = formatJobData($job);
+        }
+        
         // Ensure slug is set
         if (!isset($job['slug'])) {
             $job['slug'] = generateJobSlug($job['company_name'], $job['title'], $job['id']);
         }
         
         // Get company description if available
-        $job['company_description'] = getCompanyDescription($job['company_name']);
+        if (!isset($job['company_description'])) {
+            $job['company_description'] = getCompanyDescription($job['company_name'] ?? '');
+        }
         
         // Format responsibilities and requirements if they're strings
         if (isset($job['responsibilities']) && is_string($job['responsibilities'])) {
@@ -97,6 +195,15 @@ if ($jobId || $jobSlug) {
         }
         if (isset($job['requirements']) && is_string($job['requirements'])) {
             $job['requirements'] = array_filter(array_map('trim', explode("\n", $job['requirements'])));
+        }
+        
+        // Parse skills from skills_required
+        if (!empty($job['skills_required']) && !isset($job['skills'])) {
+            $job['skills'] = is_string($job['skills_required']) 
+                ? explode(',', $job['skills_required']) 
+                : $job['skills_required'];
+        } elseif (!isset($job['skills'])) {
+            $job['skills'] = [];
         }
         
         echo json_encode([
@@ -151,8 +258,8 @@ if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < 300) {
     }
 }
 
-// Mock job data (Replace with actual database query)
-$allJobs = getMockJobs();
+// Fetch jobs from database
+$allJobs = getJobsFromDatabase();
 
 // Apply filters
 $filteredJobs = filterJobs($allJobs, [
@@ -246,8 +353,121 @@ function generateJobSlug($companyName, $title, $id) {
 }
 
 /**
- * Get mock job data
- * Replace this with actual database query
+ * Fetch jobs from database
+ */
+function getJobsFromDatabase() {
+    $conn = getDBConnection();
+    $jobs = [];
+    
+    if ($conn) {
+        $query = "
+            SELECT 
+                j.*,
+                c.name as company_name,
+                c.logo as company_logo,
+                c.rating as company_rating,
+                c.description as company_description,
+                c.website as company_website
+            FROM jobs j
+            INNER JOIN companies c ON j.company_id = c.id
+            WHERE j.status = 'active'
+            ORDER BY j.posted_at DESC
+        ";
+        
+        $result = $conn->query($query);
+        
+        if ($result && $result->num_rows > 0) {
+            while ($row = $result->fetch_assoc()) {
+                $jobs[] = formatJobData($row);
+            }
+        }
+        
+        $conn->close();
+    }
+    
+    // If no jobs from DB or connection failed, use mock jobs as fallback
+    if (empty($jobs)) {
+        $jobs = getMockJobs();
+    }
+    
+    return $jobs;
+}
+
+/**
+ * Format job data for API response
+ */
+function formatJobData($job) {
+    // Calculate salary (use salary_min if available, otherwise salary)
+    $salary = null;
+    if (!empty($job['salary_min'])) {
+        $salary = (float)$job['salary_min'];
+    }
+    
+    // Determine badge
+    $badge = null;
+    $badgeClass = null;
+    $postedDate = new DateTime($job['posted_at']);
+    $now = new DateTime();
+    $daysDiff = $now->diff($postedDate)->days;
+    
+    if ($daysDiff <= 2) {
+        $badge = 'New';
+        $badgeClass = 'bg-green-100 text-green-800';
+    } elseif (!empty($job['urgent']) && $job['urgent'] == 1) {
+        $badge = 'Urgent';
+        $badgeClass = 'bg-orange-100 text-orange-800';
+    }
+    
+    // Parse skills
+    $skills = [];
+    if (!empty($job['skills_required'])) {
+        if (is_string($job['skills_required'])) {
+            $skills = array_map('trim', explode(',', $job['skills_required']));
+        } else {
+            $skills = $job['skills_required'];
+        }
+    }
+    
+    // Get description (remove application info if present)
+    $description = $job['description'] ?? '';
+    if (strpos($description, '--- Application Information ---') !== false) {
+        $description = trim(explode('--- Application Information ---', $description)[0]);
+    }
+    
+    return [
+        'id' => (int)$job['id'],
+        'title' => $job['title'],
+        'slug' => $job['slug'],
+        'company_name' => $job['company_name'],
+        'company_logo' => $job['company_logo'] ?: 'https://via.placeholder.com/48',
+        'company_rating' => !empty($job['company_rating']) ? (float)$job['company_rating'] : null,
+        'location' => $job['location'],
+        'latitude' => !empty($job['latitude']) ? (float)$job['latitude'] : null,
+        'longitude' => !empty($job['longitude']) ? (float)$job['longitude'] : null,
+        'job_type' => $job['job_type'],
+        'experience' => $job['experience_level'],
+        'experience_level' => $job['experience_level'],
+        'salary' => $salary,
+        'salary_min' => !empty($job['salary_min']) ? (float)$job['salary_min'] : null,
+        'salary_max' => !empty($job['salary_max']) ? (float)$job['salary_max'] : null,
+        'is_remote' => !empty($job['is_remote']) ? (int)$job['is_remote'] : 0,
+        'skills' => $skills,
+        'description' => $description,
+        'responsibilities' => $job['responsibilities'] ?? null,
+        'requirements' => $job['requirements'] ?? null,
+        'posted_at' => $job['posted_at'],
+        'badge' => $badge,
+        'badge_class' => $badgeClass,
+        'company_description' => $job['company_description'] ?? null,
+        'company_website' => $job['company_website'] ?? null,
+        'application_email' => $job['application_email'] ?? null,
+        'application_url' => $job['application_url'] ?? null,
+        'application_phone' => $job['application_phone'] ?? null,
+    ];
+}
+
+/**
+ * Get mock job data (fallback for testing)
  */
 function getMockJobs() {
     $jobs = [

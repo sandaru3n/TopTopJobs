@@ -10,6 +10,8 @@ $routes->get('/jobs', 'Home::jobs');
 $routes->get('/job/(:segment)', 'Home::jobDetails');
 $routes->get('/job/(:segment)/', 'Home::jobDetails');
 $routes->get('/job-details', 'Home::jobDetails');
+$routes->get('/post-job', 'Home::postJob');
+$routes->post('/post-job', 'Home::processPostJob');
 
 // Authentication Routes
 $routes->group('auth', ['filter' => 'guest'], function($routes) {

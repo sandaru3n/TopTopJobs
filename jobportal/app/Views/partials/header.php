@@ -59,7 +59,7 @@
                 <?php endif; ?>
                 
                 <!-- Post a Job Button -->
-                <a href="/post-job" class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-5 text-sm font-bold leading-normal tracking-[0.015em] transition-colors" style="background-color: #2bee79; color: #0e2016;" onmouseover="this.style.backgroundColor='#25d46a'" onmouseout="this.style.backgroundColor='#2bee79'">
+                <a href="<?= base_url('post-job') ?>" class="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-5 text-sm font-bold leading-normal tracking-[0.015em] transition-colors" style="background-color: #2bee79; color: #0e2016;" onmouseover="this.style.backgroundColor='#25d46a'" onmouseout="this.style.backgroundColor='#2bee79'">
                     <span class="truncate">Post a Job</span>
                 </a>
                 
@@ -180,7 +180,7 @@
         <!-- Post a Job Button (Top of Menu) -->
         <div class="p-4 border-b border-gray-200 dark:border-gray-700">
             <a 
-                href="/post-job" 
+                href="<?= base_url('post-job') ?>" 
                 class="flex items-center justify-center w-full rounded-full h-12 transition-colors font-bold text-sm"
                 style="background-color: #2bee79; color: #0e2016;"
                 onmouseover="this.style.backgroundColor='#25d46a'"

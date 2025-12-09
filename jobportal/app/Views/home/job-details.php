@@ -36,88 +36,59 @@
                         <!-- Left Column (Main Content) -->
                         <div class="lg:col-span-2 flex flex-col gap-8">
                             <!-- Job Title Card -->
-                            <div class="flex flex-col sm:flex-row items-start gap-6 p-6 border border-primary/20 dark:border-primary/10 rounded-lg bg-white dark:bg-gray-800/50">
-                                <div id="companyLogo" class="size-20 bg-center bg-no-repeat aspect-square bg-cover rounded-lg border border-primary/10 dark:border-primary/5" style="background-color: #f0f0f0;"></div>
-                                <div class="flex-grow">
-                                    <h1 id="jobTitle" class="text-2xl sm:text-3xl font-bold leading-tight tracking-[-0.015em] text-[#111318] dark:text-white mb-2"></h1>
-                                    <div class="flex items-center flex-wrap gap-x-4 gap-y-1 text-primary/80 dark:text-primary/60">
-                                        <p id="companyName" class="text-base font-normal leading-normal"></p>
-                                        <span class="hidden sm:inline">·</span>
-                                        <p id="jobLocation" class="text-base font-normal leading-normal"></p>
-                                        <span class="hidden sm:inline">·</span>
-                                        <p id="postedDate" class="text-base font-normal leading-normal"></p>
+                            <div class="bg-white dark:bg-gray-800/50 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+                                <div class="flex items-start gap-4 mb-4">
+                                    <div id="companyLogo" class="size-16 bg-center bg-no-repeat aspect-square bg-cover rounded-2xl border border-gray-300 dark:border-gray-600 flex-shrink-0" style="background-color: #f0f0f0;"></div>
+                                    <div class="flex-grow">
+                                        <h1 id="jobTitle" class="text-2xl sm:text-3xl font-bold leading-tight tracking-[-0.015em] text-[#111318] dark:text-white mb-3"></h1>
+                                        <div class="flex items-center flex-wrap gap-x-3 gap-y-1 text-primary/80 dark:text-primary/60">
+                                            <p id="companyName" class="text-base font-normal leading-normal"></p>
+                                            <span class="text-primary/60 dark:text-primary/40">·</span>
+                                            <p id="jobLocation" class="text-base font-normal leading-normal"></p>
+                                            <span class="text-primary/60 dark:text-primary/40">·</span>
+                                            <p id="postedDate" class="text-base font-normal leading-normal"></p>
+                                        </div>
                                     </div>
+                                </div>
+                                
+                                <!-- Action Buttons -->
+                                <div class="flex gap-3 flex-wrap mt-4">
+                                    <button id="saveJobBtn" class="flex items-center justify-center gap-2 rounded-full h-10 px-5 text-[#111318] dark:text-gray-200 text-sm font-bold leading-normal tracking-[0.015em] transition-colors" style="background-color: rgba(43, 238, 121, 0.5);" onmouseover="this.style.backgroundColor='rgba(43, 238, 121, 0.6)'" onmouseout="this.style.backgroundColor='rgba(43, 238, 121, 0.5)'">
+                                        <span class="material-symbols-outlined text-base">bookmark</span>
+                                        <span>Save Job</span>
+                                    </button>
+                                    <button id="shareJobBtn" class="flex items-center justify-center gap-2 rounded-full h-10 px-5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-[#111318] dark:text-gray-200 text-sm font-bold leading-normal tracking-[0.015em] hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                        <span class="material-symbols-outlined text-base">share</span>
+                                        <span>Share</span>
+                                    </button>
                                 </div>
                             </div>
 
-                            <!-- ButtonGroup -->
-                            <div class="flex flex-1 gap-3 flex-wrap">
-                                <button id="saveJobBtn" class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-full h-10 px-5 bg-primary/20 dark:bg-primary/10 text-[#111318] dark:text-gray-200 text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/30 dark:hover:bg-primary/20 transition-colors">
-                                    <span class="material-symbols-outlined text-base">bookmark</span>
-                                    <span class="truncate">Save Job</span>
-                                </button>
-                                <button id="shareJobBtn" class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center gap-2 overflow-hidden rounded-full h-10 px-5 bg-transparent border border-primary/20 dark:border-primary/10 text-[#111318] dark:text-gray-200 text-sm font-bold leading-normal tracking-[0.015em] hover:bg-primary/10 dark:hover:bg-primary/5 transition-colors">
-                                    <span class="material-symbols-outlined text-base">share</span>
-                                    <span class="truncate">Share</span>
-                                </button>
-                            </div>
-
-                            <!-- Accordions for Job Details -->
-                            <div class="flex flex-col border border-primary/20 dark:border-primary/10 rounded-lg overflow-hidden bg-white dark:bg-gray-800/50">
+                            <!-- Job Details Sections -->
+                            <div class="border border-primary/20 dark:border-primary/10 rounded-lg p-6 bg-white dark:bg-gray-800/50">
                                 <!-- Job Description -->
-                                <details class="flex flex-col border-b border-primary/20 dark:border-primary/10 group" open>
-                                    <summary class="flex cursor-pointer items-center justify-between gap-6 p-4 bg-primary/10 dark:bg-primary/5 hover:bg-primary/20 dark:hover:bg-primary/10 transition-colors">
-                                        <p class="text-[#111318] dark:text-gray-200 text-base font-bold leading-normal">Job Description</p>
-                                        <span class="material-symbols-outlined text-[#111318] dark:text-gray-200 group-open:rotate-180 transition-transform">expand_more</span>
-                                    </summary>
-                                    <div class="p-4">
-                                        <p id="jobDescription" class="text-[#4c9a6b] dark:text-gray-400 text-sm font-normal leading-relaxed whitespace-pre-line"></p>
-                                    </div>
-                                </details>
+                                <div class="mb-6">
+                                    <h3 class="text-[#111318] dark:text-white text-lg font-bold leading-normal mb-4">Job Description</h3>
+                                    <p id="jobDescription" class="text-gray-600 dark:text-gray-400 text-sm font-normal leading-relaxed whitespace-pre-line"></p>
+                                </div>
 
                                 <!-- Responsibilities -->
-                                <details class="flex flex-col border-b border-primary/20 dark:border-primary/10 group" id="responsibilitiesSection">
-                                    <summary class="flex cursor-pointer items-center justify-between gap-6 p-4 bg-primary/10 dark:bg-primary/5 hover:bg-primary/20 dark:hover:bg-primary/10 transition-colors">
-                                        <p class="text-[#111318] dark:text-gray-200 text-base font-bold leading-normal">Responsibilities</p>
-                                        <span class="material-symbols-outlined text-[#111318] dark:text-gray-200 group-open:rotate-180 transition-transform">expand_more</span>
-                                    </summary>
-                                    <div class="p-4">
-                                        <ul id="responsibilitiesList" class="text-[#4c9a6b] dark:text-gray-400 text-sm font-normal leading-relaxed list-disc pl-5 space-y-2"></ul>
-                                    </div>
-                                </details>
+                                <div class="mb-6 hidden" id="responsibilitiesSection">
+                                    <h3 class="text-[#111318] dark:text-white text-lg font-bold leading-normal mb-4">Responsibilities</h3>
+                                    <ul id="responsibilitiesList" class="text-[#4c9a6b] dark:text-gray-400 text-sm font-normal leading-relaxed list-disc pl-5 space-y-2"></ul>
+                                </div>
 
                                 <!-- Requirements -->
-                                <details class="flex flex-col border-b border-primary/20 dark:border-primary/10 group" id="requirementsSection">
-                                    <summary class="flex cursor-pointer items-center justify-between gap-6 p-4 bg-primary/10 dark:bg-primary/5 hover:bg-primary/20 dark:hover:bg-primary/10 transition-colors">
-                                        <p class="text-[#111318] dark:text-gray-200 text-base font-bold leading-normal">Requirements</p>
-                                        <span class="material-symbols-outlined text-[#111318] dark:text-gray-200 group-open:rotate-180 transition-transform">expand_more</span>
-                                    </summary>
-                                    <div class="p-4">
-                                        <ul id="requirementsList" class="text-[#4c9a6b] dark:text-gray-400 text-sm font-normal leading-relaxed list-disc pl-5 space-y-2"></ul>
-                                    </div>
-                                </details>
+                                <div class="mb-6 hidden" id="requirementsSection">
+                                    <h3 class="text-[#111318] dark:text-white text-lg font-bold leading-normal mb-4">Requirements</h3>
+                                    <ul id="requirementsList" class="text-[#4c9a6b] dark:text-gray-400 text-sm font-normal leading-relaxed list-disc pl-5 space-y-2"></ul>
+                                </div>
 
-                                <!-- Skills -->
-                                <details class="flex flex-col border-b border-primary/20 dark:border-primary/10 group" id="skillsSection">
-                                    <summary class="flex cursor-pointer items-center justify-between gap-6 p-4 bg-primary/10 dark:bg-primary/5 hover:bg-primary/20 dark:hover:bg-primary/10 transition-colors">
-                                        <p class="text-[#111318] dark:text-gray-200 text-base font-bold leading-normal">Required Skills</p>
-                                        <span class="material-symbols-outlined text-[#111318] dark:text-gray-200 group-open:rotate-180 transition-transform">expand_more</span>
-                                    </summary>
-                                    <div class="p-4">
-                                        <div id="skillsContainer" class="flex flex-wrap gap-2"></div>
-                                    </div>
-                                </details>
-
-                                <!-- About the Company -->
-                                <details class="flex flex-col group" id="companySection">
-                                    <summary class="flex cursor-pointer items-center justify-between gap-6 p-4 bg-primary/10 dark:bg-primary/5 hover:bg-primary/20 dark:hover:bg-primary/10 transition-colors">
-                                        <p class="text-[#111318] dark:text-gray-200 text-base font-bold leading-normal">About the Company</p>
-                                        <span class="material-symbols-outlined text-[#111318] dark:text-gray-200 group-open:rotate-180 transition-transform">expand_more</span>
-                                    </summary>
-                                    <div class="p-4">
-                                        <p id="companyDescription" class="text-[#4c9a6b] dark:text-gray-400 text-sm font-normal leading-relaxed"></p>
-                                    </div>
-                                </details>
+                                <!-- Required Skills -->
+                                <div class="hidden" id="skillsSection">
+                                    <h3 class="text-[#111318] dark:text-white text-lg font-bold leading-normal mb-4">Required Skills</h3>
+                                    <div id="skillsContainer" class="flex flex-wrap gap-2"></div>
+                                </div>
                             </div>
 
                             <!-- Location Section -->
@@ -147,34 +118,37 @@
                             <div class="sticky top-28 flex flex-col gap-6">
                                 <!-- Apply Card -->
                                 <div class="border border-primary/20 dark:border-primary/10 rounded-lg p-6 flex flex-col gap-4 bg-white dark:bg-gray-800/50">
-                                    <button id="applyNowBtn" class="w-full flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-6 bg-primary text-[#0d1b13] text-base font-bold leading-normal tracking-[0.015em] hover:bg-primary/90 transition-colors">
+                                    <button id="applyNowBtn" class="w-full flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-6 text-base font-bold leading-normal tracking-[0.015em] transition-colors" style="background-color: #2bee79; color: #0e2016;" onmouseover="this.style.backgroundColor='#25d46a'" onmouseout="this.style.backgroundColor='#2bee79'">
                                         <span class="truncate">Apply Now</span>
                                     </button>
                                     <div class="space-y-3 pt-2">
                                         <div class="flex justify-between items-center">
-                                            <span class="text-sm font-medium text-primary/80 dark:text-primary/60">Salary Range</span>
+                                            <span class="text-sm font-medium text-[#111318] dark:text-gray-300">Salary Range</span>
                                             <span id="salaryRange" class="text-sm font-semibold text-[#111318] dark:text-gray-200">Not disclosed</span>
                                         </div>
                                         <div class="flex justify-between items-center">
-                                            <span class="text-sm font-medium text-primary/80 dark:text-primary/60">Job Type</span>
+                                            <span class="text-sm font-medium text-[#111318] dark:text-gray-300">Job Type</span>
                                             <span id="jobType" class="text-sm font-semibold text-[#111318] dark:text-gray-200"></span>
                                         </div>
                                         <div class="flex justify-between items-center">
-                                            <span class="text-sm font-medium text-primary/80 dark:text-primary/60">Experience</span>
+                                            <span class="text-sm font-medium text-[#111318] dark:text-gray-300">Experience</span>
                                             <span id="experienceLevel" class="text-sm font-semibold text-[#111318] dark:text-gray-200"></span>
                                         </div>
                                         <div class="flex justify-between items-center">
-                                            <span class="text-sm font-medium text-primary/80 dark:text-primary/60">Location</span>
+                                            <span class="text-sm font-medium text-[#111318] dark:text-gray-300">Location</span>
                                             <span id="locationType" class="text-sm font-semibold text-[#111318] dark:text-gray-200"></span>
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- Company Card -->
-                                <div class="border border-primary/20 dark:border-primary/10 rounded-lg p-6 flex flex-col items-center text-center bg-white dark:bg-gray-800/50">
-                                    <div id="companyLogoCard" class="size-16 bg-center bg-no-repeat aspect-square bg-cover rounded-md mb-4 border border-primary/10 dark:border-primary/5" style="background-color: #f0f0f0;"></div>
+                                <div class="border border-primary/20 dark:border-primary/10 rounded-lg p-6 flex flex-col items-center text-center bg-white dark:bg-gray-800/50 relative">
+                                    <a id="companyWebsiteLink" href="#" target="_blank" class="absolute top-4 right-4 text-[#111318] dark:text-gray-300 hover:text-primary transition-colors hidden">
+                                        <span class="material-symbols-outlined text-xl">arrow_outward</span>
+                                    </a>
+                                    <div id="companyLogoCard" class="size-16 bg-center bg-no-repeat aspect-square bg-cover rounded-2xl mb-4 border border-gray-300 dark:border-gray-600" style="background-color: #f0f0f0;"></div>
                                     <h4 id="companyNameCard" class="font-bold text-lg text-[#111318] dark:text-white"></h4>
-                                    <p id="companyDescriptionCard" class="text-sm text-primary/80 dark:text-primary/60 mt-1"></p>
+                                    <p id="companyDescriptionCard" class="text-sm text-[#111318] dark:text-gray-300 mt-1"></p>
                                 </div>
                             </div>
                         </div>
@@ -266,25 +240,23 @@
             document.getElementById('jobDescription').textContent = job.description || 'No description available.';
 
             // Responsibilities
-            if (job.responsibilities) {
+            if (job.responsibilities && (Array.isArray(job.responsibilities) ? job.responsibilities.length > 0 : job.responsibilities.trim())) {
                 const responsibilities = Array.isArray(job.responsibilities) 
                     ? job.responsibilities 
                     : job.responsibilities.split('\n').filter(r => r.trim());
                 const responsibilitiesList = document.getElementById('responsibilitiesList');
                 responsibilitiesList.innerHTML = responsibilities.map(r => `<li>${r.trim()}</li>`).join('');
-            } else {
-                document.getElementById('responsibilitiesSection').classList.add('hidden');
+                document.getElementById('responsibilitiesSection').classList.remove('hidden');
             }
 
             // Requirements
-            if (job.requirements) {
+            if (job.requirements && (Array.isArray(job.requirements) ? job.requirements.length > 0 : job.requirements.trim())) {
                 const requirements = Array.isArray(job.requirements) 
                     ? job.requirements 
                     : job.requirements.split('\n').filter(r => r.trim());
                 const requirementsList = document.getElementById('requirementsList');
                 requirementsList.innerHTML = requirements.map(r => `<li>${r.trim()}</li>`).join('');
-            } else {
-                document.getElementById('requirementsSection').classList.add('hidden');
+                document.getElementById('requirementsSection').classList.remove('hidden');
             }
 
             // Skills
@@ -293,16 +265,26 @@
                 skillsContainer.innerHTML = job.skills.map(skill => 
                     `<span class="inline-flex items-center rounded-full bg-primary/20 dark:bg-primary/10 px-3 py-1 text-xs font-medium text-primary/80 dark:text-primary/60">${skill}</span>`
                 ).join('');
-            } else {
-                document.getElementById('skillsSection').classList.add('hidden');
+                document.getElementById('skillsSection').classList.remove('hidden');
             }
 
-            // Company description
-            if (job.company_description) {
-                document.getElementById('companyDescription').textContent = job.company_description;
+            // Company description (only for sidebar card)
+            if (job.company_description && job.company_description.trim()) {
                 document.getElementById('companyDescriptionCard').textContent = job.company_description;
+            }
+
+            // Company website link
+            const companyWebsiteLink = document.getElementById('companyWebsiteLink');
+            if (job.company_website && job.company_website.trim()) {
+                let websiteUrl = job.company_website.trim();
+                // Add https:// if no protocol is specified
+                if (!websiteUrl.match(/^https?:\/\//i)) {
+                    websiteUrl = 'https://' + websiteUrl;
+                }
+                companyWebsiteLink.href = websiteUrl;
+                companyWebsiteLink.classList.remove('hidden');
             } else {
-                document.getElementById('companySection').classList.add('hidden');
+                companyWebsiteLink.classList.add('hidden');
             }
 
             // Sidebar info
@@ -322,8 +304,10 @@
             const isSaved = localStorage.getItem(`saved_job_${job.id}`) === 'true';
             if (isSaved) {
                 saveBtn.innerHTML = '<span class="material-symbols-outlined text-base">bookmark</span><span class="truncate">Saved</span>';
-                saveBtn.classList.add('bg-primary', 'text-white');
-                saveBtn.classList.remove('bg-primary/20', 'text-[#111318]');
+                saveBtn.style.backgroundColor = '#2bee79';
+                saveBtn.style.color = '#0e2016';
+                saveBtn.onmouseover = function() { this.style.backgroundColor = '#25d46a'; };
+                saveBtn.onmouseout = function() { this.style.backgroundColor = '#2bee79'; };
             }
             saveBtn.addEventListener('click', () => toggleSaveJob(job.id, saveBtn));
 
@@ -332,14 +316,25 @@
 
             // Apply button
             document.getElementById('applyNowBtn').addEventListener('click', () => {
-                // Check if user is logged in
-                <?php if (session()->get('is_logged_in')): ?>
-                    // Redirect to application page or show modal
-                    window.location.href = `<?= base_url('apply') ?>?job_id=${job.id}`;
-                <?php else: ?>
-                    // Redirect to login
-                    window.location.href = `<?= base_url('login') ?>?redirect=apply&job_id=${job.id}`;
-                <?php endif; ?>
+                // Check if application URL or email is available
+                if (job.application_url) {
+                    // Open application URL in new tab
+                    window.open(job.application_url, '_blank');
+                } else if (job.application_email) {
+                    // Open email client with pre-filled email
+                    const subject = encodeURIComponent(`Application for ${job.title} at ${job.company_name}`);
+                    const body = encodeURIComponent(`Dear Hiring Manager,\n\nI am writing to express my interest in the ${job.title} position at ${job.company_name}.\n\n[Your message here]\n\nBest regards`);
+                    window.location.href = `mailto:${job.application_email}?subject=${subject}&body=${body}`;
+                } else {
+                    // Fallback to original behavior if no application method is available
+                    <?php if (session()->get('is_logged_in')): ?>
+                        // Redirect to application page or show modal
+                        window.location.href = `<?= base_url('apply') ?>?job_id=${job.id}`;
+                    <?php else: ?>
+                        // Redirect to login
+                        window.location.href = `<?= base_url('login') ?>?redirect=apply&job_id=${job.id}`;
+                    <?php endif; ?>
+                }
             });
 
             // Load related jobs
@@ -374,13 +369,17 @@
             if (isSaved) {
                 localStorage.removeItem(`saved_job_${jobId}`);
                 btn.innerHTML = '<span class="material-symbols-outlined text-base">bookmark</span><span class="truncate">Save Job</span>';
-                btn.classList.remove('bg-primary', 'text-white');
-                btn.classList.add('bg-primary/20', 'text-[#111318]');
+                btn.style.backgroundColor = 'rgba(43, 238, 121, 0.5)';
+                btn.style.color = '#111318';
+                btn.onmouseover = function() { this.style.backgroundColor = 'rgba(43, 238, 121, 0.6)'; };
+                btn.onmouseout = function() { this.style.backgroundColor = 'rgba(43, 238, 121, 0.5)'; };
             } else {
                 localStorage.setItem(`saved_job_${jobId}`, 'true');
                 btn.innerHTML = '<span class="material-symbols-outlined text-base">bookmark</span><span class="truncate">Saved</span>';
-                btn.classList.add('bg-primary', 'text-white');
-                btn.classList.remove('bg-primary/20', 'text-[#111318]');
+                btn.style.backgroundColor = '#2bee79';
+                btn.style.color = '#0e2016';
+                btn.onmouseover = function() { this.style.backgroundColor = '#25d46a'; };
+                btn.onmouseout = function() { this.style.backgroundColor = '#2bee79'; };
             }
         }
 
