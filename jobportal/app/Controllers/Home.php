@@ -20,9 +20,36 @@ class Home extends BaseController
         $this->savedJobModel = new SavedJobModel();
     }
 
-    public function index(): string
+    public function index()
     {
+        // If user is logged in, redirect to dashboard
+        if (session()->get('is_logged_in')) {
+            return redirect()->to('/dashboard');
+        }
+        
         return view('home/index');
+    }
+
+    /**
+     * Dashboard - Redirect to appropriate dashboard based on user type
+     */
+    public function dashboard()
+    {
+        // Check if user is logged in
+        if (!session()->get('is_logged_in')) {
+            return redirect()->to('/login')
+                ->with('error', 'Please log in to access the dashboard.');
+        }
+
+        $userType = session()->get('user_type');
+        
+        // Redirect admin users to admin dashboard
+        if ($userType === 'admin') {
+            return redirect()->to('/admin/dashboard');
+        }
+        
+        // For regular users, redirect to home or manage jobs
+        return redirect()->to('/manage-jobs');
     }
 
     public function jobs(): string

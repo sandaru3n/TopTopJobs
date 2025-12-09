@@ -467,8 +467,9 @@
     </div>
 
     <script>
-        const baseUrl = '<?= base_url() ?>';
-        const apiUrl = '<?= base_url('api/jobs.php') ?>';
+        // Use current origin to support both www and non-www versions
+        const baseUrl = window.location.origin + '/';
+        const apiUrl = baseUrl + 'api/jobs.php';
         
         // Toggle filter section expand/collapse
         function toggleFilterSection(button) {

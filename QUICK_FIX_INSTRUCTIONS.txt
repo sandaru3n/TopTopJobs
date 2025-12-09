@@ -1,0 +1,46 @@
+========================================
+QUICK FIX FOR DNS ERROR
+========================================
+
+PROBLEM: DNS_PROBE_FINISHED_NXDOMAIN for www.toptopjobs.local
+
+SOLUTION (Choose ONE method):
+
+METHOD 1 - EASIEST (Recommended):
+----------------------------------
+1. Right-click "add-www-to-hosts.bat" in this folder
+2. Select "Run as administrator"
+3. Done! The domain will be added automatically
+
+METHOD 2 - Manual:
+----------------------------------
+1. Open Notepad as Administrator
+2. Open: C:\Windows\System32\drivers\etc\hosts
+3. Add this line at the bottom:
+   127.0.0.1   www.toptopjobs.local
+4. Save the file
+5. Run in Command Prompt (as Admin): ipconfig /flushdns
+
+========================================
+IMPORTANT: USE HTTP, NOT HTTPS
+========================================
+
+For local development, use:
+  ✅ http://www.toptopjobs.local
+  ✅ http://toptopjobs.local
+
+NOT:
+  ❌ https://www.toptopjobs.local (SSL not needed for local)
+
+========================================
+AFTER FIXING:
+========================================
+
+1. Restart Apache in XAMPP Control Panel
+2. Test: http://www.toptopjobs.local
+3. Test: http://toptopjobs.local
+
+Both should work now!
+
+========================================
+

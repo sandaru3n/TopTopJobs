@@ -25,10 +25,17 @@ class App extends BaseConfig
     {
         parent::__construct();
         
-        // Read baseURL from environment if set
-        $envBaseURL = env('app.baseURL', '');
-        if (!empty($envBaseURL)) {
-            $this->baseURL = $envBaseURL;
+        // Auto-detect base URL from current request to support both www and non-www
+        // This allows the site to work with both toptopjobs.local and www.toptopjobs.local
+        if (isset($_SERVER['HTTP_HOST'])) {
+            $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+            $this->baseURL = $protocol . '://' . $_SERVER['HTTP_HOST'] . '/';
+        } else {
+            // Fallback to environment if HTTP_HOST is not available
+            $envBaseURL = env('app.baseURL', '');
+            if (!empty($envBaseURL)) {
+                $this->baseURL = $envBaseURL;
+            }
         }
     }
 
@@ -43,7 +50,7 @@ class App extends BaseConfig
      *
      * @var list<string>
      */
-    public array $allowedHostnames = [];
+    public array $allowedHostnames = ['www.toptopjobs.local', 'toptopjobs.local'];
 
     /**
      * --------------------------------------------------------------------------

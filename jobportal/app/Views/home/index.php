@@ -96,7 +96,8 @@
     </div>
 
     <script>
-        const baseUrl = '<?= base_url() ?>';
+        // Use current origin to support both www and non-www versions
+        const baseUrl = window.location.origin + '/';
         
         // Category state
         let categoriesData = [];

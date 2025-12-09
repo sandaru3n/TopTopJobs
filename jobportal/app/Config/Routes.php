@@ -6,6 +6,8 @@ use CodeIgniter\Router\RouteCollection;
  * @var RouteCollection $routes
  */
 $routes->get('/', 'Home::index');
+$routes->get('/dashboard', 'Home::dashboard', ['filter' => 'auth']);
+$routes->get('/dashboard/', 'Home::dashboard', ['filter' => 'auth']);
 $routes->get('/jobs', 'Home::jobs');
 $routes->get('/job/(:segment)', 'Home::jobDetails');
 $routes->get('/job/(:segment)/', 'Home::jobDetails');

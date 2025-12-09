@@ -167,8 +167,9 @@
     </div>
 
     <script>
-        const baseUrl = '<?= base_url() ?>';
-        const apiUrl = '<?= base_url('api/jobs.php') ?>';
+        // Use current origin to support both www and non-www versions
+        const baseUrl = window.location.origin + '/';
+        const apiUrl = baseUrl + 'api/jobs.php';
         
         // Extract job ID and slug from URL - support both query param and slug format
         function getJobInfoFromUrl() {

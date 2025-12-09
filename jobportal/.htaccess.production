@@ -1,0 +1,54 @@
+# ----------------------------------------------------------------------
+# CodeIgniter 4 Root .htaccess - PRODUCTION VERSION
+# Use this file if document root is set to jobportal folder (not public)
+# Rename this to .htaccess when deploying to production
+# ----------------------------------------------------------------------
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Redirect /public/ URLs to clean URLs (remove /public/ from URL)
+    # This ensures URLs like https://www.toptopjobs.com/public/login 
+    # redirect to https://www.toptopjobs.com/login
+    RewriteCond %{THE_REQUEST} \s/public/([^\s?]*) [NC]
+    RewriteRule ^ /%1 [R=301,L]
+    
+    # If the request is not for a file or directory that exists
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    
+    # Rewrite all requests to the public folder
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
+
+# Deny access to sensitive files and directories
+# Apache 2.4+ syntax (for modern hosting)
+<FilesMatch "^\.">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Protect .env file
+<Files ".env">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</Files>
+
+# Protect sensitive directories and files
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Block direct access to app, writable, vendor, tests, database, and other sensitive directories
+    RewriteRule ^(app|writable|vendor|tests|database|spark|composer\.(json|lock)|phpunit\.xml\.dist|\.env|\.git) - [F,L]
+</IfModule>
+
