@@ -455,8 +455,8 @@ function formatJobData($job) {
         'description' => $description,
         'responsibilities' => !empty($job['responsibilities']) ? (is_string($job['responsibilities']) ? array_filter(array_map('trim', explode("\n", $job['responsibilities']))) : $job['responsibilities']) : null,
         'requirements' => !empty($job['requirements']) ? (is_string($job['requirements']) ? array_filter(array_map('trim', explode("\n", $job['requirements']))) : $job['requirements']) : null,
-        'posted_at' => $job['posted_at'],
-        'expires_at' => $job['expires_at'] ?? null,
+        'posted_at' => !empty($job['posted_at']) ? date('c', strtotime($job['posted_at'])) : null, // ISO 8601 format
+        'expires_at' => !empty($job['expires_at']) ? date('c', strtotime($job['expires_at'])) : null, // ISO 8601 format
         'badge' => $badge,
         'badge_class' => $badgeClass,
         'company_description' => $job['company_description'] ?? null,

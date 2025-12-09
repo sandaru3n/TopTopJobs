@@ -1,4 +1,10 @@
 <?= view('partials/head', ['title' => 'Job Details - JobFind']) ?>
+<style>
+    /* Hide header on scroll down */
+    #mainHeader.header-hidden {
+        transform: translateY(-100%);
+    }
+</style>
 <body class="font-display bg-background-light dark:bg-background-dark text-[#111318] dark:text-gray-200">
     <div class="relative flex h-auto min-h-screen w-full flex-col group/design-root overflow-x-hidden">
         <?= view('partials/header') ?>
@@ -164,12 +170,12 @@
         const baseUrl = '<?= base_url() ?>';
         const apiUrl = '<?= base_url('api/jobs.php') ?>';
         
-        // Extract job ID from URL - support both query param and slug format
-        function getJobIdFromUrl() {
+        // Extract job ID and slug from URL - support both query param and slug format
+        function getJobInfoFromUrl() {
             // Try query parameter first
             const queryId = new URLSearchParams(window.location.search).get('id');
             if (queryId) {
-                return parseInt(queryId);
+                return { id: parseInt(queryId), slug: null };
             }
             
             // Extract from slug format: /job/company-title-id or /job/company-title-id/
@@ -180,33 +186,234 @@
                 // Extract ID from end of slug (e.g., "google-senior-product-designer-1" -> 1)
                 const idMatch = slug.match(/-(\d+)$/);
                 if (idMatch) {
-                    return parseInt(idMatch[1]);
+                    return { id: parseInt(idMatch[1]), slug: slug };
                 }
+                // If no ID found, return slug only
+                return { id: null, slug: slug };
             }
             
-            return null;
+            return { id: null, slug: null };
         }
         
-        const jobId = getJobIdFromUrl();
+        const jobInfo = getJobInfoFromUrl();
+        const jobId = jobInfo.id;
+        const jobSlug = jobInfo.slug;
         
+        // Handle header hide/show on scroll (override header.php default behavior)
+        let lastScrollY = window.scrollY;
+        let ticking = false;
+        const headerEl = document.getElementById('mainHeader');
+        const SCROLL_THRESHOLD = 5; // Minimum scroll difference to trigger hide/show
+        
+        // Track scroll direction using wheel events (for better detection at bottom)
+        let wheelDirection = 0;
+        let wheelTimeout;
+        
+        window.addEventListener('wheel', (e) => {
+            wheelDirection = e.deltaY > 0 ? 1 : -1; // 1 = down, -1 = up
+            clearTimeout(wheelTimeout);
+            wheelTimeout = setTimeout(() => {
+                wheelDirection = 0;
+            }, 200);
+        }, { passive: true });
+
+        function handleHeaderOnScroll() {
+            if (!headerEl) return;
+            
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    const currentY = window.scrollY || window.pageYOffset;
+                    const scrollDiff = currentY - lastScrollY;
+                    
+                    // Calculate if we're at the bottom
+                    const scrollHeight = Math.max(
+                        document.body.scrollHeight,
+                        document.body.offsetHeight,
+                        document.documentElement.clientHeight,
+                        document.documentElement.scrollHeight,
+                        document.documentElement.offsetHeight
+                    );
+                    const clientHeight = window.innerHeight || document.documentElement.clientHeight;
+                    const scrollTop = currentY;
+                    const distanceFromBottom = scrollHeight - (scrollTop + clientHeight);
+                    const isAtBottom = distanceFromBottom <= 150; // Very generous threshold to catch bottom earlier
+                    
+                    // Always show header at the top of the page
+                    if (currentY <= 50) {
+                        headerEl.classList.remove('header-hidden');
+                        headerEl.style.transform = 'translateY(0)';
+                        headerEl.style.transition = 'transform 0.3s ease-in-out';
+                        lastScrollY = currentY;
+                        ticking = false;
+                        return;
+                    }
+                    
+                    // Always show header when at bottom of page OR when trying to scroll up at bottom
+                    if (isAtBottom || (isAtBottom && wheelDirection < 0)) {
+                        headerEl.classList.remove('header-hidden');
+                        headerEl.style.transform = 'translateY(0)';
+                        headerEl.style.transition = 'transform 0.3s ease-in-out';
+                        lastScrollY = currentY;
+                        ticking = false;
+                        return;
+                    }
+
+                    // Hide on scroll down, show on scroll up
+                    // Use a smaller threshold to be more responsive
+                    if (Math.abs(scrollDiff) >= SCROLL_THRESHOLD) {
+                        if (scrollDiff > 0) {
+                            // Scrolling down
+                            headerEl.classList.add('header-hidden');
+                            headerEl.style.transform = 'translateY(-100%)';
+                            headerEl.style.transition = 'transform 0.3s ease-in-out';
+                        } else {
+                            // Scrolling up - always show
+                            headerEl.classList.remove('header-hidden');
+                            headerEl.style.transform = 'translateY(0)';
+                            headerEl.style.transition = 'transform 0.3s ease-in-out';
+                        }
+                        lastScrollY = currentY;
+                    } else if (scrollDiff < 0 && isAtBottom) {
+                        // Special case: trying to scroll up at bottom (even if position doesn't change much)
+                        headerEl.classList.remove('header-hidden');
+                        headerEl.style.transform = 'translateY(0)';
+                        headerEl.style.transition = 'transform 0.3s ease-in-out';
+                    }
+                    
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        }
+        
+        // Add our custom scroll handler with higher priority
+        // This will run after header.php handler and override its inline styles
+        window.addEventListener('scroll', handleHeaderOnScroll, { passive: true });
+        
+        // Also check periodically to ensure header shows at bottom
+        // This handles cases where content loads dynamically
+        function checkBottomAndShowHeader() {
+            if (!headerEl) return;
+            
+            const currentY = window.scrollY || window.pageYOffset;
+            const scrollHeight = Math.max(
+                document.body.scrollHeight,
+                document.body.offsetHeight,
+                document.documentElement.clientHeight,
+                document.documentElement.scrollHeight,
+                document.documentElement.offsetHeight
+            );
+            const clientHeight = window.innerHeight || document.documentElement.clientHeight;
+            const distanceFromBottom = scrollHeight - (currentY + clientHeight);
+            const isAtBottom = distanceFromBottom <= 150; // Very generous threshold to catch bottom earlier
+            
+            // Show header if at bottom OR if user is trying to scroll up (wheel direction)
+            if (isAtBottom || (isAtBottom && wheelDirection < 0)) {
+                headerEl.classList.remove('header-hidden');
+                headerEl.style.transform = 'translateY(0)';
+                headerEl.style.transition = 'transform 0.3s ease-in-out';
+            }
+        }
+        
+        // Enhanced scroll handler that also checks wheel direction
+        function enhancedScrollHandler() {
+            handleHeaderOnScroll();
+            
+            // If at bottom and trying to scroll up, show header immediately
+            if (!headerEl) return;
+            
+            const currentY = window.scrollY || window.pageYOffset;
+            const scrollHeight = Math.max(
+                document.body.scrollHeight,
+                document.documentElement.scrollHeight
+            );
+            const clientHeight = window.innerHeight || document.documentElement.clientHeight;
+            const distanceFromBottom = scrollHeight - (currentY + clientHeight);
+            const isAtBottom = distanceFromBottom <= 100;
+            
+            if (isAtBottom && wheelDirection < 0) {
+                // User is trying to scroll up at bottom
+                headerEl.classList.remove('header-hidden');
+                headerEl.style.transform = 'translateY(0)';
+                headerEl.style.transition = 'transform 0.3s ease-in-out';
+            }
+        }
+        
+        // Replace scroll handler with enhanced version
+        window.removeEventListener('scroll', handleHeaderOnScroll);
+        window.addEventListener('scroll', enhancedScrollHandler, { passive: true });
+        
+        // Check on load and periodically (for dynamic content)
+        window.addEventListener('load', checkBottomAndShowHeader);
+        setTimeout(checkBottomAndShowHeader, 500);
+        setTimeout(checkBottomAndShowHeader, 1000);
+        
+        // Also check on scroll end (debounced)
+        let scrollTimeout;
+        window.addEventListener('scroll', () => {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(checkBottomAndShowHeader, 150);
+        }, { passive: true });
+
         // Load job details
         async function loadJobDetails() {
-            if (!jobId) {
+            console.log('Loading job details...', { jobId, jobSlug, apiUrl });
+            
+            if (!jobId && !jobSlug) {
+                console.error('No job ID or slug found in URL');
                 showError();
                 return;
             }
 
             try {
-                const response = await fetch(`${apiUrl}?id=${jobId}`);
-                const data = await response.json();
+                // Try with ID first if available
+                if (jobId) {
+                    console.log(`Fetching job with ID: ${jobId}`);
+                    const response = await fetch(`${apiUrl}?id=${jobId}`);
+                    
+                    if (!response.ok) {
+                        console.error('API response not OK:', response.status, response.statusText);
+                        throw new Error(`API error: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log('API response:', data);
 
-                if (data.success && data.job) {
-                    displayJobDetails(data.job);
-                } else {
-                    showError();
+                    if (data.success && data.job) {
+                        console.log('Job found by ID:', data.job);
+                        displayJobDetails(data.job);
+                        return;
+                    }
+                    console.log('ID lookup failed, trying slug lookup...', data);
                 }
+                
+                // Fallback to slug lookup if ID failed or no ID available
+                if (jobSlug) {
+                    console.log(`Fetching job with slug: ${jobSlug}`);
+                    const slugResponse = await fetch(`${apiUrl}?slug=${encodeURIComponent(jobSlug)}`);
+                    
+                    if (!slugResponse.ok) {
+                        console.error('Slug API response not OK:', slugResponse.status, slugResponse.statusText);
+                        throw new Error(`Slug API error: ${slugResponse.status}`);
+                    }
+                    
+                    const slugData = await slugResponse.json();
+                    console.log('Slug API response:', slugData);
+                    
+                    if (slugData.success && slugData.job) {
+                        console.log('Job found by slug:', slugData.job);
+                        displayJobDetails(slugData.job);
+                        return;
+                    }
+                    console.error('Slug lookup also failed:', slugData);
+                }
+                
+                // Both lookups failed
+                console.error('Job not found. JobId:', jobId, 'Slug:', jobSlug);
+                showError();
             } catch (error) {
                 console.error('Error loading job details:', error);
+                console.error('Error stack:', error.stack);
                 showError();
             }
         }
@@ -235,7 +442,12 @@
             // Location and date
             document.getElementById('jobLocation').textContent = job.location;
             document.getElementById('locationText').textContent = job.location;
-            document.getElementById('postedDate').textContent = `Posted ${getTimeAgo(job.posted_at)}`;
+            
+            // Debug: Log the posted_at value to see what we're receiving
+            console.log('Posted at value:', job.posted_at, 'Type:', typeof job.posted_at);
+            const timeAgo = getTimeAgo(job.posted_at);
+            console.log('Time ago calculated:', timeAgo);
+            document.getElementById('postedDate').textContent = `Posted ${timeAgo}`;
 
             // Description
             document.getElementById('jobDescription').textContent = job.description || 'No description available.';
@@ -481,9 +693,37 @@
         }
 
         function getTimeAgo(dateString) {
+            if (!dateString) return 'recently';
+            
             const now = new Date();
-            const date = new Date(dateString);
+            let date;
+            
+            // Handle different date formats from database
+            // MySQL datetime format: "2024-01-18 14:30:00"
+            // If it's already a valid date string, use it directly
+            // Otherwise, try to parse it
+            if (typeof dateString === 'string') {
+                // Replace space with 'T' for ISO format if needed, or parse as-is
+                // MySQL datetime: "2024-01-18 14:30:00" -> "2024-01-18T14:30:00"
+                const isoString = dateString.includes('T') ? dateString : dateString.replace(' ', 'T');
+                date = new Date(isoString);
+            } else {
+                date = new Date(dateString);
+            }
+            
+            // Check if date is valid
+            if (isNaN(date.getTime())) {
+                console.error('Invalid date:', dateString);
+                return 'recently';
+            }
+            
             const diffMs = now - date;
+            
+            // Handle negative differences (future dates) - shouldn't happen but just in case
+            if (diffMs < 0) {
+                return 'just now';
+            }
+            
             const diffSecs = Math.floor(diffMs / 1000);
             const diffMins = Math.floor(diffMs / 60000);
             const diffHours = Math.floor(diffMs / 3600000);
@@ -679,7 +919,28 @@
         }
 
         // Load job details on page load
-        loadJobDetails();
+        // Add timeout to prevent infinite loading
+        let loadTimeout;
+        const startLoad = async () => {
+            loadTimeout = setTimeout(() => {
+                console.error('Job details loading timeout after 10 seconds');
+                const loadingState = document.getElementById('loadingState');
+                if (loadingState && !loadingState.classList.contains('hidden')) {
+                    console.error('Still in loading state, showing error');
+                    showError();
+                }
+            }, 10000);
+            
+            try {
+                await loadJobDetails();
+            } finally {
+                if (loadTimeout) {
+                    clearTimeout(loadTimeout);
+                }
+            }
+        };
+        
+        startLoad();
     </script>
 </body>
 </html>
