@@ -94,20 +94,35 @@
                             </div>
                         </div>
 
-                        <!-- Location -->
-                        <div>
-                            <label for="location" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
-                                Location <span class="text-red-500">*</span>
-                            </label>
-                            <input 
-                                type="text" 
-                                id="location" 
-                                name="location" 
-                                required
-                                value="<?= old('location') ?>"
-                                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                                placeholder="e.g., New York, NY or Remote"
-                            />
+                        <!-- Location and Remote -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="location" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
+                                    Location <span class="text-red-500">*</span>
+                                </label>
+                                <input 
+                                    type="text" 
+                                    id="location" 
+                                    name="location" 
+                                    required
+                                    value="<?= old('location') ?>"
+                                    class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                                    placeholder="e.g., New York, NY"
+                                />
+                            </div>
+                            <div class="flex items-end">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input 
+                                        type="checkbox" 
+                                        id="is_remote" 
+                                        name="is_remote" 
+                                        value="1"
+                                        <?= old('is_remote') ? 'checked' : '' ?>
+                                        class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary/50 cursor-pointer"
+                                    />
+                                    <span class="text-sm font-medium text-[#111318] dark:text-gray-300">Remote Job</span>
+                                </label>
+                            </div>
                         </div>
 
                         <!-- Job Type -->
@@ -145,24 +160,46 @@
                             />
                         </div>
 
-                        <!-- Monthly Salary -->
+                        <!-- Monthly Salary Range -->
                         <div>
-                            <label for="monthly_salary" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
-                                Monthly Salary
+                            <label class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
+                                Monthly Salary Range (Optional)
                             </label>
-                            <div class="flex items-center gap-2">
-                                <span class="text-gray-500 dark:text-gray-400">$</span>
-                                <input 
-                                    type="number" 
-                                    id="monthly_salary" 
-                                    name="monthly_salary" 
-                                    min="0"
-                                    step="100"
-                                    value="<?= old('monthly_salary') ?>"
-                                    class="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                                    placeholder="5000"
-                                />
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="salary_min" class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Minimum</label>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-gray-500 dark:text-gray-400">$</span>
+                                        <input 
+                                            type="number" 
+                                            id="salary_min" 
+                                            name="salary_min" 
+                                            min="0"
+                                            step="100"
+                                            value="<?= old('salary_min') ?>"
+                                            class="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                                            placeholder="3000"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="salary_max" class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Maximum</label>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-gray-500 dark:text-gray-400">$</span>
+                                        <input 
+                                            type="number" 
+                                            id="salary_max" 
+                                            name="salary_max" 
+                                            min="0"
+                                            step="100"
+                                            value="<?= old('salary_max') ?>"
+                                            class="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                                            placeholder="6000"
+                                        />
+                                    </div>
+                                </div>
                             </div>
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Leave blank if salary is not disclosed</p>
                         </div>
 
                         <!-- Job Category -->
@@ -217,10 +254,73 @@
                             <textarea 
                                 id="description" 
                                 name="description" 
-                                rows="6"
+                                rows="4"
                                 class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors resize-y"
-                                placeholder="Describe the job responsibilities, requirements, and what you're looking for..."
+                                placeholder="Provide an overview of the job position..."
                             ><?= old('description') ?></textarea>
+                        </div>
+
+                        <!-- Responsibilities -->
+                        <div>
+                            <label for="responsibilities" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
+                                Responsibilities
+                            </label>
+                            <textarea 
+                                id="responsibilities" 
+                                name="responsibilities" 
+                                rows="4"
+                                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors resize-y"
+                                placeholder="Enter each responsibility on a new line..."
+                            ><?= old('responsibilities') ?></textarea>
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Enter each responsibility on a separate line</p>
+                        </div>
+
+                        <!-- Requirements -->
+                        <div>
+                            <label for="requirements" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
+                                Requirements
+                            </label>
+                            <textarea 
+                                id="requirements" 
+                                name="requirements" 
+                                rows="4"
+                                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors resize-y"
+                                placeholder="Enter each requirement on a new line..."
+                            ><?= old('requirements') ?></textarea>
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Enter each requirement on a separate line</p>
+                        </div>
+
+                        <!-- Required Skills -->
+                        <div>
+                            <label for="skills" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
+                                Required Skills
+                            </label>
+                            <input 
+                                type="text" 
+                                id="skills" 
+                                name="skills" 
+                                value="<?= old('skills') ?>"
+                                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                                placeholder="e.g., JavaScript, React, Node.js, Python (comma-separated)"
+                            />
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Enter skills separated by commas</p>
+                        </div>
+
+                        <!-- Valid Through -->
+                        <div>
+                            <label for="valid_through" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
+                                Valid Through (Expiration Date) <span class="text-red-500">*</span>
+                            </label>
+                            <input 
+                                type="date" 
+                                id="valid_through" 
+                                name="valid_through" 
+                                required
+                                value="<?= old('valid_through') ?>"
+                                min="<?= date('Y-m-d') ?>"
+                                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                            />
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Required. Set when the job expires.</p>
                         </div>
                     </div>
                 </div>

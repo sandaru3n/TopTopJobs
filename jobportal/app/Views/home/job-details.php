@@ -103,14 +103,6 @@
                                     </div>
                                 </div>
                             </div>
-
-                            <!-- Related Jobs Section -->
-                            <div id="relatedJobsSection">
-                                <h3 class="text-xl font-bold mb-4 text-[#111318] dark:text-white">Related Jobs</h3>
-                                <div id="relatedJobsContainer" class="flex gap-4 overflow-x-auto pb-4 -mx-4 px-4">
-                                    <!-- Related jobs will be loaded here -->
-                                </div>
-                            </div>
                         </div>
 
                         <!-- Right Column (Sticky Sidebar) -->
@@ -149,6 +141,14 @@
                                     <div id="companyLogoCard" class="size-16 bg-center bg-no-repeat aspect-square bg-cover rounded-2xl mb-4 border border-gray-300 dark:border-gray-600" style="background-color: #f0f0f0;"></div>
                                     <h4 id="companyNameCard" class="font-bold text-lg text-[#111318] dark:text-white"></h4>
                                     <p id="companyDescriptionCard" class="text-sm text-[#111318] dark:text-gray-300 mt-1"></p>
+                                </div>
+
+                                <!-- Related Jobs Section -->
+                                <div id="relatedJobsSection" class="border border-primary/20 dark:border-primary/10 rounded-lg p-6 bg-white dark:bg-gray-800/50">
+                                    <h3 class="text-lg font-bold mb-4 text-[#111318] dark:text-white">Related Jobs</h3>
+                                    <div id="relatedJobsContainer" class="flex flex-col gap-4">
+                                        <!-- Related jobs will be loaded here -->
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -216,6 +216,9 @@
             document.getElementById('loadingState').classList.add('hidden');
             document.getElementById('jobDetailsContent').classList.remove('hidden');
 
+            // Update page title for SEO
+            document.title = `${job.title} at ${job.company_name} - JobFind`;
+
             // Update breadcrumb
             document.getElementById('jobTitleBreadcrumb').textContent = job.title;
 
@@ -232,9 +235,7 @@
             // Location and date
             document.getElementById('jobLocation').textContent = job.location;
             document.getElementById('locationText').textContent = job.location;
-            const postedDate = new Date(job.posted_at);
-            const daysAgo = Math.floor((Date.now() - postedDate.getTime()) / (1000 * 60 * 60 * 24));
-            document.getElementById('postedDate').textContent = `Posted ${daysAgo === 0 ? 'today' : daysAgo === 1 ? '1 day ago' : `${daysAgo} days ago`}`;
+            document.getElementById('postedDate').textContent = `Posted ${getTimeAgo(job.posted_at)}`;
 
             // Description
             document.getElementById('jobDescription').textContent = job.description || 'No description available.';
@@ -286,6 +287,9 @@
             } else {
                 companyWebsiteLink.classList.add('hidden');
             }
+
+            // Generate and inject Google JobPosting structured data
+            generateJobPostingStructuredData(job);
 
             // Sidebar info
             if (job.salary_min && job.salary_max) {
@@ -403,55 +407,275 @@
 
         async function loadRelatedJobs(currentJob) {
             try {
-                const response = await fetch(`${apiUrl}?company=${encodeURIComponent(currentJob.company_name)}&per_page=3`);
+                // Fetch jobs from the same company first
+                const response = await fetch(`${apiUrl}?company=${encodeURIComponent(currentJob.company_name)}&per_page=10`);
                 const data = await response.json();
-
+                
+                let relatedJobs = [];
+                
                 if (data.success && data.jobs) {
-                    const relatedJobs = data.jobs.filter(j => j.id !== currentJob.id).slice(0, 3);
-                    const container = document.getElementById('relatedJobsContainer');
-                    
-                    if (relatedJobs.length === 0) {
-                        document.getElementById('relatedJobsSection').classList.add('hidden');
-                        return;
-                    }
-
-                    container.innerHTML = relatedJobs.map(job => {
-                        const jobSlug = job.slug || (job.company_name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + job.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + job.id);
-                        return `
-                        <div class="flex-shrink-0 w-72 border border-primary/20 dark:border-primary/10 rounded-lg p-4 bg-white dark:bg-gray-800/50 hover:border-primary/50 dark:hover:border-primary/30 transition-colors cursor-pointer" onclick="window.location.href='<?= base_url('job') ?>/${jobSlug}/'">
-                            <div class="flex flex-col items-stretch justify-start">
-                                <div class="w-full bg-center bg-no-repeat aspect-video bg-cover rounded-md mb-4 border border-primary/10 dark:border-primary/5" style="background-image: url('${job.company_logo || 'https://via.placeholder.com/300'}'); background-size: contain; background-position: center;"></div>
-                                <div class="flex w-full flex-col items-stretch justify-center gap-1">
-                                    <p class="text-[#111318] dark:text-white text-md font-bold leading-tight">${job.title}</p>
-                                    <p class="text-primary/80 dark:text-primary/60 text-sm font-normal leading-normal">${job.company_name} - ${job.location}</p>
-                                    <p class="text-primary/60 dark:text-primary/40 text-xs font-normal leading-normal">${getTimeAgo(job.posted_at)}</p>
-                                </div>
-                                </div>
-                            </div>
-                    `;
-                    }).join('');
-                } else {
-                    document.getElementById('relatedJobsSection').classList.add('hidden');
+                    // Filter out current job and get up to 3 jobs from same company
+                    relatedJobs = data.jobs
+                        .filter(job => job.id !== currentJob.id)
+                        .slice(0, 3);
                 }
+                
+                // If we don't have 3 jobs yet, fetch by job type
+                if (relatedJobs.length < 3) {
+                    const typeResponse = await fetch(`${apiUrl}?job_type=${encodeURIComponent(currentJob.job_type)}&per_page=10`);
+                    const typeData = await typeResponse.json();
+                    
+                    if (typeData.success && typeData.jobs) {
+                        const additionalJobs = typeData.jobs
+                            .filter(job => 
+                                job.id !== currentJob.id && 
+                                !relatedJobs.some(rj => rj.id === job.id)
+                            )
+                            .slice(0, 3 - relatedJobs.length);
+                        
+                        relatedJobs = [...relatedJobs, ...additionalJobs];
+                    }
+                }
+                
+                // Display related jobs
+                displayRelatedJobs(relatedJobs.slice(0, 3));
             } catch (error) {
                 console.error('Error loading related jobs:', error);
+                // Hide related jobs section if there's an error
                 document.getElementById('relatedJobsSection').classList.add('hidden');
             }
         }
+        
+        function displayRelatedJobs(jobs) {
+            const container = document.getElementById('relatedJobsContainer');
+            
+            if (!jobs || jobs.length === 0) {
+                container.innerHTML = '<p class="text-sm text-gray-500 dark:text-gray-400 text-center">No related jobs found.</p>';
+                return;
+            }
+            
+            container.innerHTML = jobs.map(job => {
+                const jobSlug = job.slug || `${job.company_name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${job.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${job.id}`;
+                const jobUrl = `${baseUrl}job/${jobSlug}/`;
+                
+                return `
+                    <a href="${jobUrl}" class="block border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-primary/50 dark:hover:border-primary/50 hover:shadow-md transition-all duration-300">
+                        <div class="flex items-start gap-3">
+                            <img class="h-12 w-12 rounded-lg object-cover flex-shrink-0" 
+                                 alt="${job.company_name} logo" 
+                                 src="${job.company_logo || 'https://via.placeholder.com/48'}" 
+                                 onerror="this.src='https://via.placeholder.com/48'"/>
+                            <div class="flex-grow min-w-0">
+                                <h4 class="text-sm font-bold text-[#111318] dark:text-white mb-1 line-clamp-2">${job.title}</h4>
+                                <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">${job.company_name}</p>
+                                <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-500">
+                                    <span>${job.location}</span>
+                                    <span>·</span>
+                                    <span>${getTimeAgo(job.posted_at)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                `;
+            }).join('');
+        }
 
         function getTimeAgo(dateString) {
+            const now = new Date();
             const date = new Date(dateString);
-            const daysAgo = Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
-            if (daysAgo === 0) return 'Posted today';
-            if (daysAgo === 1) return 'Posted 1 day ago';
-            if (daysAgo < 7) return `Posted ${daysAgo} days ago`;
-            if (daysAgo < 30) return `Posted ${Math.floor(daysAgo / 7)} week${Math.floor(daysAgo / 7) > 1 ? 's' : ''} ago`;
-            return `Posted ${Math.floor(daysAgo / 30)} month${Math.floor(daysAgo / 30) > 1 ? 's' : ''} ago`;
+            const diffMs = now - date;
+            const diffSecs = Math.floor(diffMs / 1000);
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+            const diffWeeks = Math.floor(diffDays / 7);
+            const diffMonths = Math.floor(diffDays / 30);
+
+            if (diffSecs < 60) return 'just now';
+            if (diffMins < 60) return `${diffMins} min ago`;
+            if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+            if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+            if (diffDays < 30) return `${diffWeeks} week${diffWeeks > 1 ? 's' : ''} ago`;
+            if (diffDays < 365) return `${diffMonths} month${diffMonths > 1 ? 's' : ''} ago`;
+            return `${Math.floor(diffDays / 365)} year${Math.floor(diffDays / 365) > 1 ? 's' : ''} ago`;
         }
 
         function showError() {
             document.getElementById('loadingState').classList.add('hidden');
             document.getElementById('errorState').classList.remove('hidden');
+        }
+
+        function generateJobPostingStructuredData(job) {
+            // Remove existing structured data if any
+            const existingScript = document.getElementById('job-posting-structured-data');
+            if (existingScript) {
+                existingScript.remove();
+            }
+
+            // Format description in HTML
+            let description = (job.description || '').replace(/\n/g, '<br>');
+            
+            // Add responsibilities
+            if (job.responsibilities) {
+                const responsibilities = Array.isArray(job.responsibilities) 
+                    ? job.responsibilities 
+                    : job.responsibilities.split('\n').filter(r => r.trim());
+                if (responsibilities.length > 0) {
+                    description += '<p><strong>Responsibilities:</strong></p><ul>';
+                    responsibilities.forEach(resp => {
+                        description += `<li>${resp.trim()}</li>`;
+                    });
+                    description += '</ul>';
+                }
+            }
+            
+            // Add requirements
+            if (job.requirements) {
+                const requirements = Array.isArray(job.requirements) 
+                    ? job.requirements 
+                    : job.requirements.split('\n').filter(r => r.trim());
+                if (requirements.length > 0) {
+                    description += '<p><strong>Requirements:</strong></p><ul>';
+                    requirements.forEach(req => {
+                        description += `<li>${req.trim()}</li>`;
+                    });
+                    description += '</ul>';
+                }
+            }
+            
+            // Add skills
+            if (job.skills && job.skills.length > 0) {
+                description += `<p><strong>Required Skills:</strong> ${job.skills.join(', ')}</p>`;
+            }
+            
+            // Ensure description is not empty
+            if (!description || description.trim() === '') {
+                description = job.title || 'Job posting';
+            }
+
+            // Format datePosted
+            const postedDate = new Date(job.posted_at);
+            const datePosted = postedDate.toISOString().split('T')[0];
+
+            // Build hiring organization
+            const hiringOrganization = {
+                "@type": "Organization",
+                "name": job.company_name || "Unknown Company"
+            };
+
+            if (job.company_website) {
+                let websiteUrl = job.company_website.trim();
+                if (!websiteUrl.match(/^https?:\/\//i)) {
+                    websiteUrl = 'https://' + websiteUrl;
+                }
+                hiringOrganization.sameAs = websiteUrl;
+            }
+
+            if (job.company_logo) {
+                hiringOrganization.logo = job.company_logo;
+            }
+
+            // Build job location
+            let jobLocation = null;
+            if (!job.is_remote && job.location) {
+                // Parse location (assuming format like "City, State" or "City, Country")
+                const locationParts = job.location.split(',').map(s => s.trim());
+                const address = {
+                    "@type": "PostalAddress",
+                    "addressLocality": locationParts[0] || job.location,
+                    "addressCountry": locationParts.length > 1 ? locationParts[locationParts.length - 1] : "US"
+                };
+                if (locationParts.length > 2) {
+                    address.addressRegion = locationParts[1];
+                }
+
+                jobLocation = {
+                    "@type": "Place",
+                    "address": address
+                };
+            }
+
+            // Build structured data object
+            const structuredData = {
+                "@context": "https://schema.org/",
+                "@type": "JobPosting",
+                "title": job.title,
+                "description": description,
+                "datePosted": datePosted,
+                "hiringOrganization": hiringOrganization,
+                "identifier": {
+                    "@type": "PropertyValue",
+                    "name": job.company_name || "Unknown",
+                    "value": job.id.toString()
+                }
+            };
+
+            // Add job location or remote job properties
+            if (job.is_remote) {
+                structuredData.jobLocationType = "TELECOMMUTE";
+                structuredData.applicantLocationRequirements = {
+                    "@type": "Country",
+                    "name": "USA"
+                };
+            } else if (jobLocation) {
+                structuredData.jobLocation = jobLocation;
+            }
+
+            // Add employment type
+            const employmentTypeMap = {
+                'full-time': 'FULL_TIME',
+                'part-time': 'PART_TIME',
+                'contract': 'CONTRACTOR',
+                'internship': 'INTERN',
+                'remote': 'FULL_TIME',
+                'freelance': 'CONTRACTOR',
+                'temporary': 'TEMPORARY'
+            };
+            if (job.job_type && employmentTypeMap[job.job_type.toLowerCase()]) {
+                structuredData.employmentType = employmentTypeMap[job.job_type.toLowerCase()];
+            }
+
+            // Add base salary if available
+            if (job.salary_min && job.salary_max) {
+                structuredData.baseSalary = {
+                    "@type": "MonetaryAmount",
+                    "currency": "USD",
+                    "value": {
+                        "@type": "QuantitativeValue",
+                        "minValue": job.salary_min,
+                        "maxValue": job.salary_max,
+                        "unitText": "MONTH"
+                    }
+                };
+            } else if (job.salary) {
+                structuredData.baseSalary = {
+                    "@type": "MonetaryAmount",
+                    "currency": "USD",
+                    "value": {
+                        "@type": "QuantitativeValue",
+                        "value": job.salary,
+                        "unitText": "MONTH"
+                    }
+                };
+            }
+
+            // Add validThrough if available
+            if (job.expires_at) {
+                const validThroughDate = new Date(job.expires_at);
+                structuredData.validThrough = validThroughDate.toISOString();
+            }
+
+            // Add directApply if application URL or email exists
+            if (job.application_url || job.application_email) {
+                structuredData.directApply = true;
+            }
+
+            // Create and inject script tag
+            const script = document.createElement('script');
+            script.id = 'job-posting-structured-data';
+            script.type = 'application/ld+json';
+            script.textContent = JSON.stringify(structuredData, null, 2);
+            document.head.appendChild(script);
         }
 
         // Load job details on page load
