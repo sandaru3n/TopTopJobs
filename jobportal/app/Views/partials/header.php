@@ -110,9 +110,15 @@
             
             <!-- Mobile Menu Button -->
             <div class="flex md:hidden items-center gap-2">
-                <a href="/post-job" class="flex items-center justify-center size-10 rounded-full transition-colors" style="background-color: #2bee79; color: #0e2016;" onmouseover="this.style.backgroundColor='#25d46a'" onmouseout="this.style.backgroundColor='#2bee79'">
-                    <span class="material-symbols-outlined text-xl">add</span>
-                </a>
+                <?php if (!session()->get('is_logged_in')): ?>
+                    <!-- Guest buttons on mobile -->
+                    <a href="<?= base_url('login') ?>" class="flex min-w-[70px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-3 text-xs font-bold leading-normal tracking-[0.015em] transition-colors" style="background-color: white; color: #000000; border: 2px solid #000000;" onmouseover="this.style.backgroundColor='#f5f5f5'" onmouseout="this.style.backgroundColor='white'">
+                        <span class="truncate">Log In</span>
+                    </a>
+                    <a href="<?= base_url('signup') ?>" class="flex min-w-[70px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 px-3 text-xs font-bold leading-normal tracking-[0.015em] transition-colors" style="background-color: #000000; color: white;" onmouseover="this.style.backgroundColor='#333333'" onmouseout="this.style.backgroundColor='#000000'">
+                        <span class="truncate">Sign Up</span>
+                    </a>
+                <?php endif; ?>
                 <button 
                     id="mobileMenuBtn"
                     type="button"
@@ -169,6 +175,21 @@
             >
                 <span class="material-symbols-outlined text-xl">close</span>
             </button>
+        </div>
+        
+        <!-- Post a Job Button (Top of Menu) -->
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+            <a 
+                href="/post-job" 
+                class="flex items-center justify-center w-full rounded-full h-12 transition-colors font-bold text-sm"
+                style="background-color: #2bee79; color: #0e2016;"
+                onmouseover="this.style.backgroundColor='#25d46a'"
+                onmouseout="this.style.backgroundColor='#2bee79'"
+                onclick="closeMobileMenu()"
+            >
+                <span class="material-symbols-outlined text-xl mr-2">add</span>
+                <span>Post a Job</span>
+            </a>
         </div>
         
         <!-- Mobile Menu Content -->
@@ -266,28 +287,6 @@
                     >
                         <span class="material-symbols-outlined text-xl">search</span>
                         <span>Browse Jobs</span>
-                    </a>
-                    <a 
-                        href="<?= base_url('login') ?>" 
-                        class="flex items-center gap-3 px-4 py-3 rounded-full transition-colors font-bold"
-                        style="background-color: white; color: #000000; border: 2px solid #000000;"
-                        onmouseover="this.style.backgroundColor='#f5f5f5'"
-                        onmouseout="this.style.backgroundColor='white'"
-                        onclick="closeMobileMenu()"
-                    >
-                        <span class="material-symbols-outlined text-xl">login</span>
-                        <span>Log In</span>
-                    </a>
-                    <a 
-                        href="<?= base_url('signup') ?>" 
-                        class="flex items-center gap-3 px-4 py-3 rounded-full transition-colors font-bold"
-                        style="background-color: #000000; color: white;"
-                        onmouseover="this.style.backgroundColor='#333333'"
-                        onmouseout="this.style.backgroundColor='#000000'"
-                        onclick="closeMobileMenu()"
-                    >
-                        <span class="material-symbols-outlined text-xl">person_add</span>
-                        <span>Sign Up</span>
                     </a>
                 </div>
             <?php endif; ?>
