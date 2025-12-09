@@ -647,62 +647,114 @@ class JobSearch {
         const distance = job.distance ? `${job.distance} km away` : '';
         const skills = (job.skills || []).slice(0, 3);
         const postedTime = this.getTimeAgo(job.posted_at);
+        const category = job.category || 'Other';
+        const categoryColor = this.getCategoryColor(category);
 
         return `
-            <div class="job-card ${this.viewMode}-view" data-job-id="${job.id}">
-                <div class="job-card-header">
-                    <div class="job-card-company">
-                        <img src="${job.company_logo || 'https://via.placeholder.com/48'}" 
-                             alt="${job.company_name} logo" 
-                             class="job-card-company-logo"
-                             onerror="this.src='https://via.placeholder.com/48'">
-                        <div>
-                            <h3 class="job-card-title">${this.truncateText(job.title, 40)}</h3>
-                            <p class="job-card-company-name">${job.company_name} ${job.company_rating ? `⭐ ${job.company_rating}` : ''}</p>
+            <div class="job-card-modern" data-job-id="${job.id}">
+                <div class="job-card-content">
+                    <div class="job-card-top">
+                        <div class="job-card-header-modern">
+                            <div class="job-card-logo-wrapper">
+                                <img src="${job.company_logo || 'https://via.placeholder.com/64'}" 
+                                     alt="${job.company_name} logo" 
+                                     class="job-card-logo"
+                                     onerror="this.src='https://via.placeholder.com/64'">
+                            </div>
+                            <div class="job-card-title-section">
+                                <div class="job-card-title-row">
+                                    <h3 class="job-card-title-modern">${this.escapeHtml(job.title)}</h3>
+                                    ${job.badge ? `<span class="job-card-badge-modern">${job.badge}</span>` : ''}
+                                </div>
+                                <p class="job-card-company-modern">${this.escapeHtml(job.company_name)}${job.company_rating ? ` <span class="job-rating">⭐ ${job.company_rating}</span>` : ''}</p>
+                            </div>
                         </div>
                     </div>
-                    ${job.badge ? `<span class="job-card-badge ${job.badge_class || 'bg-green-100 text-green-800'}">${job.badge}</span>` : ''}
-                </div>
-                <p class="job-card-description">${job.description || ''}</p>
-                <div class="job-card-skills">
-                    ${skills.map(skill => `<span class="job-card-skill">${skill}</span>`).join('')}
-                </div>
-                <div class="job-card-footer">
-                    <div class="job-card-meta">
-                        <span>📍 ${job.location}</span>
-                        ${distance ? `<span>${distance}</span>` : ''}
-                        <span>💰 ${salary}</span>
-                        <span>🕒 ${postedTime}</span>
+                    
+                    <div class="job-card-body">
+                        <div class="job-card-category">
+                            <span class="job-category-tag ${categoryColor}">${this.escapeHtml(category)}</span>
+                        </div>
+                        <p class="job-card-description-modern">${this.escapeHtml(job.description || 'No description available.')}</p>
+                        ${skills.length > 0 ? `
+                        <div class="job-card-skills-modern">
+                            ${skills.map(skill => `<span class="job-skill-tag">${this.escapeHtml(skill)}</span>`).join('')}
+                        </div>
+                        ` : ''}
                     </div>
-                    <div class="job-card-actions">
-                        <button class="job-card-action-btn ${isSaved ? 'saved' : ''}" 
-                                onclick="jobSearch.toggleSaveJob(${job.id})"
-                                aria-label="Save job">
-                            <span class="material-symbols-outlined">${isSaved ? 'bookmark' : 'bookmark_border'}</span>
-                        </button>
-                        <button class="job-card-action-btn apply" 
-                                onclick="jobSearch.applyToJob(${job.id})"
-                                aria-label="Apply">
-                            <span class="material-symbols-outlined">send</span>
-                        </button>
-                        <button class="job-card-action-btn" 
-                                onclick="jobSearch.shareJob(${job.id})"
-                                aria-label="Share">
-                            <span class="material-symbols-outlined">share</span>
-                        </button>
+                    
+                    <div class="job-card-footer-modern">
+                        <div class="job-card-info">
+                            <div class="job-info-item">
+                                <span class="material-symbols-outlined job-info-icon">location_on</span>
+                                <span class="job-info-text">${this.escapeHtml(job.location)}</span>
+                            </div>
+                            <div class="job-info-item">
+                                <span class="material-symbols-outlined job-info-icon">attach_money</span>
+                                <span class="job-info-text">${salary}</span>
+                            </div>
+                            <div class="job-info-item">
+                                <span class="material-symbols-outlined job-info-icon">schedule</span>
+                                <span class="job-info-text">${postedTime}</span>
+                            </div>
+                        </div>
+                        <div class="job-card-actions-modern">
+                            <button class="job-action-btn save-btn ${isSaved ? 'saved' : ''}" 
+                                    onclick="event.stopPropagation(); jobSearch.toggleSaveJob(${job.id})"
+                                    aria-label="Save job"
+                                    title="Save job">
+                                <span class="material-symbols-outlined">${isSaved ? 'bookmark' : 'bookmark_border'}</span>
+                            </button>
+                            <button class="job-action-btn apply-btn" 
+                                    onclick="event.stopPropagation(); jobSearch.applyToJob(${job.id})"
+                                    aria-label="Apply"
+                                    title="Apply">
+                                <span class="material-symbols-outlined">send</span>
+                            </button>
+                            <button class="job-action-btn share-btn" 
+                                    onclick="event.stopPropagation(); jobSearch.shareJob(${job.id})"
+                                    aria-label="Share"
+                                    title="Share">
+                                <span class="material-symbols-outlined">share</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         `;
     }
+    
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    getCategoryColor(category) {
+        const colorMap = {
+            'Cashier': 'category-blue',
+            'Data Entry': 'category-purple',
+            'IT/Software': 'category-indigo',
+            'Marketing': 'category-pink',
+            'Sales': 'category-orange',
+            'Customer Service': 'category-teal',
+            'Design': 'category-rose',
+            'Engineering': 'category-cyan',
+            'Finance': 'category-emerald',
+            'Healthcare': 'category-red',
+            'Education': 'category-amber',
+            'Other': 'category-gray'
+        };
+        return colorMap[category] || 'category-gray';
+    }
 
     setupJobCardActions() {
         // Add click handler for job card to navigate to job details page
-        document.querySelectorAll('.job-card').forEach(card => {
+        document.querySelectorAll('.job-card-modern').forEach(card => {
             card.style.cursor = 'pointer';
             card.addEventListener('click', (e) => {
                 // Don't navigate if clicking on action buttons
-                if (e.target.closest('.job-card-actions')) {
+                if (e.target.closest('.job-card-actions-modern')) {
                     return;
                 }
                 const jobId = card.dataset.jobId;

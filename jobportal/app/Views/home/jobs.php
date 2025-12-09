@@ -429,7 +429,7 @@
                 </div>
 
                 <!-- Job Listings Container -->
-                <div id="jobListings" class="grid grid-cols-1 gap-4 md:gap-6">
+                <div id="jobListings" class="w-full">
                     <!-- Skeleton loaders -->
                     <div class="skeleton-loader">
                         <div class="skeleton-header"></div>
