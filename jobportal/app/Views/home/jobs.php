@@ -203,15 +203,19 @@
             </aside>
 
             <!-- Mobile Filter Sheet -->
-            <div id="mobileFilterSheet" class="fixed inset-x-0 bottom-0 bg-white dark:bg-gray-800 rounded-t-3xl shadow-2xl transform translate-y-full transition-transform duration-300 z-50 max-h-[80vh] overflow-y-auto">
-                <div class="p-6">
-                    <div class="flex items-center justify-between mb-6">
+            <div id="mobileFilterSheet" class="fixed inset-x-0 bottom-0 bg-white dark:bg-gray-800 rounded-t-3xl shadow-2xl transform translate-y-full transition-transform duration-300 z-50 max-h-[80vh] flex flex-col">
+                <!-- Sticky Header -->
+                <div class="sticky top-0 bg-white dark:bg-gray-800 z-10 px-6 pt-6 pb-4 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex items-center justify-between">
                         <h2 class="text-xl font-bold text-[#111318] dark:text-white">All Filters</h2>
                         <button id="closeMobileFilters" class="flex items-center justify-center size-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors">
                             <span class="material-symbols-outlined text-lg">close</span>
                         </button>
                     </div>
-                    
+                </div>
+                
+                <!-- Scrollable Content -->
+                <div class="flex-1 overflow-y-auto px-6 py-4">
                     <!-- Job Type -->
                     <div class="mb-6 filter-section">
                         <button class="filter-section-header w-full flex items-center justify-between py-3 cursor-pointer" onclick="toggleFilterSection(this)">
@@ -391,9 +395,11 @@
                             </button>
                         </div>
                     </div>
-
-                    <!-- Action Buttons -->
-                    <div class="flex gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                </div>
+                
+                <!-- Sticky Footer -->
+                <div class="sticky bottom-0 bg-white dark:bg-gray-800 z-10 px-6 pt-4 pb-6 border-t border-gray-200 dark:border-gray-700">
+                    <div class="flex gap-3">
                         <button id="clearFiltersMobile" class="w-full py-2.5 px-4 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors cursor-pointer">
                             Clear All Filters
                         </button>
