@@ -1,4 +1,14 @@
 <?= view('partials/head', ['title' => 'Job Portal Home Page - JobFind']) ?>
+<style>
+    /* Ensure line-clamp-3 works for job descriptions */
+    .line-clamp-3 {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+</style>
 <body class="font-display bg-background-light dark:bg-background-dark text-[#111318] dark:text-gray-200">
     <div class="relative flex min-h-screen w-full flex-col">
         <?= view('partials/header') ?>
@@ -123,6 +133,28 @@
             }
         }
 
+        // Get category color class
+        function getCategoryColor(category) {
+            if (!category) return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300';
+            
+            const colorMap = {
+                'Cashier': 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300',
+                'Data Entry': 'bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300',
+                'IT/Software': 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-300',
+                'Marketing': 'bg-pink-100 dark:bg-pink-900/50 text-pink-800 dark:text-pink-300',
+                'Sales': 'bg-orange-100 dark:bg-orange-900/50 text-orange-800 dark:text-orange-300',
+                'Customer Service': 'bg-teal-100 dark:bg-teal-900/50 text-teal-800 dark:text-teal-300',
+                'Design': 'bg-rose-100 dark:bg-rose-900/50 text-rose-800 dark:text-rose-300',
+                'Engineering': 'bg-cyan-100 dark:bg-cyan-900/50 text-cyan-800 dark:text-cyan-300',
+                'Finance': 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300',
+                'Healthcare': 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300',
+                'Education': 'bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300',
+                'Other': 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+            };
+            
+            return colorMap[category] || 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300';
+        }
+
         function renderJobs(jobs) {
             const container = document.getElementById('jobGrid');
             container.innerHTML = jobs.map(job => `
@@ -137,7 +169,10 @@
                         </div>
                         ${job.badge ? `<span class="inline-flex items-center rounded-full ${job.badge_class || 'bg-green-100 dark:bg-green-900/50'} px-2.5 py-0.5 text-xs font-medium ${job.badge === 'New' ? 'text-green-800 dark:text-green-300' : 'text-orange-800 dark:text-orange-300'}">${job.badge}</span>` : ''}
                     </div>
-                    <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed">${job.description || ''}</p>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="inline-flex items-center rounded-full ${getCategoryColor(job.category || 'Other')} px-3 py-1 text-xs font-medium">${job.category || 'Other'}</span>
+                    </div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-3">${job.description || ''}</p>
                     <div class="flex flex-wrap gap-2">
                         ${(job.skills || []).slice(0, 3).map(skill => `
                             <span class="inline-flex items-center rounded-full bg-background-light dark:bg-gray-700 px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-300">${skill}</span>

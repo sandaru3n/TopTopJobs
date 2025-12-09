@@ -100,7 +100,7 @@ if ($jobId || $jobSlug) {
         if ($jobId) {
             // Find by ID
             $stmt = $conn->prepare("
-                SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website
+                SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website, c.industry as company_industry
                 FROM jobs j
                 INNER JOIN companies c ON j.company_id = c.id
                 WHERE j.id = ? AND j.status = 'active'
@@ -115,7 +115,7 @@ if ($jobId || $jobSlug) {
             if (preg_match('/-(\d+)$/', $jobSlug, $matches)) {
                 $extractedId = (int)$matches[1];
                 $stmt = $conn->prepare("
-                    SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website
+                    SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website, c.industry as company_industry
                     FROM jobs j
                     INNER JOIN companies c ON j.company_id = c.id
                     WHERE j.id = ? AND j.status = 'active'
@@ -128,7 +128,7 @@ if ($jobId || $jobSlug) {
             } else {
                 // Try to match by slug directly
                 $stmt = $conn->prepare("
-                    SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website
+                    SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website, c.industry as company_industry
                     FROM jobs j
                     INNER JOIN companies c ON j.company_id = c.id
                     WHERE j.slug = ? AND j.status = 'active'
@@ -367,7 +367,8 @@ function getJobsFromDatabase() {
                 c.logo as company_logo,
                 c.rating as company_rating,
                 c.description as company_description,
-                c.website as company_website
+                c.website as company_website,
+                c.industry as company_industry
             FROM jobs j
             INNER JOIN companies c ON j.company_id = c.id
             WHERE j.status = 'active'
@@ -418,14 +419,34 @@ function formatJobData($job) {
         $badgeClass = 'bg-orange-100 text-orange-800';
     }
     
-    // Parse skills
+    // Parse skills and extract category
     $skills = [];
+    $category = null;
+    $categoryList = ['Cashier', 'Data Entry', 'IT/Software', 'Marketing', 'Sales', 'Customer Service', 'Design', 'Engineering', 'Finance', 'Healthcare', 'Education', 'Other'];
+    
     if (!empty($job['skills_required'])) {
         if (is_string($job['skills_required'])) {
-            $skills = array_map('trim', explode(',', $job['skills_required']));
+            $parsed = array_map('trim', explode(',', $job['skills_required']));
+            // Check if first item is a category
+            if (!empty($parsed) && in_array($parsed[0], $categoryList)) {
+                $category = $parsed[0];
+                $skills = array_slice($parsed, 1); // Rest are skills
+            } else {
+                $skills = $parsed;
+            }
         } else {
             $skills = $job['skills_required'];
         }
+    }
+    
+    // Also check company industry as fallback for category
+    if (!$category && !empty($job['company_industry'])) {
+        $category = $job['company_industry'];
+    }
+    
+    // Default to "Other" if no category found
+    if (!$category) {
+        $category = 'Other';
     }
     
     // Get description (remove application info if present)
@@ -452,6 +473,7 @@ function formatJobData($job) {
         'salary_max' => !empty($job['salary_max']) ? (float)$job['salary_max'] : null,
         'is_remote' => !empty($job['is_remote']) ? (int)$job['is_remote'] : 0,
         'skills' => $skills,
+        'category' => $category,
         'description' => $description,
         'responsibilities' => !empty($job['responsibilities']) ? (is_string($job['responsibilities']) ? array_filter(array_map('trim', explode("\n", $job['responsibilities']))) : $job['responsibilities']) : null,
         'requirements' => !empty($job['requirements']) ? (is_string($job['requirements']) ? array_filter(array_map('trim', explode("\n", $job['requirements']))) : $job['requirements']) : null,
