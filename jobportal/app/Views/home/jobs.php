@@ -501,27 +501,7 @@
             });
         });
         
-        // Handle filter pill button clicks
-        document.addEventListener('DOMContentLoaded', () => {
-            document.querySelectorAll('.filter-pill-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    // Toggle active state
-                    const isActive = this.classList.contains('active');
-                    
-                    if (isActive) {
-                        // Deselect
-                        this.classList.remove('active');
-                        this.classList.remove('bg-gray-200', 'dark:bg-gray-600');
-                        this.classList.add('bg-white', 'dark:bg-gray-700');
-                    } else {
-                        // Select
-                        this.classList.add('active');
-                        this.classList.remove('bg-white', 'dark:bg-gray-700');
-                        this.classList.add('bg-gray-200', 'dark:bg-gray-600');
-                    }
-                });
-            });
-        });
+        // Note: Filter pill button clicks are handled by jobs.js
     </script>
     <script src="<?= base_url('js/jobs.js') ?>"></script>
 </body>

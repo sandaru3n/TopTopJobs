@@ -474,13 +474,13 @@ if ($jobId || $jobSlug) {
 
 $query = $_GET['q'] ?? '';
 $location = $_GET['loc'] ?? '';
-$jobTypes = isset($_GET['job_type']) ? explode(',', $_GET['job_type']) : [];
-$experiences = isset($_GET['experience']) ? explode(',', $_GET['experience']) : [];
+$jobTypes = isset($_GET['job_type']) && !empty($_GET['job_type']) ? array_filter(array_map('trim', explode(',', $_GET['job_type']))) : [];
+$experiences = isset($_GET['experience']) && !empty($_GET['experience']) ? array_filter(array_map('trim', explode(',', $_GET['experience']))) : [];
 $salaryMin = isset($_GET['sal_min']) ? (int)$_GET['sal_min'] : 0;
-$datePosted = isset($_GET['date_posted']) ? explode(',', $_GET['date_posted']) : [];
+$datePosted = isset($_GET['date_posted']) && !empty($_GET['date_posted']) ? array_filter(array_map('trim', explode(',', $_GET['date_posted']))) : [];
 $company = $_GET['company'] ?? '';
-$skills = isset($_GET['skills']) ? explode(',', $_GET['skills']) : [];
-$categories = isset($_GET['category']) ? explode(',', $_GET['category']) : [];
+$skills = isset($_GET['skills']) && !empty($_GET['skills']) ? array_filter(array_map('trim', explode(',', $_GET['skills']))) : [];
+$categories = isset($_GET['category']) && !empty($_GET['category']) ? array_filter(array_map('trim', explode(',', $_GET['category']))) : [];
 $userLat = isset($_GET['lat']) ? (float)$_GET['lat'] : null;
 $userLng = isset($_GET['lng']) ? (float)$_GET['lng'] : null;
 $sort = $_GET['sort'] ?? 'relevant';
@@ -680,6 +680,20 @@ function getJobsFromDatabase() {
 }
 
 /**
+ * Map database experience levels to frontend filter values
+ */
+function mapExperienceLevel($dbLevel) {
+    $mapping = [
+        'fresher' => 'fresher',
+        'junior' => 'junior',
+        'mid' => 'junior',      // Map mid to junior for frontend
+        'senior' => 'senior',
+        'lead' => 'senior'       // Map lead to senior for frontend
+    ];
+    return $mapping[$dbLevel] ?? $dbLevel;
+}
+
+/**
  * Format job data for API response
  */
 function formatJobData($job) {
@@ -767,6 +781,10 @@ function formatJobData($job) {
         }
     }
     
+    // Map experience level for frontend compatibility
+    $experienceLevel = $job['experience_level'] ?? '';
+    $mappedExperience = mapExperienceLevel($experienceLevel);
+    
     return [
         'id' => (int)$job['id'],
         'title' => $job['title'],
@@ -778,8 +796,8 @@ function formatJobData($job) {
         'latitude' => !empty($job['latitude']) ? (float)$job['latitude'] : null,
         'longitude' => !empty($job['longitude']) ? (float)$job['longitude'] : null,
         'job_type' => $job['job_type'],
-        'experience' => $job['experience_level'],
-        'experience_level' => $job['experience_level'],
+        'experience' => $mappedExperience,  // Use mapped experience for frontend filters
+        'experience_level' => $experienceLevel,  // Keep original for reference
         'salary' => $salary,
         'salary_min' => !empty($job['salary_min']) ? (float)$job['salary_min'] : null,
         'salary_max' => !empty($job['salary_max']) ? (float)$job['salary_max'] : null,
@@ -810,12 +828,12 @@ function filterJobs($jobs, $filters) {
 
     // Full-text search on title, company, skills
     if (!empty($filters['query'])) {
-        $query = strtolower($filters['query']);
+        $query = strtolower(trim($filters['query']));
         $filtered = array_filter($filtered, function($job) use ($query) {
             $searchText = strtolower(
-                $job['title'] . ' ' . 
-                $job['company_name'] . ' ' . 
-                implode(' ', $job['skills'])
+                ($job['title'] ?? '') . ' ' . 
+                ($job['company_name'] ?? '') . ' ' . 
+                implode(' ', $job['skills'] ?? [])
             );
             return strpos($searchText, $query) !== false;
         });
@@ -823,31 +841,62 @@ function filterJobs($jobs, $filters) {
 
     // Location filter
     if (!empty($filters['location'])) {
-        $location = strtolower($filters['location']);
+        $location = strtolower(trim($filters['location']));
         $filtered = array_filter($filtered, function($job) use ($location) {
-            return strpos(strtolower($job['location']), $location) !== false || 
-                   ($location === 'remote' && $job['job_type'] === 'remote');
+            // Check if location matches the job location string
+            $locationMatch = strpos(strtolower($job['location'] ?? ''), $location) !== false;
+            
+            // Check if it's a remote job (either job_type is 'remote' or is_remote flag is set)
+            $remoteMatch = ($location === 'remote' && (
+                ($job['job_type'] ?? '') === 'remote' || 
+                (!empty($job['is_remote']) && $job['is_remote'] == 1)
+            ));
+            
+            return $locationMatch || $remoteMatch;
         });
     }
 
     // Job type filter
     if (!empty($filters['job_types'])) {
         $filtered = array_filter($filtered, function($job) use ($filters) {
-            return in_array($job['job_type'], $filters['job_types']);
+            $jobType = $job['job_type'] ?? '';
+            $isRemote = (!empty($job['is_remote']) && $job['is_remote'] == 1);
+            
+            // Check each filter type
+            foreach ($filters['job_types'] as $filterType) {
+                // Handle remote filter specially - check both job_type and is_remote flag
+                if ($filterType === 'remote') {
+                    if ($jobType === 'remote' || $isRemote) {
+                        return true;
+                    }
+                } else {
+                    // For other job types, check exact match
+                    if ($jobType === $filterType) {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
         });
     }
 
     // Experience filter
     if (!empty($filters['experiences'])) {
         $filtered = array_filter($filtered, function($job) use ($filters) {
-            return in_array($job['experience'], $filters['experiences']);
+            $jobExperience = $job['experience'] ?? $job['experience_level'] ?? '';
+            // Map database experience level to frontend filter value
+            $mappedExperience = mapExperienceLevel($jobExperience);
+            return in_array($mappedExperience, $filters['experiences']);
         });
     }
 
     // Salary filter
     if ($filters['salary_min'] > 0) {
         $filtered = array_filter($filtered, function($job) use ($filters) {
-            return $job['salary'] >= $filters['salary_min'];
+            // Check both salary and salary_min fields
+            $jobSalary = $job['salary'] ?? $job['salary_min'] ?? 0;
+            return $jobSalary >= $filters['salary_min'];
         });
     }
 
@@ -855,7 +904,15 @@ function filterJobs($jobs, $filters) {
     if (!empty($filters['date_posted'])) {
         $now = time();
         $filtered = array_filter($filtered, function($job) use ($filters, $now) {
+            if (empty($job['posted_at'])) {
+                return false;
+            }
+            
             $postedTime = strtotime($job['posted_at']);
+            if ($postedTime === false) {
+                return false;
+            }
+            
             $diff = $now - $postedTime;
             
             foreach ($filters['date_posted'] as $filter) {
@@ -869,41 +926,25 @@ function filterJobs($jobs, $filters) {
 
     // Company filter
     if (!empty($filters['company'])) {
-        $company = strtolower($filters['company']);
+        $company = strtolower(trim($filters['company']));
         $filtered = array_filter($filtered, function($job) use ($company) {
-            return strpos(strtolower($job['company_name']), $company) !== false;
+            return strpos(strtolower($job['company_name'] ?? ''), $company) !== false;
         });
     }
 
     // Skills filter
     if (!empty($filters['skills'])) {
         $filtered = array_filter($filtered, function($job) use ($filters) {
-            $jobSkills = array_map('strtolower', $job['skills']);
+            $jobSkills = array_map('strtolower', $job['skills'] ?? []);
             $filterSkills = array_map('strtolower', $filters['skills']);
             return !empty(array_intersect($jobSkills, $filterSkills));
         });
     }
 
-    // Category filter
+    // Category filter - use the category field directly from formatted data
     if (!empty($filters['categories'])) {
         $filtered = array_filter($filtered, function($job) use ($filters) {
-            // Get category from job (extracted from skills or company_industry)
-            $categoryList = ['Cashier', 'Data Entry', 'IT/Software', 'Marketing', 'Sales', 'Customer Service', 'Design', 'Engineering', 'Finance', 'Healthcare', 'Education', 'Other'];
-            $jobCategory = 'Other';
-            
-            // Try to extract from skills_required
-            if (!empty($job['skills_required'])) {
-                $parsed = is_string($job['skills_required']) ? explode(',', $job['skills_required']) : $job['skills_required'];
-                if (!empty($parsed) && in_array($parsed[0], $categoryList)) {
-                    $jobCategory = $parsed[0];
-                }
-            }
-            
-            // Fallback to company_industry
-            if ($jobCategory === 'Other' && !empty($job['company_industry'])) {
-                $jobCategory = $job['company_industry'];
-            }
-            
+            $jobCategory = $job['category'] ?? 'Other';
             return in_array($jobCategory, $filters['categories']);
         });
     }
