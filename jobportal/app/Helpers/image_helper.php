@@ -39,11 +39,6 @@ if (!function_exists('fix_image_url')) {
             return null;
         }
         
-        // Remove /api/ prefix from uploads paths FIRST (fixes old cached URLs)
-        if (stripos($url, '/api/uploads/') !== false) {
-            $url = str_ireplace('/api/uploads/', '/uploads/', $url);
-        }
-        
         // Determine current domain and protocol
         $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || 
                    (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ||
@@ -53,16 +48,56 @@ if (!function_exists('fix_image_url')) {
         $protocol = $isHttps ? 'https' : 'http';
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
         
-        // PRIORITY 1: If it's a relative path (starts with /), convert to absolute URL
+        // PRIORITY 1: If it's already a valid absolute URL (http/https), handle it FIRST
+        // This prevents duplication when URL already contains full path
+        if (stripos($url, 'http://') === 0 || stripos($url, 'https://') === 0) {
+            // Remove /api/ prefix from uploads if present
+            if (stripos($url, '/api/uploads/') !== false) {
+                $url = str_ireplace('/api/uploads/', '/uploads/', $url);
+            }
+            // Convert HTTP to HTTPS to prevent mixed content warnings on production
+            if ($isHttps && stripos($url, 'http://') === 0) {
+                $url = str_replace('http://', 'https://', $url);
+            }
+            // Check if URL already contains the current host (prevent duplication)
+            if (stripos($url, $host) !== false) {
+                // URL is already correct, return as-is
+                return $url;
+            }
+            // If it's an absolute URL but different domain, check if it needs conversion
+            // (e.g., localhost URL on production server)
+            if (stripos($url, 'localhost') !== false || 
+                stripos($url, '127.0.0.1') !== false || 
+                stripos($url, 'toptopjobs.local') !== false ||
+                stripos($url, '.local/') !== false) {
+                // Extract the path from the URL
+                $parsed = parse_url($url);
+                $path = isset($parsed['path']) ? $parsed['path'] : $url;
+                
+                // Remove domain parts and get just the path
+                $path = preg_replace('#https?://[^/]+/?#i', '', $path);
+                $path = ltrim($path, '/');
+                
+                // Rebuild URL with current domain
+                return $protocol . '://' . $host . '/' . $path;
+            }
+            // Return the absolute URL as-is (it's already correct)
+            return $url;
+        }
+        
+        // PRIORITY 2: If it's a relative path (starts with /), convert to absolute URL
         // This handles: /uploads/company_logos/file.png
-        // NO basePath needed - images are served directly from root
         if (strpos($url, '/') === 0) {
             $path = ltrim($url, '/');
-            // Simple URL: protocol://host/path (no basePath for uploads)
+            // Remove /api/ prefix if present
+            if (stripos($path, 'api/uploads/') === 0) {
+                $path = str_ireplace('api/uploads/', 'uploads/', $path);
+            }
+            // Simple URL: protocol://host/path
             return $protocol . '://' . $host . '/' . $path;
         }
         
-        // PRIORITY 2: If it looks like a path without leading slash, add it and convert
+        // PRIORITY 3: If it looks like a path without leading slash, add it and convert
         // This handles: uploads/company_logos/file.png
         if (stripos($url, 'uploads/') === 0 || stripos($url, 'company_logos/') !== false || stripos($url, 'profile_pictures/') !== false) {
             // Ensure it starts with uploads/
@@ -73,11 +108,12 @@ if (!function_exists('fix_image_url')) {
                     $url = 'uploads/' . $url;
                 }
             }
-            // Simple URL: protocol://host/path (no basePath for uploads)
+            // Simple URL: protocol://host/path
             return $protocol . '://' . $host . '/' . $url;
         }
         
-        // PRIORITY 3: If it contains localhost, 127.0.0.1, or toptopjobs.local, convert to current domain
+        // PRIORITY 4: If it contains localhost, 127.0.0.1, or toptopjobs.local (but not as absolute URL)
+        // This handles edge cases where URL might not start with http:// but contains localhost
         if (stripos($url, 'localhost') !== false || 
             stripos($url, '127.0.0.1') !== false || 
             stripos($url, 'toptopjobs.local') !== false ||
@@ -90,21 +126,8 @@ if (!function_exists('fix_image_url')) {
             $path = preg_replace('#https?://[^/]+/?#i', '', $path);
             $path = ltrim($path, '/');
             
-            // Rebuild URL with current domain (no basePath for uploads)
+            // Rebuild URL with current domain
             return $protocol . '://' . $host . '/' . $path;
-        }
-        
-        // PRIORITY 4: If it's a valid absolute URL (http/https), fix /api/uploads/ and convert HTTP to HTTPS
-        if ((stripos($url, 'http://') === 0 || stripos($url, 'https://') === 0)) {
-            // Remove /api/ prefix from uploads if present
-            if (stripos($url, '/api/uploads/') !== false) {
-                $url = str_ireplace('/api/uploads/', '/uploads/', $url);
-            }
-            // Convert HTTP to HTTPS to prevent mixed content warnings on production
-            if ($isHttps && stripos($url, 'http://') === 0) {
-                $url = str_replace('http://', 'https://', $url);
-            }
-            return $url;
         }
         
         // If we can't determine, return null (not placeholder) so frontend can handle it
