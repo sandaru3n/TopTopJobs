@@ -185,6 +185,65 @@
     color: #9ca3af;
 }
 
+/* Mobile company info - single line with company, location, posted time */
+.job-card-company-location-mobile {
+    display: none;
+    font-size: 0.6875rem; /* 11px */
+    margin: 0.375rem 0 0 0;
+    line-height: 1.5;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dark .job-card-company-location-mobile {
+    color: #9ca3af;
+}
+
+.mobile-company-name {
+    display: inline;
+    font-weight: 500;
+    color: #4b5563;
+    letter-spacing: -0.01em;
+}
+
+.dark .mobile-company-name {
+    color: #d1d5db;
+    font-weight: 500;
+}
+
+.mobile-location {
+    display: inline;
+    color: #6b7280;
+    font-weight: 400;
+}
+
+.dark .mobile-location {
+    color: #9ca3af;
+}
+
+.mobile-posted {
+    display: inline;
+    color: #6b7280;
+    font-weight: 400;
+}
+
+.dark .mobile-posted {
+    color: #9ca3af;
+}
+
+.mobile-separator {
+    display: inline-block;
+    margin: 0 0.5rem;
+    color: #cbd5e1;
+    font-weight: 300;
+    vertical-align: middle;
+}
+
+.dark .mobile-separator {
+    color: #4b5563;
+}
+
 .job-rating {
     color: #f59e0b;
     font-weight: 500;
@@ -403,6 +462,40 @@
     
     .job-card-title-modern {
         font-size: 1rem;
+    }
+    
+    /* Hide desktop company name on mobile */
+    .desktop-company {
+        display: none;
+    }
+    
+    /* Show mobile company info on single line */
+    .job-card-company-location-mobile {
+        display: flex;
+        align-items: center;
+        flex-wrap: nowrap;
+        gap: 0.375rem;
+        font-size: 0.6875rem; /* 11px - smaller text */
+        margin-top: 0.375rem;
+        overflow: hidden;
+    }
+    
+    .mobile-company-name,
+    .mobile-location,
+    .mobile-posted {
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+    
+    .mobile-separator {
+        flex-shrink: 0;
+        margin: 0;
+    }
+    
+    /* Hide location and posted time from footer on mobile since it's now in header */
+    .job-info-item.job-info-location,
+    .job-info-item.job-info-posted {
+        display: none;
     }
     
     .job-card-body {
@@ -1041,6 +1134,36 @@ input[type="range"]::-moz-range-thumb {
     border-color: rgba(16, 185, 129, 0.6) !important;
     color: #d1fae5 !important;
     font-weight: 600;
+}
+
+/* Responsibilities and Requirements List Styling */
+#responsibilitiesList,
+#requirementsList {
+    color: #111318;
+}
+
+.dark #responsibilitiesList,
+.dark #requirementsList {
+    color: #d1d5db;
+}
+
+/* Ensure bullet points are black */
+#responsibilitiesList li::marker,
+#requirementsList li::marker {
+    color: #111318;
+}
+
+.dark #responsibilitiesList li::marker,
+.dark #requirementsList li::marker {
+    color: #d1d5db;
+}
+
+.list-item-black li::marker {
+    color: #111318 !important;
+}
+
+.dark .list-item-black li::marker {
+    color: #d1d5db !important;
 }
 
 /* Print Styles */

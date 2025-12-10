@@ -81,13 +81,13 @@
                                 <!-- Responsibilities -->
                                 <div class="mb-6 hidden" id="responsibilitiesSection">
                                     <h3 class="text-[#111318] dark:text-white text-lg font-bold leading-normal mb-4">Responsibilities</h3>
-                                    <ul id="responsibilitiesList" class="text-[#4c9a6b] dark:text-gray-400 text-sm font-normal leading-relaxed list-disc pl-5 space-y-2"></ul>
+                                    <ul id="responsibilitiesList" class="text-[#111318] dark:text-gray-300 text-sm font-normal leading-relaxed list-disc pl-5 space-y-2 list-item-black"></ul>
                                 </div>
 
                                 <!-- Requirements -->
                                 <div class="mb-6 hidden" id="requirementsSection">
                                     <h3 class="text-[#111318] dark:text-white text-lg font-bold leading-normal mb-4">Requirements</h3>
-                                    <ul id="requirementsList" class="text-[#4c9a6b] dark:text-gray-400 text-sm font-normal leading-relaxed list-disc pl-5 space-y-2"></ul>
+                                    <ul id="requirementsList" class="text-[#111318] dark:text-gray-300 text-sm font-normal leading-relaxed list-disc pl-5 space-y-2 list-item-black"></ul>
                                 </div>
 
                                 <!-- Required Skills -->

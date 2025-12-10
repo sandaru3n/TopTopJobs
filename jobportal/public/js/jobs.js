@@ -666,7 +666,14 @@ class JobSearch {
                                     <h3 class="job-card-title-modern">${this.escapeHtml(job.title)}</h3>
                                     ${job.badge ? `<span class="job-card-badge-modern">${job.badge}</span>` : ''}
                                 </div>
-                                <p class="job-card-company-modern">${this.escapeHtml(job.company_name)}${job.company_rating ? ` <span class="job-rating">⭐ ${job.company_rating}</span>` : ''}</p>
+                                <p class="job-card-company-modern desktop-company">${this.escapeHtml(job.company_name)}${job.company_rating ? ` <span class="job-rating">⭐ ${job.company_rating}</span>` : ''}</p>
+                                <div class="job-card-company-location-mobile mobile-company-info">
+                                    <span class="mobile-company-name">${this.escapeHtml(job.company_name)}</span>
+                                    <span class="mobile-separator">·</span>
+                                    <span class="mobile-location">${this.escapeHtml(job.location)}</span>
+                                    <span class="mobile-separator">·</span>
+                                    <span class="mobile-posted">Posted ${postedTime}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -685,7 +692,7 @@ class JobSearch {
                     
                     <div class="job-card-footer-modern">
                         <div class="job-card-info">
-                            <div class="job-info-item">
+                            <div class="job-info-item job-info-location">
                                 <span class="material-symbols-outlined job-info-icon">location_on</span>
                                 <span class="job-info-text">${this.escapeHtml(job.location)}</span>
                             </div>
@@ -693,7 +700,7 @@ class JobSearch {
                                 <span class="material-symbols-outlined job-info-icon">attach_money</span>
                                 <span class="job-info-text">${salary}</span>
                             </div>
-                            <div class="job-info-item">
+                            <div class="job-info-item job-info-posted">
                                 <span class="material-symbols-outlined job-info-icon">schedule</span>
                                 <span class="job-info-text">${postedTime}</span>
                             </div>
