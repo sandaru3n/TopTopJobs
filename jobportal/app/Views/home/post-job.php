@@ -245,6 +245,41 @@
                             ><?= old('description') ?></textarea>
                         </div>
 
+                        <!-- Job Image (Optional) -->
+                        <div>
+                            <label for="job_image" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
+                                Job Image (Optional)
+                            </label>
+                            <div class="flex items-center gap-4">
+                                <label for="job_image" id="jobImageUploadArea" class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                    <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                        <span class="material-symbols-outlined text-3xl text-gray-400 dark:text-gray-500 mb-2">image</span>
+                                        <p class="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                                            <span class="font-semibold">Click to upload</span> or drag and drop
+                                        </p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, GIF up to 5MB</p>
+                                    </div>
+                                    <input 
+                                        type="file" 
+                                        id="job_image" 
+                                        name="job_image" 
+                                        accept="image/png,image/jpeg,image/jpg,image/gif"
+                                        class="hidden"
+                                        onchange="handleJobImageUpload(this)"
+                                    />
+                                </label>
+                            </div>
+                            <div id="jobImagePreview" class="mt-3 hidden">
+                                <div class="flex items-center gap-3">
+                                    <img id="jobImagePreviewImg" src="" alt="Job image preview" class="h-32 w-auto object-contain rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 p-2">
+                                    <div>
+                                        <p class="text-sm font-medium text-[#111318] dark:text-white" id="jobImageFileName"></p>
+                                        <button type="button" onclick="removeJobImage()" class="mt-1 text-xs text-red-600 dark:text-red-400 hover:underline">Remove image</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Responsibilities -->
                         <div>
                             <label for="responsibilities" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
@@ -472,6 +507,46 @@
             document.getElementById('logoPreviewImg').src = '';
             document.getElementById('logoFileName').textContent = '';
         }
+
+        // Handle job image upload preview
+        function handleJobImageUpload(input) {
+            if (input.files && input.files[0]) {
+                processJobImageFile(input.files[0], input);
+            }
+        }
+        
+        function processJobImageFile(file, input) {
+            // Validate file size (5MB max)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('File size must be less than 5MB');
+                if (input) input.value = '';
+                return;
+            }
+            
+            // Validate file type
+            const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif'];
+            if (!validTypes.includes(file.type)) {
+                alert('Please upload a valid image file (PNG, JPG, GIF)');
+                if (input) input.value = '';
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('jobImagePreviewImg').src = e.target.result;
+                document.getElementById('jobImageFileName').textContent = file.name;
+                document.getElementById('jobImagePreview').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // Remove job image
+        function removeJobImage() {
+            document.getElementById('job_image').value = '';
+            document.getElementById('jobImagePreview').classList.add('hidden');
+            document.getElementById('jobImagePreviewImg').src = '';
+            document.getElementById('jobImageFileName').textContent = '';
+        }
         
         // Drag and drop functionality
         (function() {
@@ -512,6 +587,51 @@
                 if (files.length > 0) {
                     fileInput.files = files;
                     processLogoFile(files[0], fileInput);
+                }
+            }
+        })();
+
+        // Drag and drop functionality for job image
+        (function() {
+            const jobImageUploadArea = document.getElementById('jobImageUploadArea');
+            const jobImageInput = document.getElementById('job_image');
+            
+            if (jobImageUploadArea && jobImageInput) {
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    jobImageUploadArea.addEventListener(eventName, preventDefaults, false);
+                });
+                
+                function preventDefaults(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    jobImageUploadArea.addEventListener(eventName, highlight, false);
+                });
+                
+                ['dragleave', 'drop'].forEach(eventName => {
+                    jobImageUploadArea.addEventListener(eventName, unhighlight, false);
+                });
+                
+                function highlight(e) {
+                    jobImageUploadArea.classList.add('border-primary', 'bg-primary/5');
+                }
+                
+                function unhighlight(e) {
+                    jobImageUploadArea.classList.remove('border-primary', 'bg-primary/5');
+                }
+                
+                jobImageUploadArea.addEventListener('drop', handleDrop, false);
+                
+                function handleDrop(e) {
+                    const dt = e.dataTransfer;
+                    const files = dt.files;
+                    
+                    if (files.length > 0) {
+                        jobImageInput.files = files;
+                        processJobImageFile(files[0], jobImageInput);
+                    }
                 }
             }
         })();

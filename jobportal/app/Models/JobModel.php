@@ -36,6 +36,7 @@ class JobModel extends Model
         'longitude',
         'is_remote',
         'skills_required',
+        'image',
         'status',
         'views_count',
         'applications_count',

@@ -479,6 +479,7 @@ class Home extends BaseController
             'company_description' => 'permit_empty',
             'company_website' => 'permit_empty|valid_url',
             'company_logo' => 'permit_empty|uploaded[company_logo]|max_size[company_logo,2048]|ext_in[company_logo,png,jpg,jpeg,gif]',
+            'job_image' => 'permit_empty|uploaded[job_image]|max_size[job_image,5120]|ext_in[job_image,png,jpg,jpeg,gif]',
         ];
 
         if (!$this->validate($rules)) {
@@ -539,6 +540,26 @@ class Home extends BaseController
             // Store relative path in database (e.g., /uploads/company_logos/filename.png)
             helper('image');
             $logoPath = upload_path('company_logos/' . $newName);
+        }
+
+        // Handle job image upload
+        $jobImagePath = null;
+        $jobImageFile = $this->request->getFile('job_image');
+        
+        if ($jobImageFile && $jobImageFile->isValid() && !$jobImageFile->hasMoved()) {
+            // Create uploads directory in public folder if it doesn't exist
+            $uploadPath = FCPATH . 'uploads/job_images/';
+            if (!is_dir($uploadPath)) {
+                mkdir($uploadPath, 0755, true);
+            }
+            
+            // Generate unique filename
+            $newName = $jobImageFile->getRandomName();
+            $jobImageFile->move($uploadPath, $newName);
+            
+            // Store relative path in database (e.g., /uploads/job_images/filename.png)
+            helper('image');
+            $jobImagePath = upload_path('job_images/' . $newName);
         }
 
         try {
@@ -676,6 +697,11 @@ class Home extends BaseController
                 'posted_at' => date('Y-m-d H:i:s'),
                 'expires_at' => $validThrough,
             ];
+            
+            // Add job image if uploaded
+            if ($jobImagePath) {
+                $jobData['image'] = $jobImagePath;
+            }
             
             // Add application contact fields if they exist in database
             // CodeIgniter will ignore these fields if columns don't exist

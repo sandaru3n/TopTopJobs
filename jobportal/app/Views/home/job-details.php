@@ -78,6 +78,11 @@
                                     <p id="jobDescription" class="text-gray-600 dark:text-gray-400 text-sm font-normal leading-relaxed whitespace-pre-line"></p>
                                 </div>
 
+                                <!-- Job Image -->
+                                <div class="mb-6 hidden" id="jobImageSection">
+                                    <img id="jobImage" src="" alt="Job Image" class="w-full rounded-lg object-cover border border-gray-200 dark:border-gray-700">
+                                </div>
+
                                 <!-- Responsibilities -->
                                 <div class="mb-6 hidden" id="responsibilitiesSection">
                                     <h3 class="text-[#111318] dark:text-white text-lg font-bold leading-normal mb-4">Responsibilities</h3>
@@ -600,6 +605,32 @@
 
             // Description
             document.getElementById('jobDescription').textContent = job.description || 'No description available.';
+
+            // Job Image
+            const jobImageSection = document.getElementById('jobImageSection');
+            const jobImage = document.getElementById('jobImage');
+            if (job.image && job.image.trim()) {
+                // Image URL should already be processed by the API
+                let imageUrl = job.image.trim();
+                // Ensure it starts with / if it's a relative path
+                if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://') && !imageUrl.startsWith('data:') && !imageUrl.startsWith('/')) {
+                    imageUrl = '/' + imageUrl;
+                }
+                jobImage.src = imageUrl;
+                jobImage.alt = `${job.title} - Job Image`;
+                jobImage.onerror = function() {
+                    // Hide image section if image fails to load
+                    jobImageSection.classList.add('hidden');
+                };
+                jobImage.onload = function() {
+                    // Show image section when image loads successfully
+                    jobImageSection.classList.remove('hidden');
+                };
+                // Try to load the image (will trigger onload or onerror)
+                jobImageSection.classList.remove('hidden');
+            } else {
+                jobImageSection.classList.add('hidden');
+            }
 
             // Responsibilities
             if (job.responsibilities && (Array.isArray(job.responsibilities) ? job.responsibilities.length > 0 : job.responsibilities.trim())) {
