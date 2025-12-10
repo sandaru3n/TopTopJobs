@@ -144,7 +144,7 @@
             <!-- Quick Actions -->
             <div class="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
                 <h2 class="text-xl font-bold text-[#111318] dark:text-white mb-4">Quick Actions</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <a href="<?= base_url('/') ?>" class="flex items-center gap-3 p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                         <span class="material-symbols-outlined text-primary">home</span>
                         <div>
@@ -157,6 +157,13 @@
                         <div>
                             <p class="font-medium text-[#111318] dark:text-white">Browse Jobs</p>
                             <p class="text-sm text-gray-500 dark:text-gray-400">View all jobs</p>
+                        </div>
+                    </a>
+                    <a href="<?= base_url('/admin/collections') ?>" class="flex items-center gap-3 p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                        <span class="material-symbols-outlined text-primary">folder</span>
+                        <div>
+                            <p class="font-medium text-[#111318] dark:text-white">Collections</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Manage collections</p>
                         </div>
                     </a>
                     <a href="#" class="flex items-center gap-3 p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">

@@ -48,7 +48,25 @@ $routes->post('api/toggle-save-job', 'Home::toggleSaveJob', ['filter' => 'auth']
 $routes->get('api/check-saved-job/(:num)', 'Home::checkSavedJob');
 $routes->get('api/check-saved-job', 'Home::checkSavedJob');
 
+// Collection Pages (Public)
+$routes->get('/collection/(:segment)', 'Home::collectionPage');
+$routes->get('/collection/(:segment)/', 'Home::collectionPage');
+
 // Protected Admin Routes
 $routes->group('admin', ['filter' => 'auth:admin'], function($routes) {
     $routes->get('dashboard', 'AdminController::dashboard');
+    
+    // Collection Management Routes
+    // Put parameterized routes BEFORE literal routes to avoid conflicts
+    $routes->get('collections/(:num)/jobs', 'AdminController::manageCollectionJobs');
+    $routes->post('collections/(:num)/jobs/add', 'AdminController::addJobToCollection');
+    $routes->post('collections/(:num)/jobs/(:num)/remove', 'AdminController::removeJobFromCollection');
+    $routes->get('collections/(:num)/edit', 'AdminController::editCollection');
+    $routes->post('collections/(:num)/update', 'AdminController::updateCollection');
+    $routes->post('collections/(:num)/delete', 'AdminController::deleteCollection');
+    
+    // Literal routes (must come after parameterized routes)
+    $routes->get('collections/create', 'AdminController::createCollection');
+    $routes->post('collections/store', 'AdminController::storeCollection');
+    $routes->get('collections', 'AdminController::collections');
 });

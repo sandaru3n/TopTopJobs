@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Models\CompanyModel;
 use App\Models\JobModel;
 use App\Models\SavedJobModel;
+use App\Models\CollectionModel;
 
 class Home extends BaseController
 {
@@ -12,12 +13,14 @@ class Home extends BaseController
     protected $companyModel;
     protected $jobModel;
     protected $savedJobModel;
+    protected $collectionModel;
 
     public function __construct()
     {
         $this->companyModel = new CompanyModel();
         $this->jobModel = new JobModel();
         $this->savedJobModel = new SavedJobModel();
+        $this->collectionModel = new CollectionModel();
     }
 
     public function index()
@@ -484,9 +487,181 @@ class Home extends BaseController
         return view('home/job-details');
     }
 
+    /**
+     * Display collection page with SEO meta tags
+     * PUBLIC ACCESS - No authentication required
+     * NEVER REDIRECTS - Always shows a page
+     */
+    public function collectionPage($slug = null)
+    {
+        // Public access - no authentication check needed
+        // Get slug from parameter or URI segment if not provided
+        if (empty($slug)) {
+            // Try to get from URI segment: /collection/{slug}
+            $uri = $this->request->getUri();
+            $segments = $uri->getSegments();
+            
+            // Find 'collection' in segments and get the next segment
+            $collectionIndex = array_search('collection', $segments);
+            if ($collectionIndex !== false && isset($segments[$collectionIndex + 1])) {
+                $slug = $segments[$collectionIndex + 1];
+            }
+            
+            // Alternative: get from path directly using regex
+            if (empty($slug)) {
+                $path = $uri->getPath();
+                // Remove leading/trailing slashes and extract collection slug
+                $path = trim($path, '/');
+                if (preg_match('#^collection/(.+?)(?:/|$)#', $path, $matches)) {
+                    $slug = $matches[1];
+                }
+            }
+            
+            // Last resort: get from route parameters
+            if (empty($slug)) {
+                $routeParams = $this->request->getUri()->getSegments();
+                // If route is /collection/{slug}, segment 1 should be the slug
+                if (isset($routeParams[1]) && $routeParams[0] === 'collection') {
+                    $slug = $routeParams[1];
+                }
+            }
+        }
+        
+        // Clean the slug - remove any trailing slashes and decode URL encoding
+        $slug = $slug ? trim(urldecode($slug), '/') : '';
+        
+        // If no slug provided, show not found page
+        if (empty($slug)) {
+            $data = [
+                'title' => 'Collection Not Found',
+                'message' => 'Please provide a collection slug in the URL.',
+                'slug' => ''
+            ];
+            return view('home/collection-not-found', $data);
+        }
+        
+        // Get collection by slug using direct database query for reliability
+        $db = \Config\Database::connect();
+        $builder = $db->table('collections');
+        
+        // Try exact match first
+        $collection = $builder->where('slug', $slug)->get()->getRowArray();
+        
+        // If not found, try case-insensitive search (MySQL default is case-insensitive, but be safe)
+        if (!$collection) {
+            $builder = $db->table('collections');
+            $collection = $builder->where('LOWER(slug)', strtolower($slug))->get()->getRowArray();
+        }
+        
+        // Load image helper
+        helper('image');
+        
+        // Initialize default values
+        $jobs = [];
+        $isNotFound = false;
+        $isInactive = false;
+        
+        if (!$collection) {
+            // Collection doesn't exist - show collection page with not found state
+            $isNotFound = true;
+            $collection = [
+                'name' => 'Collection Not Found',
+                'slug' => $slug,
+                'site_title' => 'Collection Not Found - TopTopJobs',
+                'description' => 'The collection you are looking for does not exist.',
+                'meta_description' => 'The collection you are looking for does not exist.',
+                'meta_keywords' => '',
+            ];
+        } elseif ($collection['status'] !== 'active') {
+            // Collection exists but is inactive - show collection page with inactive state
+            $isInactive = true;
+        } else {
+            // Collection exists and is active - get jobs
+            $jobs = $this->collectionModel->getCollectionJobs($collection['id']);
+            
+            // Clean job descriptions - remove application information
+            foreach ($jobs as &$job) {
+                if (!empty($job['description'])) {
+                    $job['description'] = $this->cleanJobDescription($job['description']);
+                }
+            }
+            unset($job); // Break reference
+        }
+        
+        // Always prepare meta tags for SEO (even if collection doesn't exist)
+        $metaTags = [
+            'title' => esc($collection['site_title'] ?? 'Collection - TopTopJobs'),
+            'description' => esc($collection['meta_description'] ?? $collection['description'] ?? ''),
+            'keywords' => esc($collection['meta_keywords'] ?? ''),
+            'og:title' => esc($collection['site_title'] ?? 'Collection - TopTopJobs'),
+            'og:description' => esc($collection['meta_description'] ?? $collection['description'] ?? ''),
+            'og:type' => 'website',
+            'og:url' => current_url(),
+            'twitter:card' => 'summary',
+            'twitter:title' => esc($collection['site_title'] ?? 'Collection - TopTopJobs'),
+            'twitter:description' => esc($collection['meta_description'] ?? $collection['description'] ?? ''),
+        ];
+
+        $data = [
+            'title' => $collection['site_title'] ?? 'Collection - TopTopJobs',
+            'collection' => $collection,
+            'jobs' => $jobs,
+            'metaTags' => $metaTags,
+            'isNotFound' => $isNotFound,
+            'isInactive' => $isInactive,
+        ];
+
+        // ALWAYS show the collection page template - never redirect
+        return view('home/collection', $data);
+    }
+
+    /**
+     * Clean job description by removing application information sections
+     */
+    private function cleanJobDescription($description)
+    {
+        if (empty($description)) {
+            return '';
+        }
+        
+        // Remove application information sections
+        // Pattern: --- Application Information --- ... (everything after this)
+        $description = preg_replace('/---\s*Application\s+Information\s*---.*$/is', '', $description);
+        
+        // Remove any remaining application-related patterns (case insensitive, multiline)
+        $description = preg_replace('/Application\s+Information.*$/is', '', $description);
+        $description = preg_replace('/Application\s+URL:.*$/im', '', $description);
+        $description = preg_replace('/Apply\s+Online:.*$/im', '', $description);
+        $description = preg_replace('/Application\s+Email:.*$/im', '', $description);
+        $description = preg_replace('/Application\s+Phone:.*$/im', '', $description);
+        $description = preg_replace('/Phone:.*$/im', '', $description);
+        
+        // Remove URLs that might be application links
+        $description = preg_replace('/http[s]?:\/\/[^\s]+/i', '', $description);
+        
+        // Remove multiple consecutive dashes/lines
+        $description = preg_replace('/-{3,}.*$/m', '', $description);
+        
+        // Clean up extra whitespace and newlines
+        $description = preg_replace('/\n{3,}/', "\n\n", $description);
+        $description = preg_replace('/\s{3,}/', ' ', $description);
+        $description = trim($description);
+        
+        return $description;
+    }
+
     public function postJob(): string
     {
-        return view('home/post-job');
+        // Get active collections for dropdown (only existing collections created by admin)
+        $collections = $this->collectionModel->where('status', 'active')
+            ->orderBy('name', 'ASC')
+            ->findAll();
+        
+        $data = [
+            'collections' => $collections ?? []
+        ];
+        
+        return view('home/post-job', $data);
     }
 
     public function processPostJob()
@@ -526,6 +701,7 @@ class Home extends BaseController
             'company_website' => 'permit_empty|valid_url',
             'company_logo' => 'permit_empty|uploaded[company_logo]|max_size[company_logo,2048]|ext_in[company_logo,png,jpg,jpeg,gif]',
             'job_image' => 'permit_empty|uploaded[job_image]|max_size[job_image,5120]|ext_in[job_image,png,jpg,jpeg,gif]',
+            'collection_id' => 'permit_empty|integer|is_natural',
         ];
 
         if (!$this->validate($rules)) {
@@ -771,6 +947,18 @@ class Home extends BaseController
             // Generate and update slug with job ID
             $finalSlug = $this->jobModel->generateSlug($companyName, $jobTitle, $jobId);
             $this->jobModel->update($jobId, ['slug' => $finalSlug]);
+
+            // Add job to collection if collection_id is provided
+            $collectionId = $this->request->getPost('collection_id');
+            if ($collectionId && is_numeric($collectionId)) {
+                $collectionId = (int) $collectionId;
+                // Verify collection exists and is active
+                $collection = $this->collectionModel->find($collectionId);
+                if ($collection && $collection['status'] === 'active') {
+                    // Add job to collection (will not add if already exists)
+                    $this->collectionModel->addJobToCollection($collectionId, $jobId);
+                }
+            }
 
             return redirect()->to('/jobs')
                 ->with('success', 'Job posted successfully!');

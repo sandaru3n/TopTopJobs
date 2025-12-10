@@ -214,6 +214,28 @@
                             </select>
                         </div>
 
+                        <!-- Collection (Optional) -->
+                        <?php if (!empty($collections) && count($collections) > 0): ?>
+                        <div>
+                            <label for="collection_id" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
+                                Add to Collection (Optional)
+                            </label>
+                            <select 
+                                id="collection_id" 
+                                name="collection_id" 
+                                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors cursor-pointer"
+                            >
+                                <option value="">None - Don't add to any collection</option>
+                                <?php foreach ($collections as $collection): ?>
+                                    <option value="<?= esc($collection['id']) ?>" <?= old('collection_id') == $collection['id'] ? 'selected' : '' ?>>
+                                        <?= esc($collection['name']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Optionally add this job to an existing collection page</p>
+                        </div>
+                        <?php endif; ?>
+
                         <!-- Minimum Years of Experience -->
                         <div>
                             <label for="min_experience" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
