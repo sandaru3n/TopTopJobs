@@ -71,18 +71,17 @@ class Home extends BaseController
             ->orderBy('created_at', 'DESC')
             ->findAll();
 
+        // Load image helper
+        helper('image');
+        
         // Get company info for each job
         foreach ($jobs as &$job) {
             $company = $this->companyModel->find($job['company_id']);
             $job['company_name'] = $company['name'] ?? 'Unknown Company';
             $logo = $company['logo'] ?? null;
             
-            // Convert HTTP URLs to HTTPS to prevent mixed content warnings
-            if ($logo && strpos($logo, 'http://') === 0) {
-                $logo = str_replace('http://', 'https://', $logo);
-            }
-            
-            $job['company_logo'] = $logo;
+            // Fix image URL for production
+            $job['company_logo'] = fix_image_url($logo);
         }
 
         return view('home/manage-jobs', ['jobs' => $jobs]);
@@ -121,12 +120,15 @@ class Home extends BaseController
                 ->with('error', 'Job not found or you do not have permission to edit it.');
         }
 
+        // Load image helper
+        helper('image');
+        
         // Get company info
         $company = $this->companyModel->find($job['company_id']);
         
-        // Convert HTTP URLs to HTTPS to prevent mixed content warnings
-        if ($company && isset($company['logo']) && $company['logo'] && strpos($company['logo'], 'http://') === 0) {
-            $company['logo'] = str_replace('http://', 'https://', $company['logo']);
+        // Fix company logo URL for production
+        if ($company && isset($company['logo'])) {
+            $company['logo'] = fix_image_url($company['logo']);
         }
 
         // Extract application info from description if stored there
@@ -284,11 +286,9 @@ class Home extends BaseController
             }
             $newName = $logoFile->getRandomName();
             $logoFile->move($uploadPath, $newName);
-            $logoPath = base_url('uploads/company_logos/' . $newName);
-            // Ensure HTTPS for uploaded images to prevent mixed content warnings
-            if (strpos($logoPath, 'http://') === 0) {
-                $logoPath = str_replace('http://', 'https://', $logoPath);
-            }
+            // Store relative path in database (e.g., /uploads/company_logos/filename.png)
+            helper('image');
+            $logoPath = upload_path('company_logos/' . $newName);
         }
 
         // Update or find company
@@ -376,7 +376,11 @@ class Home extends BaseController
     {
         // If slug is provided, extract ID from it
         // Slug format: company-title-id
+        // Also handle if slug contains "public/" prefix (fallback for /public/job/... URLs)
         if ($slug) {
+            // Remove "public/" prefix if present
+            $slug = preg_replace('#^public/#', '', $slug);
+            
             // Extract ID from end of slug (e.g., "google-senior-product-designer-1" -> 1)
             if (preg_match('/-(\d+)$/', $slug, $matches)) {
                 $jobId = (int)$matches[1];
@@ -483,12 +487,9 @@ class Home extends BaseController
             $newName = $file->getRandomName();
             $file->move($uploadPath, $newName);
             
-            // Store relative path for database (accessible via web)
-            $logoPath = base_url('uploads/company_logos/' . $newName);
-            // Ensure HTTPS for uploaded images to prevent mixed content warnings
-            if (strpos($logoPath, 'http://') === 0) {
-                $logoPath = str_replace('http://', 'https://', $logoPath);
-            }
+            // Store relative path in database (e.g., /uploads/company_logos/filename.png)
+            helper('image');
+            $logoPath = upload_path('company_logos/' . $newName);
         }
 
         try {

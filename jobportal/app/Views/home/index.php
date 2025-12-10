@@ -168,8 +168,13 @@
 
         function renderJobs(jobs) {
             const container = document.getElementById('jobGrid');
-            container.innerHTML = jobs.map(job => `
-                <div class="bg-white dark:bg-gray-800/50 rounded-lg p-6 flex flex-col gap-4 border border-gray-200 dark:border-gray-700/50 hover:shadow-lg hover:border-primary/50 dark:hover:border-primary/50 transition-all duration-300 cursor-pointer" onclick="window.location.href='<?= base_url('job') ?>/${job.slug || (job.company_name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + job.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + job.id)}/'">
+            container.innerHTML = jobs.map(job => {
+                // Generate job slug
+                const jobSlug = job.slug || (job.company_name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + job.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + job.id);
+                // Generate clean URL without /public/
+                const jobUrl = window.location.origin + '/job/' + jobSlug + '/';
+                return `
+                <div class="bg-white dark:bg-gray-800/50 rounded-lg p-6 flex flex-col gap-4 border border-gray-200 dark:border-gray-700/50 hover:shadow-lg hover:border-primary/50 dark:hover:border-primary/50 transition-all duration-300 cursor-pointer" data-job-id="${job.id}" onclick="window.location.href='${jobUrl}'">
                     <div class="flex items-start justify-between">
                         <div class="flex items-center gap-4">
                             <img class="h-12 w-12 rounded-full object-cover" alt="${job.company_name} logo" src="${job.company_logo || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgdmlld0JveD0iMCAwIDQ4IDQ4Ij48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIGZpbGw9IiNlNWU3ZWIiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE2IiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj5Mb2dvPC90ZXh0Pjwvc3ZnPg=='}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0OCIgaGVpZ2h0PSI0OCIgdmlld0JveD0iMCAwIDQ4IDQ4Ij48cmVjdCB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIGZpbGw9IiNlNWU3ZWIiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjE2IiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj5Mb2dvPC90ZXh0Pjwvc3ZnPg=='"/>
@@ -194,7 +199,22 @@
                         <span>Posted ${getTimeAgo(job.posted_at)}</span>
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
+            
+            // Also add event delegation as fallback for click handling
+            container.addEventListener('click', function(e) {
+                const jobCard = e.target.closest('[data-job-id]');
+                if (jobCard && !e.target.closest('button, a')) {
+                    const jobId = jobCard.getAttribute('data-job-id');
+                    const job = jobs.find(j => j.id == jobId);
+                    if (job) {
+                        const jobSlug = job.slug || (job.company_name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + job.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + job.id);
+                        const jobUrl = window.location.origin + '/job/' + jobSlug + '/';
+                        window.location.href = jobUrl;
+                    }
+                }
+            });
         }
 
         function updateResultsCount() {

@@ -2,9 +2,32 @@
 
 class JobSearch {
     constructor() {
-        this.baseUrl = window.baseUrl || '';
+        // Get baseUrl from window or construct from current location
+        if (window.baseUrl) {
+            this.baseUrl = window.baseUrl;
+        } else {
+            // Construct from current location, removing /public/ if present
+            let path = window.location.pathname;
+            // Remove /public/ from anywhere in the path
+            path = path.replace(/\/public\/?/g, '/');
+            // Get base path (everything before the last segment)
+            const pathParts = path.split('/').filter(p => p);
+            // Remove last segment if it's not empty
+            if (pathParts.length > 0 && !pathParts[pathParts.length - 1].includes('.')) {
+                pathParts.pop();
+            }
+            this.baseUrl = pathParts.length > 0 ? '/' + pathParts.join('/') : '';
+        }
+        
         // Remove trailing slash if present
         this.baseUrl = this.baseUrl.replace(/\/$/, '');
+        // Remove /public/ from baseUrl if present anywhere (for clean URLs)
+        this.baseUrl = this.baseUrl.replace(/\/public\/?/g, '/').replace(/\/+/g, '/');
+        // Ensure it starts with / if not empty
+        if (this.baseUrl && !this.baseUrl.startsWith('/')) {
+            this.baseUrl = '/' + this.baseUrl;
+        }
+        
         // Use apiUrl from window if available, otherwise construct it
         if (window.apiUrl) {
             this.apiUrl = window.apiUrl;
@@ -585,33 +608,38 @@ class JobSearch {
             const response = await fetch(url);
             
             if (!response.ok) {
+                const errorText = await response.text();
+                console.error('API Error Response:', errorText);
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             
             const data = await response.json();
             console.log('Jobs data received:', data);
-
-            if (data.success) {
-                if (reset) {
-                    this.jobs = data.jobs;
-                } else {
-                    this.jobs = [...(this.jobs || []), ...data.jobs];
-                }
-
-                this.hasMore = data.has_more;
-                this.renderJobs();
-                this.updateResultsCount(data.total, data.page, data.per_page);
-
-                if (this.jobs.length === 0 && reset) {
-                    emptyState.classList.remove('hidden');
-                } else {
-                    emptyState.classList.add('hidden');
-                }
-
-                errorState.classList.add('hidden');
-            } else {
+            
+            // Check if API returned success
+            if (!data.success) {
+                console.error('API returned error:', data.message || 'Unknown error');
                 throw new Error(data.message || 'Failed to load jobs');
             }
+
+            // Process successful response
+            if (reset) {
+                this.jobs = data.jobs || [];
+            } else {
+                this.jobs = [...(this.jobs || []), ...(data.jobs || [])];
+            }
+
+            this.hasMore = data.has_more || false;
+            this.renderJobs();
+            this.updateResultsCount(data.total || 0, data.page || 1, data.per_page || 20);
+
+            if (this.jobs.length === 0 && reset) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            errorState.classList.add('hidden');
         } catch (error) {
             console.error('Error loading jobs:', error);
             console.error('Error details:', {
@@ -767,13 +795,19 @@ class JobSearch {
                 const jobId = card.dataset.jobId;
                 // Find the job to get its slug
                 const job = this.jobs.find(j => j.id == jobId);
+                // Ensure baseUrl doesn't contain /public/
+                let cleanBaseUrl = this.baseUrl.replace(/\/public\/?/g, '/').replace(/\/+/g, '/');
+                if (!cleanBaseUrl || cleanBaseUrl === '/') {
+                    cleanBaseUrl = '';
+                }
+                
                 if (job && job.slug) {
-                    window.location.href = `${this.baseUrl}/job/${job.slug}/`;
+                    window.location.href = `${cleanBaseUrl}/job/${job.slug}/`.replace(/\/+/g, '/');
                 } else {
                     // Fallback: generate slug from company name, title, and ID
                     const companySlug = (job?.company_name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
                     const titleSlug = (job?.title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
-                    window.location.href = `${this.baseUrl}/job/${companySlug}-${titleSlug}-${jobId}/`;
+                    window.location.href = `${cleanBaseUrl}/job/${companySlug}-${titleSlug}-${jobId}/`.replace(/\/+/g, '/');
                 }
             });
         });
@@ -825,7 +859,24 @@ class JobSearch {
         if (!job) return;
 
         const text = `Check out this job: ${job.title} at ${job.company_name}`;
-        const url = `${window.location.origin}/jobs?id=${jobId}`;
+        // Generate clean URL without /public/
+        let cleanBaseUrl = this.baseUrl.replace(/\/public\/?/g, '/').replace(/\/+/g, '/');
+        if (!cleanBaseUrl || cleanBaseUrl === '/') {
+            cleanBaseUrl = '';
+        }
+        // Use slug if available, otherwise generate from company name, title, and ID
+        let url;
+        if (job.slug) {
+            url = `${cleanBaseUrl}/job/${job.slug}/`.replace(/\/+/g, '/');
+        } else {
+            const companySlug = (job.company_name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            const titleSlug = (job.title || '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            url = `${cleanBaseUrl}/job/${companySlug}-${titleSlug}-${jobId}/`.replace(/\/+/g, '/');
+        }
+        // Ensure URL is absolute (include origin if not present)
+        if (!url.startsWith('http')) {
+            url = window.location.origin + url;
+        }
         const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`;
 
         if (navigator.share) {

@@ -170,14 +170,22 @@
         // Use current origin to support both www and non-www versions
         // Remove /public/ from pathname if present to get clean base URL
         let basePath = window.location.pathname;
-        // Remove /public/ if it exists in the path
-        basePath = basePath.replace(/^\/public/, '');
+        // Remove /public/ from anywhere in the path (all occurrences)
+        basePath = basePath.replace(/\/public\/?/g, '/').replace(/\/+/g, '/');
         // Get the base path (everything before /job/)
         const pathParts = basePath.split('/job/');
-        const cleanBasePath = pathParts[0] || '/';
+        let cleanBasePath = pathParts[0] || '/';
         
-        const baseUrl = window.location.origin + cleanBasePath.replace(/\/$/, '') + '/';
-        const apiUrl = baseUrl + 'api/jobs.php';
+        // Remove /public/ from path for clean URLs (remove all occurrences)
+        cleanBasePath = cleanBasePath.replace(/\/public\/?/g, '/').replace(/\/+/g, '/');
+        
+        // Ensure clean base path
+        if (cleanBasePath === '/') {
+            cleanBasePath = '';
+        }
+        
+        const baseUrl = window.location.origin + (cleanBasePath ? cleanBasePath.replace(/\/$/, '') + '/' : '/');
+        const apiUrl = baseUrl.replace(/\/+$/, '/') + 'api/jobs.php';
         
         console.log('Base URL:', baseUrl);
         console.log('API URL:', apiUrl);
@@ -768,7 +776,9 @@
         function shareJob(job) {
             // Generate slug URL
             const jobSlug = job.slug || (job.company_name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + job.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + job.id);
-            const shareUrl = `${baseUrl}/job/${jobSlug}/`;
+            // Remove /public/ from baseUrl if present for clean URLs (remove all occurrences)
+            const cleanBaseUrl = baseUrl.replace(/\/public\/?/g, '/').replace(/\/+/g, '/').replace(/\/$/, '');
+            const shareUrl = `${cleanBaseUrl}/job/${jobSlug}/`.replace(/\/+/g, '/');
             
             if (navigator.share) {
                 navigator.share({
@@ -834,7 +844,9 @@
             
             container.innerHTML = jobs.map(job => {
                 const jobSlug = job.slug || `${job.company_name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${job.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${job.id}`;
-                const jobUrl = `${baseUrl}job/${jobSlug}/`;
+                // Remove /public/ from baseUrl if present for clean URLs (remove all occurrences)
+                const cleanBaseUrl = baseUrl.replace(/\/public\/?/g, '/').replace(/\/+/g, '/').replace(/\/$/, '');
+                const jobUrl = `${cleanBaseUrl}/job/${jobSlug}/`.replace(/\/+/g, '/');
                 
                 return `
                     <a href="${jobUrl}" class="block border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-primary/50 dark:hover:border-primary/50 hover:shadow-md transition-all duration-300">

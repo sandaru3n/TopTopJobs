@@ -11,6 +11,9 @@ $routes->get('/dashboard/', 'Home::dashboard', ['filter' => 'auth']);
 $routes->get('/jobs', 'Home::jobs');
 $routes->get('/job/(:segment)', 'Home::jobDetails');
 $routes->get('/job/(:segment)/', 'Home::jobDetails');
+// Fallback route for /public/job/... URLs (will be redirected by .htaccess, but this handles if redirect doesn't work)
+$routes->get('/public/job/(:segment)', 'Home::jobDetails');
+$routes->get('/public/job/(:segment)/', 'Home::jobDetails');
 $routes->get('/job-details', 'Home::jobDetails');
 $routes->get('/post-job', 'Home::postJob');
 $routes->post('/post-job', 'Home::processPostJob');

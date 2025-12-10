@@ -55,6 +55,9 @@ class AuthController extends BaseController
         $user = $this->userModel->verifyCredentials($email, $password);
 
         if ($user) {
+            // Load helper and fix profile picture URL
+            helper('image');
+            
             // Set session data
             $sessionData = [
                 'user_id'    => $user['id'],
@@ -62,7 +65,7 @@ class AuthController extends BaseController
                 'first_name' => $user['first_name'],
                 'last_name'  => $user['last_name'],
                 'user_type'  => $user['user_type'],
-                'profile_picture' => $user['profile_picture'] ?? null,
+                'profile_picture' => !empty($user['profile_picture']) ? fix_image_url($user['profile_picture'], 150) : null,
                 'is_logged_in' => true,
             ];
 
@@ -230,6 +233,12 @@ class AuthController extends BaseController
             return redirect()->to('/login')
                 ->with('error', 'User not found.');
         }
+        
+        // Load image helper and fix profile picture URL
+        helper('image');
+        if (!empty($user['profile_picture'])) {
+            $user['profile_picture'] = fix_image_url($user['profile_picture'], 150);
+        }
 
         return view('auth/profile', ['user' => $user]);
     }
@@ -293,8 +302,9 @@ class AuthController extends BaseController
             $newName = $file->getRandomName();
             $file->move($uploadPath, $newName);
 
-            // Store relative path for database
-            $updateData['profile_picture'] = base_url('uploads/profile_pictures/' . $newName);
+            // Store relative path in database (e.g., /uploads/profile_pictures/filename.png)
+            helper('image');
+            $updateData['profile_picture'] = upload_path('profile_pictures/' . $newName);
 
             // Delete old profile picture if exists
             if (!empty($user['profile_picture']) && file_exists(str_replace(base_url(), FCPATH, $user['profile_picture']))) {
@@ -324,7 +334,10 @@ class AuthController extends BaseController
 
             // Update session if profile picture changed
             if (isset($updateData['profile_picture'])) {
-                $this->session->set('profile_picture', $updateData['profile_picture']);
+                // Load helper and fix URL before storing in session
+                helper('image');
+                $fixedUrl = fix_image_url($updateData['profile_picture'], 150);
+                $this->session->set('profile_picture', $fixedUrl);
             }
         }
 

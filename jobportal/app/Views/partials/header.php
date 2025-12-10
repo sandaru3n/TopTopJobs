@@ -75,9 +75,14 @@
                             aria-expanded="false"
                             style="pointer-events: auto;"
                         >
-                            <?php if (session()->get('profile_picture')): ?>
+                            <?php 
+                            helper('image');
+                            $profilePic = session()->get('profile_picture');
+                            if ($profilePic): 
+                                $fixedProfilePic = fix_image_url($profilePic);
+                            ?>
                                 <img 
-                                    src="<?= esc(session()->get('profile_picture')) ?>" 
+                                    src="<?= esc($fixedProfilePic) ?>" 
                                     alt="Profile" 
                                     class="w-full h-full object-cover pointer-events-none"
                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"

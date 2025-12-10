@@ -48,71 +48,114 @@ function getPlaceholderImage($size = 48) {
 /**
  * Check and validate image URL
  * Returns validated URL or placeholder if invalid
+ * Converts localhost/local domain URLs to current production domain
  * 
  * @param string $url The image URL to check
  * @param int $placeholderSize Size for placeholder if URL is invalid
  * @return string Valid image URL or data URI placeholder
  */
 function checkImageUrl($url, $placeholderSize = 48) {
-    // If empty, return placeholder
-    if (empty($url)) {
-        return getPlaceholderImage($placeholderSize);
+    // If empty or null, return null (not placeholder) so frontend can handle it
+    if (empty($url) || $url === null) {
+        return null;
     }
     
     // Convert to string to ensure we're working with a string
     $url = (string)$url;
+    $url = trim($url);
     
-    // If it's already a data URI, return as-is
+    // If empty after trimming, return null (not placeholder)
+    if ($url === '') {
+        return null;
+    }
+    
+    // If it's already a data URI placeholder, return null (not placeholder) so frontend can handle it
+    // But if it's a valid data URI image (not our placeholder), return as-is
     if (strpos($url, 'data:') === 0) {
+        // Check if it's our placeholder SVG - if so, return null
+        if (strpos($url, 'data:image/svg+xml') !== false && strpos($url, 'Logo') !== false) {
+            return null;
+        }
+        // Otherwise, it's a valid data URI image, return as-is
         return $url;
     }
     
-    // If it's a via.placeholder.com URL, replace with data URI
+    // If it's a via.placeholder.com URL, return null
     if (strpos($url, 'via.placeholder.com') !== false) {
-        return getPlaceholderImage($placeholderSize);
+        return null;
     }
     
-    // If it's a local development URL, convert to current domain
-    // Check for both http and https, and handle with or without trailing slash
-    // Also check for toptopjobs.local anywhere in the URL (not just at start)
-    if (stripos($url, 'toptopjobs.local') !== false) {
-        // Always use HTTPS if the request is over HTTPS, or if it's a production domain
-        $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || 
-                   (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ||
-                   (isset($_SERVER['HTTP_HOST']) && stripos($_SERVER['HTTP_HOST'], 'toptopjobs.com') !== false);
-        $protocol = $isHttps ? 'https' : 'http';
-        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-        // Remove the local domain part using regex
-        $path = preg_replace('#https?://toptopjobs\.local/?#i', '', $url);
+    // Remove /api/ prefix from uploads paths FIRST
+    if (stripos($url, '/api/uploads/') !== false) {
+        $url = str_ireplace('/api/uploads/', '/uploads/', $url);
+    }
+    
+    // Determine current domain and protocol
+    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || 
+               (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ||
+               (!empty($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443) ||
+               (isset($_SERVER['HTTP_HOST']) && (stripos($_SERVER['HTTP_HOST'], 'toptopjobs.com') !== false || stripos($_SERVER['HTTP_HOST'], 'www.') !== false));
+    
+    $protocol = $isHttps ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    
+    // PRIORITY 1: If it's a relative path (starts with /), convert to absolute URL
+    // This handles: /uploads/company_logos/file.png
+    // NO basePath needed - images are served directly from root
+    if (strpos($url, '/') === 0) {
+        $path = ltrim($url, '/');
+        // Simple URL: protocol://host/path (no basePath for uploads)
+        return $protocol . '://' . $host . '/' . $path;
+    }
+    
+    // PRIORITY 2: If it looks like a path without leading slash, add it and convert
+    // This handles: uploads/company_logos/file.png
+    if (stripos($url, 'uploads/') === 0 || stripos($url, 'company_logos/') !== false || stripos($url, 'profile_pictures/') !== false) {
+        // Ensure it starts with uploads/
+        if (stripos($url, 'uploads/') !== 0) {
+            if (stripos($url, 'company_logos/') !== false) {
+                $url = 'uploads/' . $url;
+            } elseif (stripos($url, 'profile_pictures/') !== false) {
+                $url = 'uploads/' . $url;
+            }
+        }
+        // Simple URL: protocol://host/path (no basePath for uploads)
+        return $protocol . '://' . $host . '/' . $url;
+    }
+    
+    // PRIORITY 3: If it contains localhost, 127.0.0.1, or toptopjobs.local, convert to current domain
+    if (stripos($url, 'localhost') !== false || 
+        stripos($url, '127.0.0.1') !== false || 
+        stripos($url, 'toptopjobs.local') !== false ||
+        stripos($url, '.local/') !== false) {
+        // Extract the path from the URL
+        $parsed = parse_url($url);
+        $path = isset($parsed['path']) ? $parsed['path'] : $url;
+        
+        // Remove domain parts and get just the path
+        $path = preg_replace('#https?://[^/]+/?#i', '', $path);
         $path = ltrim($path, '/');
-        $converted = $protocol . '://' . $host . '/' . $path;
-        error_log("URL converted: {$url} -> {$converted}");
-        return $converted;
+        
+        // Rebuild URL with current domain (no basePath for uploads)
+        return $protocol . '://' . $host . '/' . $path;
     }
     
-    // If it's a valid absolute URL (http/https), convert HTTP to HTTPS to prevent mixed content
-    if (filter_var($url, FILTER_VALIDATE_URL) && (stripos($url, 'http://') === 0 || stripos($url, 'https://') === 0)) {
-        // Convert HTTP to HTTPS to prevent mixed content warnings
-        if (stripos($url, 'http://') === 0) {
+    // PRIORITY 4: If it's a valid absolute URL (http/https), fix /api/uploads/ and convert HTTP to HTTPS
+    // Check if it starts with http:// or https:// first (faster check)
+    if ((stripos($url, 'http://') === 0 || stripos($url, 'https://') === 0)) {
+        // Remove /api/ prefix from uploads if present
+        if (stripos($url, '/api/uploads/') !== false) {
+            $url = str_ireplace('/api/uploads/', '/uploads/', $url);
+        }
+        // Convert HTTP to HTTPS to prevent mixed content warnings on production
+        if ($isHttps && stripos($url, 'http://') === 0) {
             $url = str_replace('http://', 'https://', $url);
         }
         return $url;
     }
     
-    // If it's a relative path, convert to absolute URL
-    if (!filter_var($url, FILTER_VALIDATE_URL)) {
-        // Always use HTTPS if the request is over HTTPS, or if it's a production domain
-        $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || 
-                   (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ||
-                   (isset($_SERVER['HTTP_HOST']) && stripos($_SERVER['HTTP_HOST'], 'toptopjobs.com') !== false);
-        $protocol = $isHttps ? 'https' : 'http';
-        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-        $path = ltrim($url, '/');
-        return $protocol . '://' . $host . '/' . $path;
-    }
-    
-    // If we can't determine, return placeholder
-    return getPlaceholderImage($placeholderSize);
+    // If we can't determine, return null (not placeholder) so frontend can handle it
+    return null;
 }
 
 /**
@@ -175,7 +218,7 @@ function getDBConnection() {
         $conn = @new mysqli($hostname, $username, $password, $database, $port);
         
         if ($conn->connect_error) {
-            // Return null instead of die to allow fallback to mock data
+            // Return null if connection fails
             error_log('Database connection failed: ' . $conn->connect_error);
             return null;
         }
@@ -202,8 +245,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 }
 
 // Get query parameters
+// Wrap everything in try-catch to ensure we always return valid JSON
 try {
-// Check if requesting a single job by ID or slug
+    // Check if requesting a single job by ID or slug
 $jobId = isset($_GET['id']) ? (int)$_GET['id'] : null;
 $jobSlug = isset($_GET['slug']) ? trim($_GET['slug']) : null;
 
@@ -352,57 +396,31 @@ if ($jobId || $jobSlug) {
         }
     }
     
-    // Fallback to mock jobs if DB query failed
+    // No fallback - only database data
     if (!$job) {
-        error_log('Job not found in database, trying mock jobs fallback...');
-        $allJobs = getMockJobs();
-        if ($jobId) {
-            error_log('Searching mock jobs for ID: ' . $jobId);
-            foreach ($allJobs as $j) {
-                if ($j['id'] == $jobId) {
-                    $job = $j;
-                    error_log('Job found in mock jobs by ID: ' . $jobId);
-                    break;
-                }
-            }
-        } elseif ($jobSlug) {
-            error_log('Searching mock jobs for slug: ' . $jobSlug);
-            if (preg_match('/-(\d+)$/', $jobSlug, $matches)) {
-                $extractedId = (int)$matches[1];
-                error_log('Extracted ID from slug for mock search: ' . $extractedId);
-                foreach ($allJobs as $j) {
-                    if ($j['id'] == $extractedId) {
-                        $job = $j;
-                        error_log('Job found in mock jobs by extracted ID: ' . $extractedId);
-                        break;
-                    }
-                }
-            }
-            // Also try direct slug match
-            if (!$job) {
-                foreach ($allJobs as $j) {
-                    if (isset($j['slug']) && $j['slug'] === $jobSlug) {
-                        $job = $j;
-                        error_log('Job found in mock jobs by slug: ' . $jobSlug);
-                        break;
-                    }
-                }
-            }
-        }
-        if (!$job) {
-            error_log('Job not found in mock jobs either. ID: ' . ($jobId ?: 'null') . ', Slug: ' . ($jobSlug ?: 'null'));
-        }
+        error_log('Job not found in database. ID: ' . ($jobId ?: 'null') . ', Slug: ' . ($jobSlug ?: 'null'));
     }
     
     if ($job) {
         // Format job data if from database
-        if (isset($job['company_name'])) {
-            $job = formatJobData($job);
+        try {
+            if (isset($job['company_name'])) {
+                $job = formatJobData($job);
+            }
+        } catch (Exception $e) {
+            error_log('Error formatting job data: ' . $e->getMessage());
+            // No fallback - job will be null if formatting fails
+            $job = null;
         }
         
         // Ensure slug is set
         if (!isset($job['slug'])) {
-            $job['slug'] = generateJobSlug($job['company_name'], $job['title'], $job['id']);
+            try {
+                $job['slug'] = generateJobSlug($job['company_name'], $job['title'], $job['id']);
+            } catch (Exception $e) {
+                error_log('Error generating slug: ' . $e->getMessage());
+                $job['slug'] = 'job-' . ($job['id'] ?? 'unknown');
+            }
         }
         
         // Get company description if available
@@ -469,51 +487,15 @@ $sort = $_GET['sort'] ?? 'relevant';
 $page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
 $perPage = isset($_GET['per_page']) ? min(100, max(1, (int)$_GET['per_page'])) : 20;
 
-// Cache key for this search (include version to invalidate old caches)
-$cacheKey = md5(serialize([
-    'v2', // Version marker - increment to invalidate all caches
-    'q' => $query,
-    'loc' => $location,
-    'job_type' => $jobTypes,
-    'experience' => $experiences,
-    'sal_min' => $salaryMin,
-    'date_posted' => $datePosted,
-    'company' => $company,
-    'skills' => $skills,
-    'category' => $categories,
-    'sort' => $sort,
-    'page' => $page
-]));
+// No caching - always fetch fresh data
 
-// Check cache (5 minutes) - but skip cache if it contains old local URLs
-$cacheFile = __DIR__ . '/../writable/cache/jobs_' . $cacheKey . '.json';
-if (file_exists($cacheFile) && (time() - filemtime($cacheFile)) < 300) {
-    $cached = json_decode(file_get_contents($cacheFile), true);
-    if ($cached) {
-        // Check if cached data contains old local URLs - if so, regenerate
-        $hasOldUrls = false;
-        if (isset($cached['jobs']) && is_array($cached['jobs'])) {
-            foreach ($cached['jobs'] as $job) {
-                if (isset($job['company_logo']) && stripos($job['company_logo'], 'toptopjobs.local') !== false) {
-                    $hasOldUrls = true;
-                    error_log("Cache invalidated: Found old URL in job ID " . ($job['id'] ?? 'unknown') . ": " . $job['company_logo']);
-                    break;
-                }
-            }
-        }
-        
-        if (!$hasOldUrls) {
-            echo json_encode($cached);
-            exit;
-        }
-        // If old URLs found, delete cache and regenerate
-        @unlink($cacheFile);
-        error_log('Cache invalidated due to old local URLs found');
-    }
+// Fetch jobs from database (with error handling)
+try {
+    $allJobs = getJobsFromDatabase();
+} catch (Exception $e) {
+    error_log('Error fetching jobs from database: ' . $e->getMessage());
+    $allJobs = []; // Return empty array on error
 }
-
-// Fetch jobs from database
-$allJobs = getJobsFromDatabase();
 
 // Apply filters
 $filteredJobs = filterJobs($allJobs, [
@@ -554,44 +536,49 @@ $offset = ($page - 1) * $perPage;
 $paginatedJobs = array_slice($filteredJobs, $offset, $perPage);
 $hasMore = ($offset + $perPage) < $total;
 
-// Format response
+// Format response - always return valid structure even if no jobs
 $response = [
     'success' => true,
-    'jobs' => $paginatedJobs,
-    'total' => $total,
+    'jobs' => $paginatedJobs ?: [],
+    'total' => $total ?: 0,
     'page' => $page,
     'per_page' => $perPage,
-    'has_more' => $hasMore
+    'has_more' => $hasMore ?: false
 ];
 
-// Cache response
-$cacheDir = dirname($cacheFile);
-if (!is_dir($cacheDir)) {
-    @mkdir($cacheDir, 0755, true);
+// Ensure JSON encoding doesn't fail
+$jsonResponse = json_encode($response, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+if ($jsonResponse === false) {
+    error_log('JSON encoding failed: ' . json_last_error_msg());
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Error encoding response',
+        'jobs' => [],
+        'total' => 0,
+        'page' => 1,
+        'per_page' => 20,
+        'has_more' => false
+    ]);
+} else {
+    echo $jsonResponse;
 }
-if (is_dir($cacheDir) && is_writable($cacheDir)) {
-    @file_put_contents($cacheFile, json_encode($response));
-}
-
-echo json_encode($response);
 
 } catch (Exception $e) {
     // Log the full error for debugging
     error_log('API Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine());
     error_log('Stack trace: ' . $e->getTraceAsString());
     
+    // Return error response - no mock data fallback
     http_response_code(500);
-    
-    // In production, don't expose error details to client
-    $errorMessage = 'An error occurred while processing your request';
-    if (ini_get('display_errors')) {
-        // Only show detailed error in development
-        $errorMessage = $e->getMessage();
-    }
-    
     echo json_encode([
         'success' => false,
-        'message' => $errorMessage
+        'message' => 'Database connection error. Please try again later.',
+        'jobs' => [],
+        'total' => 0,
+        'page' => 1,
+        'per_page' => 21,
+        'has_more' => false
     ]);
     exit;
 } catch (Error $e) {
@@ -599,16 +586,16 @@ echo json_encode($response);
     error_log('API Fatal Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ' on line ' . $e->getLine());
     error_log('Stack trace: ' . $e->getTraceAsString());
     
+    // Return error response - no mock data fallback
     http_response_code(500);
-    
-    $errorMessage = 'An error occurred while processing your request';
-    if (ini_get('display_errors')) {
-        $errorMessage = $e->getMessage();
-    }
-    
     echo json_encode([
         'success' => false,
-        'message' => $errorMessage
+        'message' => 'System error. Please try again later.',
+        'jobs' => [],
+        'total' => 0,
+        'page' => 1,
+        'per_page' => 21,
+        'has_more' => false
     ]);
     exit;
 }
@@ -639,41 +626,56 @@ function generateJobSlug($companyName, $title, $id) {
  * Fetch jobs from database
  */
 function getJobsFromDatabase() {
-    $conn = getDBConnection();
     $jobs = [];
     
-    if ($conn) {
-        $query = "
-            SELECT 
-                j.*,
-                c.name as company_name,
-                c.logo as company_logo,
-                c.rating as company_rating,
-                c.description as company_description,
-                c.website as company_website,
-                c.industry as company_industry
-            FROM jobs j
-            INNER JOIN companies c ON j.company_id = c.id
-            WHERE j.status = 'active'
-            ORDER BY j.posted_at DESC
-        ";
+    try {
+        $conn = getDBConnection();
         
-        $result = $conn->query($query);
-        
-        if ($result && $result->num_rows > 0) {
-            while ($row = $result->fetch_assoc()) {
-                $jobs[] = formatJobData($row);
+        if ($conn) {
+            try {
+                $query = "
+                    SELECT 
+                        j.*,
+                        c.name as company_name,
+                        c.logo as company_logo,
+                        c.rating as company_rating,
+                        c.description as company_description,
+                        c.website as company_website,
+                        c.industry as company_industry
+                    FROM jobs j
+                    INNER JOIN companies c ON j.company_id = c.id
+                    WHERE j.status = 'active'
+                    ORDER BY j.posted_at DESC
+                ";
+                
+                $result = $conn->query($query);
+                
+                if ($result && $result->num_rows > 0) {
+                    while ($row = $result->fetch_assoc()) {
+                        try {
+                            $jobs[] = formatJobData($row);
+                        } catch (Exception $e) {
+                            error_log('Error formatting job data: ' . $e->getMessage());
+                            // Skip this job and continue
+                            continue;
+                        }
+                    }
+                }
+                
+                $conn->close();
+            } catch (Exception $e) {
+                error_log('Database query error: ' . $e->getMessage());
+                if ($conn) {
+                    @$conn->close();
+                }
             }
         }
-        
-        $conn->close();
+    } catch (Exception $e) {
+        error_log('Database connection error: ' . $e->getMessage());
     }
     
-    // If no jobs from DB or connection failed, use mock jobs as fallback
-    if (empty($jobs)) {
-        $jobs = getMockJobs();
-    }
-    
+    // Return empty array if no database connection or no jobs found
+    // No mock data fallback - only database data
     return $jobs;
 }
 
@@ -740,14 +742,28 @@ function formatJobData($job) {
     
     // Check and validate company logo URL
     $originalLogo = $job['company_logo'] ?? null;
+    
+    // Process logo URL - checkImageUrl will return null if empty/null/invalid (frontend will handle with placeholder)
     $companyLogo = checkImageUrl($originalLogo, 48);
     
-    // Debug: Verify conversion worked
-    if ($originalLogo && stripos($originalLogo, 'toptopjobs.local') !== false) {
-        if (stripos($companyLogo, 'toptopjobs.local') === false) {
-            error_log("✓ URL converted: {$originalLogo} -> {$companyLogo}");
-        } else {
-            error_log("✗ URL conversion FAILED: {$originalLogo} -> {$companyLogo}");
+    // Debug: Log if a valid-looking URL was converted to null (shouldn't happen for valid paths)
+    if (!empty($originalLogo) && 
+        $originalLogo !== null && 
+        trim($originalLogo) !== '' &&
+        $companyLogo === null &&
+        strpos($originalLogo, 'data:') !== 0) {
+        // Log the conversion for debugging
+        error_log("⚠ Logo URL converted to null - Job ID: " . ($job['id'] ?? 'unknown') . ", Original: {$originalLogo}");
+        
+        // Try to fix it manually - check if it's a relative path we missed
+        $trimmed = trim($originalLogo);
+        if (strpos($trimmed, '/') === 0 || stripos($trimmed, 'uploads/') !== false || stripos($trimmed, 'company_logos/') !== false) {
+            // It looks like a valid path, try checkImageUrl again with the trimmed version
+            $retryLogo = checkImageUrl($trimmed, 48);
+            if ($retryLogo !== null) {
+                $companyLogo = $retryLogo;
+                error_log("✓ Fixed logo URL on retry: {$companyLogo}");
+            }
         }
     }
     
@@ -785,267 +801,6 @@ function formatJobData($job) {
     ];
 }
 
-/**
- * Get mock job data (fallback for testing)
- */
-function getMockJobs() {
-    $jobs = [
-        [
-            'id' => 1,
-            'title' => 'Senior Product Designer',
-            'slug' => 'google-senior-product-designer-1',
-            'company_name' => 'Google',
-            'company_logo' => 'https://lh3.googleusercontent.com/aida-public/AB6AXuB05iY8MHCloko0xXgRy_Jczz3KCqK0j41JrpKtPrLoEFSBFfS3RRHpNwzjo4352pEft_-EM62Omi8fugVrYLNxKrOsfEO5ZP6w9WUGuZZMWAuQs87m3zlh7lr-j_KpkSIAdOUXj7Uyz_BxbAn456x3WlhcmsufhjVi8jlruQLLjoOKsTE-K0ERqPW3aIXAbIXW8nLj0joDAxMs4LQsueuixWEizOvt6Hc_WHFPI-fgqEFcM-OkXqbqruu1W-l7ZNGeaz-xtRB17OU',
-            'company_rating' => 4.5,
-            'location' => 'Mountain View, CA',
-            'latitude' => 37.4220,
-            'longitude' => -122.0841,
-            'job_type' => 'full-time',
-            'experience' => 'senior',
-            'experience_level' => 'senior',
-            'salary' => 180000,
-            'salary_min' => 120000,
-            'salary_max' => 160000,
-            'is_remote' => 0,
-            'skills' => ['Design', 'UI/UX', 'Figma', 'Prototyping'],
-            'description' => "We are looking for a passionate Senior Product Designer to join our team in San Francisco. You will be responsible for the entire product design lifecycle, from user research and wireframing to creating high-fidelity mockups and prototypes. You'll work closely with product managers, engineers, and other stakeholders to deliver intuitive and beautiful user experiences.",
-            'responsibilities' => [
-                'Conduct user research and usability testing to inform design decisions.',
-                'Create wireframes, storyboards, user flows, process flows, and sitemaps.',
-                'Develop high-fidelity mockups and interactive prototypes for web and mobile.',
-                'Collaborate with product management and engineering to define and implement innovative solutions.',
-                'Establish and promote design guidelines, best practices, and standards.'
-            ],
-            'requirements' => [
-                '5+ years of experience in product design.',
-                'Strong portfolio of design projects.',
-                'Proficiency in Figma, Sketch, or Adobe XD.',
-                'Experience working in an Agile/Scrum development process.',
-                'Excellent visual design skills with a sensitivity to user-system interaction.'
-            ],
-            'posted_at' => date('Y-m-d H:i:s', strtotime('-2 days')),
-            'badge' => 'New',
-            'badge_class' => 'bg-green-100 text-green-800'
-        ],
-        [
-            'id' => 2,
-            'title' => 'Backend Engineer (PHP)',
-            'slug' => 'meta-backend-engineer-php-2',
-            'company_name' => 'Meta',
-            'company_logo' => 'https://lh3.googleusercontent.com/aida-public/AB6AXuCa4i9YIcvfi-4ogR9bYPtb6EJMcZ8KfKUSIiSqiXRRJ3jCbf5rdnslYZNneZtbu6y43LO2fS3xzUfDQErXrK9H0LaCLOoNVZ5kfDwXVkQYE6KYUyvX77gLNFrVcfKuUnUSDq-m5bzJ1MBZP07bfb7uuDtHjgZZ5o8CjvB1Mj0HChB1AF-HBDsjY-Ecyst_57BtODR9uqGxFLCw6b2Fh-3ydN3CDzDGN34kd7W_uavR3nMaQ-nhElLHY3Q6rkqlv0zlgsIHBn5nvI0',
-            'company_rating' => 4.7,
-            'location' => 'Menlo Park, CA',
-            'latitude' => 37.4530,
-            'longitude' => -122.1817,
-            'job_type' => 'full-time',
-            'experience' => 'junior',
-            'salary' => 96000,
-            'skills' => ['PHP', 'MySQL', 'Laravel', 'API'],
-            'description' => 'Join our infrastructure team to build and scale the next generation of our platform using PHP 8+ and modern frameworks.',
-            'posted_at' => date('Y-m-d H:i:s', strtotime('-5 days')),
-            'badge' => null
-        ],
-        [
-            'id' => 3,
-            'title' => 'Data Analyst Intern',
-            'slug' => 'spotify-data-analyst-intern-3',
-            'company_name' => 'Spotify',
-            'company_logo' => 'https://lh3.googleusercontent.com/aida-public/AB6AXuCQsPRlVdF3rN3bKlU8wxZtnvbjdk5DNq4DlRb_JCSH3qOCzaHxtyplssUPOFlQAwvq6pVcnSx1QmYwF68l57sHCFdV84ClRyXCzL0pKb7X2nIOmfcEntKcn8SGFGlJItZ4lKsNSIfAFpikh2D8ogZa-76swsmJK1ck4_XPjdYClAxG0bB29yURje5XPKJspi5wSXAmyDEjhrJ-DrbDKQ6V5_133Ar5VEPEqIBToz7WDCjDd-iWk5iXJyHWiDTzVGp02RQO1Gy-h9M',
-            'company_rating' => 4.3,
-            'location' => 'New York, NY',
-            'latitude' => 40.7128,
-            'longitude' => -74.0060,
-            'job_type' => 'internship',
-            'experience' => 'fresher',
-            'salary' => 36000,
-            'skills' => ['Analytics', 'SQL', 'Python'],
-            'description' => 'An exciting opportunity for a student or recent graduate to work with our data science team on user behavior analysis.',
-            'posted_at' => date('Y-m-d H:i:s', strtotime('-7 days')),
-            'badge' => null
-        ],
-        [
-            'id' => 4,
-            'title' => 'Frontend Developer',
-            'slug' => 'amazon-frontend-developer-4',
-            'company_name' => 'Amazon',
-            'company_logo' => 'https://lh3.googleusercontent.com/aida-public/AB6AXuCbPYBEnGDCgg5AuErg8Ad1-82nyneAu2AfDt4vaL-Sb5V6alib6oYn-x2ana1u7rB6knYikdgAICW-02xN1qPS5C1sBWZQR5SbsomyWuq0PWcSLWQngi4oyO_L6zkA0AJ47HG4x1EE_WnZhW0Q5ToBetjzUwBE1aDA9KPpZyR9SWxkTf7bBrTeSXBUpR98uVRt14E4D8NRGanAWd4p6ZOX5ref_jNMLfEiRaxfWXuFWdMN-gfc_BuzwxA9WXt5Og3kwsQxtQM-QyY',
-            'company_rating' => 4.2,
-            'location' => 'Seattle, WA',
-            'latitude' => 47.6062,
-            'longitude' => -122.3321,
-            'job_type' => 'contract',
-            'experience' => 'junior',
-            'salary' => 84000,
-            'skills' => ['Bootstrap 5', 'JavaScript', 'React', 'Frontend'],
-            'description' => 'Build beautiful and responsive user interfaces using Bootstrap 5 and modern JavaScript frameworks for AWS services.',
-            'posted_at' => date('Y-m-d H:i:s', strtotime('-3 days')),
-            'badge' => null
-        ],
-        [
-            'id' => 5,
-            'title' => 'DevOps Engineer',
-            'slug' => 'slack-devops-engineer-5',
-            'company_name' => 'Slack',
-            'company_logo' => 'https://lh3.googleusercontent.com/aida-public/AB6AXuC6dCnph3Osdogd3AI2I8gtmgR4Nyk3QNY8GcxYg2wiseVuZgqpE3tisH3Sj-F1Ks5SAUJYq6FsLBtLWfjOxe2DNPnErv5aDYg5_yDJgNJl0CnKhLdmvpfF8Ss7HTOYPfQlgDTF8S2_cqGsRGp21QnadsR0ev86n3xoJb0v22ME7ilNwWiHMfnPpB_dJ4--1zA_oqVTcBVsTLQOvCA0G1oph0I7KDcRZxCAITomTFMk2reXTFbn8LvjJU51uuKcZZvLFVU8nxRFRfU',
-            'company_rating' => 4.6,
-            'location' => 'San Francisco, CA',
-            'latitude' => 37.7749,
-            'longitude' => -122.4194,
-            'job_type' => 'full-time',
-            'experience' => 'senior',
-            'salary' => 144000,
-            'skills' => ['CI/CD', 'Docker', 'Kubernetes', 'AWS'],
-            'description' => 'Help maintain and improve our CI/CD pipelines, ensuring our services are reliable and scalable for millions of users.',
-            'posted_at' => date('Y-m-d H:i:s', strtotime('-1 day')),
-            'badge' => 'Urgent',
-            'badge_class' => 'bg-orange-100 text-orange-800'
-        ],
-        [
-            'id' => 6,
-            'title' => 'Marketing Manager',
-            'slug' => 'shopify-marketing-manager-6',
-            'company_name' => 'Shopify',
-            'company_logo' => 'https://lh3.googleusercontent.com/aida-public/AB6AXuAPEpuUQWTh6vxomG4Yb6m5TEd75ohHpmHO11hDa3ACXjcdfAyZpafbzUlgzqP0E_MDHfRWDj_wOdhTGFWrVxVRApC1PKZksihRcqNVMYmkMNK3zLdDgv9x2I6ln4e3rxevAYjXaXhWzUSIX2rFUZoxvz9dmXYk6lMWAMQDE-PNJe4GCK_xz85hFMJ0M1hlJxT9JtY5P3mKJ4Y9GJoZz1fbHW1iOMmXtBK_mC99xxfCQjdHoPyNZ0MkxwjbYD_Fn2CzXGtDFRasDq4',
-            'company_rating' => 4.4,
-            'location' => 'Ottawa, ON',
-            'latitude' => 45.4215,
-            'longitude' => -75.6972,
-            'job_type' => 'part-time',
-            'experience' => 'junior',
-            'salary' => 60000,
-            'skills' => ['Marketing', 'SEO', 'Content'],
-            'description' => 'Lead our growth marketing initiatives and develop campaigns to attract new merchants to the Shopify platform.',
-            'posted_at' => date('Y-m-d H:i:s', strtotime('-8 days')),
-            'badge' => null
-        ],
-        [
-            'id' => 7,
-            'title' => 'Full Stack Developer (Remote)',
-            'slug' => 'microsoft-full-stack-developer-remote-7',
-            'company_name' => 'Microsoft',
-            'company_logo' => getPlaceholderImage(48),
-            'company_rating' => 4.8,
-            'location' => 'Remote',
-            'latitude' => null,
-            'longitude' => null,
-            'job_type' => 'remote',
-            'experience' => 'senior',
-            'salary' => 168000,
-            'skills' => ['Node.js', 'React', 'TypeScript', 'MongoDB'],
-            'description' => 'Build scalable web applications using modern technologies. Work remotely with a global team.',
-            'posted_at' => date('Y-m-d H:i:s', strtotime('-12 hours')),
-            'badge' => 'New',
-            'badge_class' => 'bg-green-100 text-green-800'
-        ],
-        [
-            'id' => 8,
-            'title' => 'PHP Developer',
-            'slug' => 'techcorp-php-developer-8',
-            'company_name' => 'TechCorp',
-            'company_logo' => getPlaceholderImage(48),
-            'company_rating' => 4.1,
-            'location' => 'Mumbai, India',
-            'latitude' => 19.0760,
-            'longitude' => 72.8777,
-            'job_type' => 'full-time',
-            'experience' => 'junior',
-            'salary' => 72000,
-            'skills' => ['PHP', 'Laravel', 'MySQL', 'REST API'],
-            'description' => 'We are looking for a PHP developer with experience in Laravel framework to join our growing team.',
-            'posted_at' => date('Y-m-d H:i:s', strtotime('-6 hours')),
-            'badge' => 'New',
-            'badge_class' => 'bg-green-100 text-green-800'
-        ],
-        [
-            'id' => 9,
-            'title' => 'Data Scientist',
-            'slug' => 'tastiorecipes-data-scientist-9',
-            'company_name' => 'Tastiorecipes',
-            'company_logo' => getPlaceholderImage(48),
-            'company_rating' => 4.3,
-            'location' => 'San Francisco, CA',
-            'latitude' => 37.7749,
-            'longitude' => -122.4194,
-            'job_type' => 'full-time',
-            'experience' => 'senior',
-            'experience_level' => 'senior',
-            'salary' => 150000,
-            'salary_min' => 130000,
-            'salary_max' => 170000,
-            'is_remote' => 0,
-            'skills' => ['Python', 'Machine Learning', 'Data Analysis', 'SQL'],
-            'description' => 'Join our data science team to analyze user behavior, build recommendation systems, and improve our recipe platform using advanced machine learning techniques.',
-            'responsibilities' => [
-                'Develop and implement machine learning models for recipe recommendations.',
-                'Analyze large datasets to identify patterns and insights.',
-                'Collaborate with product and engineering teams to deploy models.',
-                'Create data visualizations and reports for stakeholders.',
-                'Maintain and improve existing data pipelines.'
-            ],
-            'requirements' => [
-                '5+ years of experience in data science or machine learning.',
-                'Strong proficiency in Python, SQL, and data analysis tools.',
-                'Experience with machine learning frameworks (TensorFlow, PyTorch, scikit-learn).',
-                'Strong statistical analysis and problem-solving skills.',
-                'Excellent communication skills to present findings to non-technical stakeholders.'
-            ],
-            'posted_at' => date('Y-m-d H:i:s', strtotime('-3 days')),
-            'badge' => null
-        ],
-        [
-            'id' => 10,
-            'title' => 'Senior Software Engineer',
-            'slug' => 'tastiorecipes-com-senior-software-engineer-10',
-            'company_name' => 'Tastiorecipes',
-            'company_logo' => getPlaceholderImage(48),
-            'company_rating' => 4.3,
-            'location' => 'San Francisco, CA',
-            'latitude' => 37.7749,
-            'longitude' => -122.4194,
-            'job_type' => 'full-time',
-            'experience' => 'senior',
-            'experience_level' => 'senior',
-            'salary' => 160000,
-            'salary_min' => 140000,
-            'salary_max' => 180000,
-            'is_remote' => 0,
-            'skills' => ['JavaScript', 'Node.js', 'React', 'TypeScript', 'AWS'],
-            'description' => 'We are seeking a Senior Software Engineer to join our engineering team. You will be responsible for designing, developing, and maintaining scalable web applications that serve millions of users. You will work with cutting-edge technologies and collaborate with cross-functional teams to deliver high-quality software solutions.',
-            'responsibilities' => [
-                'Design and develop scalable, high-performance web applications.',
-                'Write clean, maintainable, and well-documented code.',
-                'Collaborate with product managers, designers, and other engineers.',
-                'Participate in code reviews and technical discussions.',
-                'Mentor junior engineers and contribute to team growth.',
-                'Identify and resolve performance bottlenecks.',
-                'Ensure code quality through testing and best practices.'
-            ],
-            'requirements' => [
-                '5+ years of professional software development experience.',
-                'Strong proficiency in JavaScript, TypeScript, and modern frameworks (React, Node.js).',
-                'Experience with cloud platforms (AWS, GCP, or Azure).',
-                'Solid understanding of database design and optimization.',
-                'Experience with microservices architecture and RESTful APIs.',
-                'Strong problem-solving and debugging skills.',
-                'Excellent communication and collaboration skills.',
-                'Bachelor\'s degree in Computer Science or related field, or equivalent experience.'
-            ],
-            'posted_at' => date('Y-m-d H:i:s', strtotime('-1 day')),
-            'badge' => 'New',
-            'badge_class' => 'bg-green-100 text-green-800'
-        ]
-    ];
-    
-    // Ensure all jobs have slugs
-    foreach ($jobs as &$job) {
-        if (!isset($job['slug'])) {
-            $job['slug'] = generateJobSlug($job['company_name'], $job['title'], $job['id']);
-        }
-    }
-    unset($job);
-    
-    return $jobs;
-}
 
 /**
  * Filter jobs based on criteria

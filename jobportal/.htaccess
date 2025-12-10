@@ -5,32 +5,63 @@
 # ----------------------------------------------------------------------
 
 # Disable directory browsing (IMPORTANT for security)
-Options -Indexes
+# But allow root to be rewritten to public
+Options -Indexes +FollowSymLinks
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
     
-    # Redirect /public/ URLs to clean URLs (remove /public/ from URL)
-    # This ensures URLs like https://toptopjobs.com/public/login redirect to https://toptopjobs.com/login
-    # Also handles /public/api/jobs.php -> /api/jobs.php
-    RewriteCond %{THE_REQUEST} \s/+(.+?/)?public/([^\s?]*) [NC]
-    RewriteRule ^ /%2 [R=301,L]
-    
-    # If accessing root directory, redirect to public
-    RewriteCond %{REQUEST_URI} ^/$
+    # PRIORITY 1: If accessing root directory, rewrite to public/ FIRST (before blocking rules)
+    # This prevents 403 errors when accessing the root
+    RewriteCond %{REQUEST_URI} ^/?$
     RewriteRule ^(.*)$ public/ [L]
     
-    # If the request is for a file that exists in root, serve it directly (like .htaccess itself)
+    # PRIORITY 2: Block direct access to sensitive directories
+    # Only block if it's NOT the root path and matches sensitive patterns
+    RewriteCond %{REQUEST_URI} !^/$
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteCond %{REQUEST_URI} ^/(app|writable|vendor|tests|database|spark|composer\.(json|lock)|phpunit\.xml\.dist|\.env|\.git) [NC]
+    RewriteRule ^ - [F,L]
+    
+    # Block sensitive files in root (but not directories)
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteCond %{REQUEST_URI} \.(env|git)$ [NC]
+    RewriteRule ^ - [F,L]
+    
+    # PRIORITY 3: Redirect /public/ URLs to clean URLs (remove /public/ from URL)
+    # This ensures URLs like https://toptopjobs.com/public/job/... redirect to https://toptopjobs.com/job/...
+    # Match any request that contains /public/ in the URL
+    RewriteCond %{THE_REQUEST} \s/+public/([^\s?]*) [NC]
+    RewriteRule ^ /%1 [R=301,L]
+    
+    # Also handle REQUEST_URI for internal redirects
+    RewriteCond %{REQUEST_URI} ^/public/(.+)$ [NC]
+    RewriteRule ^public/(.*)$ /$1 [R=301,L]
+    
+    # PRIORITY 4: Serve uploads directly - bypass CodeIgniter routing
+    # Handle both /uploads/ and /api/uploads/ patterns
+    RewriteCond %{REQUEST_URI} ^/(api/)?uploads/ [NC]
+    RewriteCond %{DOCUMENT_ROOT}/public%{REQUEST_URI} -f
+    RewriteRule ^(.*)$ public/$1 [L]
+    
+    # PRIORITY 5: Serve API files directly from public folder
+    # This ensures /api/jobs.php works without /public/ prefix
+    RewriteCond %{REQUEST_URI} ^/api/.*\.php$ [NC]
+    RewriteCond %{DOCUMENT_ROOT}/public%{REQUEST_URI} -f
+    RewriteRule ^(.*)$ public/$1 [L]
+    
+    # PRIORITY 6: If the request is for a file that exists in root, serve it directly
     RewriteCond %{REQUEST_FILENAME} -f
     RewriteRule ^ - [L]
     
-    # If the request is for a directory that exists in root, serve it directly
+    # PRIORITY 7: If the request is for a directory that exists in root, serve it directly
     RewriteCond %{REQUEST_FILENAME} -d
     RewriteRule ^ - [L]
     
-    # Rewrite all requests to public folder (let public/.htaccess handle file serving)
-    # This handles /api/jobs.php -> /public/api/jobs.php (internally)
-    # The public/.htaccess will serve existing files directly
+    # PRIORITY 8: Rewrite all other requests to public folder (let public/.htaccess handle routing)
+    # This handles /job/... -> /public/ (CodeIgniter will route it)
+    # This handles /api/... -> /public/api/...
+    # The public/.htaccess will serve existing files directly or route through CodeIgniter
     RewriteCond %{REQUEST_URI} !^/public/
     RewriteRule ^(.*)$ public/$1 [L]
 </IfModule>
@@ -57,11 +88,4 @@ Options -Indexes
         Deny from all
     </IfModule>
 </Files>
-
-# Protect sensitive directories and files
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    # Block direct access to app, writable, vendor, tests, database, and other sensitive directories
-    RewriteRule ^(app|writable|vendor|tests|database|spark|composer\.(json|lock)|phpunit\.xml\.dist|\.env|\.git) - [F,L]
-</IfModule>
 
