@@ -529,6 +529,18 @@
             const mobileSearchInput = document.getElementById('headerSearchJobInputMobile');
             const mobileSearchBtn = document.getElementById('headerSearchBtnMobile');
             
+            // Populate search inputs with URL query parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const searchQuery = urlParams.get('q');
+            if (searchQuery) {
+                if (desktopSearchInput) {
+                    desktopSearchInput.value = decodeURIComponent(searchQuery);
+                }
+                if (mobileSearchInput) {
+                    mobileSearchInput.value = decodeURIComponent(searchQuery);
+                }
+            }
+            
             function handleSearch(searchInput, e) {
                 if (e) {
                     e.preventDefault();
