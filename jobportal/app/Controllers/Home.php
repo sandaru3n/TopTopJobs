@@ -88,6 +88,52 @@ class Home extends BaseController
     }
 
     /**
+     * Delete Job - Delete a job (does not delete the company)
+     */
+    public function deleteJob($id = null)
+    {
+        // Check if user is logged in
+        if (!session()->get('user_id')) {
+            return redirect()->to('/login')
+                ->with('error', 'Please log in to delete jobs.');
+        }
+
+        // Get ID from URI if not provided as parameter
+        if ($id === null) {
+            $segments = $this->request->getUri()->getSegments();
+            $id = (int)end($segments);
+        } else {
+            $id = (int)$id;
+        }
+
+        if (!$id) {
+            return redirect()->to('/manage-jobs')
+                ->with('error', 'Invalid job ID.');
+        }
+
+        $userId = session()->get('user_id');
+        $job = $this->jobModel->find($id);
+
+        // Check if job exists and belongs to user
+        if (!$job || $job['posted_by'] != $userId) {
+            return redirect()->to('/manage-jobs')
+                ->with('error', 'Job not found or you do not have permission to delete it.');
+        }
+
+        try {
+            // Delete the job (company is NOT deleted)
+            $this->jobModel->delete($id);
+
+            return redirect()->to('/manage-jobs')
+                ->with('success', 'Job deleted successfully.');
+        } catch (\Exception $e) {
+            log_message('error', 'Job deletion error: ' . $e->getMessage());
+            return redirect()->to('/manage-jobs')
+                ->with('error', 'An error occurred while deleting the job. Please try again.');
+        }
+    }
+
+    /**
      * Edit Job - Show edit form
      */
     public function editJob($id = null): string

@@ -40,6 +40,7 @@ $routes->post('profile/password', 'AuthController::updatePassword', ['filter' =>
 $routes->get('manage-jobs', 'Home::manageJobs', ['filter' => 'auth']);
 $routes->get('edit-job/(:num)', 'Home::editJob', ['filter' => 'auth']);
 $routes->post('update-job/(:num)', 'Home::updateJob', ['filter' => 'auth']);
+$routes->match(['get', 'post', 'delete'], 'delete-job/(:num)', 'Home::deleteJob', ['filter' => 'auth']);
 
 // Saved Jobs routes
 $routes->get('saved-jobs', 'Home::savedJobs', ['filter' => 'auth']);

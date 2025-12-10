@@ -1127,11 +1127,16 @@
                 return;
             }
             
+            // Extract base path from current location to avoid double domain issue
+            let currentPath = window.location.pathname;
+            currentPath = currentPath.replace(/\/public\/?/g, '/').replace(/\/+/g, '/');
+            const pathParts = currentPath.split('/job/');
+            const basePath = (pathParts[0] || '').replace(/\/$/, '');
+            
             container.innerHTML = jobs.map(job => {
                 const jobSlug = job.slug || `${job.company_name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${job.title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${job.id}`;
-                // Remove /public/ from baseUrl if present for clean URLs (remove all occurrences)
-                const cleanBaseUrl = baseUrl.replace(/\/public\/?/g, '/').replace(/\/+/g, '/').replace(/\/$/, '');
-                const jobUrl = `${cleanBaseUrl}/job/${jobSlug}/`.replace(/\/+/g, '/');
+                // Construct relative URL using base path
+                const jobUrl = `${basePath}/job/${jobSlug}`.replace(/\/+/g, '/');
                 
                 return `
                     <a href="${jobUrl}" class="block border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-primary/50 dark:hover:border-primary/50 hover:shadow-md transition-all duration-300">

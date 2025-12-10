@@ -104,6 +104,20 @@
                                         >
                                             Edit
                                         </a>
+                                        <form 
+                                            action="<?= base_url('delete-job/' . $job['id']) ?>" 
+                                            method="POST" 
+                                            class="inline"
+                                            onsubmit="return confirm('Are you sure you want to delete this job? This action cannot be undone.');"
+                                        >
+                                            <?= csrf_field() ?>
+                                            <button 
+                                                type="submit"
+                                                class="px-4 py-2 rounded-lg border border-red-300 dark:border-red-600 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                            >
+                                                Delete
+                                            </button>
+                                        </form>
                                     </div>
                                 </div>
                             </div>
