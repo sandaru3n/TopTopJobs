@@ -75,7 +75,14 @@ class Home extends BaseController
         foreach ($jobs as &$job) {
             $company = $this->companyModel->find($job['company_id']);
             $job['company_name'] = $company['name'] ?? 'Unknown Company';
-            $job['company_logo'] = $company['logo'] ?? null;
+            $logo = $company['logo'] ?? null;
+            
+            // Convert HTTP URLs to HTTPS to prevent mixed content warnings
+            if ($logo && strpos($logo, 'http://') === 0) {
+                $logo = str_replace('http://', 'https://', $logo);
+            }
+            
+            $job['company_logo'] = $logo;
         }
 
         return view('home/manage-jobs', ['jobs' => $jobs]);
@@ -116,6 +123,11 @@ class Home extends BaseController
 
         // Get company info
         $company = $this->companyModel->find($job['company_id']);
+        
+        // Convert HTTP URLs to HTTPS to prevent mixed content warnings
+        if ($company && isset($company['logo']) && $company['logo'] && strpos($company['logo'], 'http://') === 0) {
+            $company['logo'] = str_replace('http://', 'https://', $company['logo']);
+        }
 
         // Extract application info from description if stored there
         $description = $job['description'] ?? '';
@@ -273,6 +285,10 @@ class Home extends BaseController
             $newName = $logoFile->getRandomName();
             $logoFile->move($uploadPath, $newName);
             $logoPath = base_url('uploads/company_logos/' . $newName);
+            // Ensure HTTPS for uploaded images to prevent mixed content warnings
+            if (strpos($logoPath, 'http://') === 0) {
+                $logoPath = str_replace('http://', 'https://', $logoPath);
+            }
         }
 
         // Update or find company
@@ -469,6 +485,10 @@ class Home extends BaseController
             
             // Store relative path for database (accessible via web)
             $logoPath = base_url('uploads/company_logos/' . $newName);
+            // Ensure HTTPS for uploaded images to prevent mixed content warnings
+            if (strpos($logoPath, 'http://') === 0) {
+                $logoPath = str_replace('http://', 'https://', $logoPath);
+            }
         }
 
         try {
@@ -662,7 +682,14 @@ class Home extends BaseController
         foreach ($jobs as &$job) {
             $company = $this->companyModel->find($job['company_id']);
             $job['company_name'] = $company['name'] ?? 'Unknown Company';
-            $job['company_logo'] = $company['logo'] ?? null;
+            $logo = $company['logo'] ?? null;
+            
+            // Convert HTTP URLs to HTTPS to prevent mixed content warnings
+            if ($logo && strpos($logo, 'http://') === 0) {
+                $logo = str_replace('http://', 'https://', $logo);
+            }
+            
+            $job['company_logo'] = $logo;
             $job['saved_at'] = $savedJobs[array_search($job['id'], $jobIds)]['created_at'] ?? null;
         }
 

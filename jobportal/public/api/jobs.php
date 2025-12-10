@@ -76,7 +76,11 @@ function checkImageUrl($url, $placeholderSize = 48) {
     // Check for both http and https, and handle with or without trailing slash
     // Also check for toptopjobs.local anywhere in the URL (not just at start)
     if (stripos($url, 'toptopjobs.local') !== false) {
-        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        // Always use HTTPS if the request is over HTTPS, or if it's a production domain
+        $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || 
+                   (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ||
+                   (isset($_SERVER['HTTP_HOST']) && stripos($_SERVER['HTTP_HOST'], 'toptopjobs.com') !== false);
+        $protocol = $isHttps ? 'https' : 'http';
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
         // Remove the local domain part using regex
         $path = preg_replace('#https?://toptopjobs\.local/?#i', '', $url);
@@ -86,14 +90,22 @@ function checkImageUrl($url, $placeholderSize = 48) {
         return $converted;
     }
     
-    // If it's a valid absolute URL (http/https), return as-is
+    // If it's a valid absolute URL (http/https), convert HTTP to HTTPS to prevent mixed content
     if (filter_var($url, FILTER_VALIDATE_URL) && (stripos($url, 'http://') === 0 || stripos($url, 'https://') === 0)) {
+        // Convert HTTP to HTTPS to prevent mixed content warnings
+        if (stripos($url, 'http://') === 0) {
+            $url = str_replace('http://', 'https://', $url);
+        }
         return $url;
     }
     
     // If it's a relative path, convert to absolute URL
     if (!filter_var($url, FILTER_VALIDATE_URL)) {
-        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        // Always use HTTPS if the request is over HTTPS, or if it's a production domain
+        $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || 
+                   (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ||
+                   (isset($_SERVER['HTTP_HOST']) && stripos($_SERVER['HTTP_HOST'], 'toptopjobs.com') !== false);
+        $protocol = $isHttps ? 'https' : 'http';
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
         $path = ltrim($url, '/');
         return $protocol . '://' . $host . '/' . $path;
