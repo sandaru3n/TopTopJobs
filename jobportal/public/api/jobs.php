@@ -263,7 +263,7 @@ if ($jobId || $jobSlug) {
             if ($jobId) {
                 // Find by ID
                 $stmt = $conn->prepare("
-                    SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website, c.industry as company_industry
+                    SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website, c.maps_url as company_maps_url, c.industry as company_industry
                     FROM jobs j
                     INNER JOIN companies c ON j.company_id = c.id
                     WHERE j.id = ? AND j.status = 'active'
@@ -290,7 +290,7 @@ if ($jobId || $jobSlug) {
                     
                     // First try with active status
                     $stmt = $conn->prepare("
-                        SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website, c.industry as company_industry
+                        SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website, c.maps_url as company_maps_url, c.industry as company_industry
                         FROM jobs j
                         INNER JOIN companies c ON j.company_id = c.id
                         WHERE j.id = ? AND j.status = 'active'
@@ -307,7 +307,7 @@ if ($jobId || $jobSlug) {
                                 // Try without status filter as fallback
                                 $stmt->close();
                                 $stmt = $conn->prepare("
-                                    SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website, c.industry as company_industry
+                                    SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website, c.maps_url as company_maps_url, c.industry as company_industry
                                     FROM jobs j
                                     INNER JOIN companies c ON j.company_id = c.id
                                     WHERE j.id = ?
@@ -340,7 +340,7 @@ if ($jobId || $jobSlug) {
                     error_log('Trying to match by slug directly: ' . $jobSlug);
                     // First try with active status
                     $stmt = $conn->prepare("
-                        SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website, c.industry as company_industry
+                        SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website, c.maps_url as company_maps_url, c.industry as company_industry
                         FROM jobs j
                         INNER JOIN companies c ON j.company_id = c.id
                         WHERE j.slug = ? AND j.status = 'active'
@@ -357,7 +357,7 @@ if ($jobId || $jobSlug) {
                                 // Try without status filter as fallback
                                 $stmt->close();
                                 $stmt = $conn->prepare("
-                                    SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website, c.industry as company_industry
+                                    SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website, c.maps_url as company_maps_url, c.industry as company_industry
                                     FROM jobs j
                                     INNER JOIN companies c ON j.company_id = c.id
                                     WHERE j.slug = ?
@@ -641,6 +641,7 @@ function getJobsFromDatabase() {
                         c.rating as company_rating,
                         c.description as company_description,
                         c.website as company_website,
+                        c.maps_url as company_maps_url,
                         c.industry as company_industry
                     FROM jobs j
                     INNER JOIN companies c ON j.company_id = c.id
@@ -813,6 +814,7 @@ function formatJobData($job) {
         'badge_class' => $badgeClass,
         'company_description' => $job['company_description'] ?? null,
         'company_website' => $job['company_website'] ?? null,
+        'company_maps_url' => $job['company_maps_url'] ?? null,
         'application_email' => $job['application_email'] ?? null,
         'application_url' => $job['application_url'] ?? null,
         'application_phone' => $job['application_phone'] ?? null,

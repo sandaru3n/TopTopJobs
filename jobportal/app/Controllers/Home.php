@@ -226,9 +226,12 @@ class Home extends BaseController
 
         // Validation rules (similar to post job)
         $validation = \Config\Services::validation();
+        $jobType = $this->request->getPost('job_type');
+        $isRemoteJob = ($jobType === 'remote');
+        
         $rules = [
             'job_title' => 'required|max_length[255]',
-            'location' => 'required|max_length[255]',
+            'location' => $isRemoteJob ? 'permit_empty|max_length[255]' : 'required|max_length[255]',
             'job_type' => 'required|in_list[full-time,part-time,contract,internship,remote]',
             'application_email' => 'permit_empty|valid_email',
             'application_url' => 'permit_empty|valid_url',
@@ -270,7 +273,25 @@ class Home extends BaseController
         $applicationEmail = $this->request->getPost('application_email');
         $applicationUrl = $this->request->getPost('application_url');
         $applicationPhone = $this->request->getPost('application_phone');
-        $isRemote = $this->request->getPost('is_remote') == '1' || $this->request->getPost('is_remote') == 1;
+        // Determine if remote from job_type (checkbox removed from form)
+        $isRemote = ($jobType === 'remote');
+        
+        // Set default location for remote jobs if location is empty
+        if ($isRemote) {
+            $location = trim($location ?? '');
+            if (empty($location)) {
+                $location = 'Remote';
+            }
+        } else {
+            // Ensure location is not empty for non-remote jobs
+            $location = trim($location ?? '');
+            if (empty($location)) {
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', 'Location is required for non-remote jobs.');
+            }
+        }
+        
         $validThroughInput = $this->request->getPost('valid_through');
         $companyName = $this->request->getPost('company_name');
         $companyId = $this->request->getPost('company_id');
@@ -296,9 +317,10 @@ class Home extends BaseController
         if (!empty($companyId)) {
             $company = $this->companyModel->find($companyId);
             if ($company) {
-                // Update company with new data if provided
+                // Update company with new data if provided (maps_url is preserved from existing company)
                 $companyData = [];
                 if ($companyWebsite) $companyData['website'] = $companyWebsite;
+                // Keep existing maps_url from database, don't update it
                 if ($companyDescription) $companyData['description'] = $companyDescription;
                 if ($jobCategory) $companyData['industry'] = $jobCategory;
                 if ($logoPath) $companyData['logo'] = $logoPath;
@@ -433,11 +455,14 @@ class Home extends BaseController
         // This is a placeholder - implement actual job posting logic here
         $validation = \Config\Services::validation();
         
+        $jobType = $this->request->getPost('job_type');
+        $isRemoteJob = ($jobType === 'remote');
+        
         $rules = [
             'job_title' => 'required|max_length[255]',
             'application_email' => 'permit_empty|valid_email',
             'application_url' => 'permit_empty|valid_url',
-            'location' => 'required|max_length[255]',
+            'location' => $isRemoteJob ? 'permit_empty|max_length[255]' : 'required|max_length[255]',
             'job_type' => 'required|in_list[full-time,part-time,internship,remote,contract]',
             'application_phone' => 'permit_empty|max_length[20]',
             'salary_min' => 'permit_empty|numeric',
@@ -462,13 +487,13 @@ class Home extends BaseController
                 ->with('errors', $validation->getErrors());
         }
 
-        // Validate salary range
+        // Validate salary range (minimum must be less than maximum)
         $salaryMin = $this->request->getPost('salary_min');
         $salaryMax = $this->request->getPost('salary_max');
-        if ($salaryMin && $salaryMax && (float)$salaryMin > (float)$salaryMax) {
+        if ($salaryMin && $salaryMax && (float)$salaryMin >= (float)$salaryMax) {
             return redirect()->back()
                 ->withInput()
-                ->with('error', 'Minimum salary cannot be greater than maximum salary.');
+                ->with('error', 'Minimum salary must be less than maximum salary.');
         }
 
         // Validate valid_through is present and not in the past
@@ -535,7 +560,22 @@ class Home extends BaseController
             $applicationEmail = $this->request->getPost('application_email');
             $applicationUrl = $this->request->getPost('application_url');
             $applicationPhone = $this->request->getPost('application_phone');
-            $isRemote = $this->request->getPost('is_remote') == '1' || $this->request->getPost('is_remote') == 1;
+            // Determine if remote from job_type (checkbox removed from form)
+            $isRemote = ($jobType === 'remote');
+            
+            // Set default location for remote jobs if location is empty
+            if ($isRemote) {
+                $location = trim($location ?? '');
+                if (empty($location)) {
+                    $location = 'Remote';
+                }
+            } else {
+                // Ensure location is not empty for non-remote jobs
+                $location = trim($location ?? '');
+                if (empty($location)) {
+                    throw new \Exception('Location is required for non-remote jobs');
+                }
+            }
             $validThroughInput = $this->request->getPost('valid_through');
             $userId = session()->get('user_id');
 
@@ -594,10 +634,7 @@ class Home extends BaseController
                 $finalSalaryMin = $finalSalaryMax;
             }
 
-            // Determine if remote (from checkbox or job type)
-            if (!$isRemote) {
-                $isRemote = ($jobType === 'remote' || stripos($location, 'remote') !== false);
-            }
+            // isRemote is already determined from job_type above
 
             // Process skills (comma-separated string)
             $skillsString = null;
@@ -668,6 +705,7 @@ class Home extends BaseController
                 
         } catch (\Exception $e) {
             log_message('error', 'Job posting error: ' . $e->getMessage());
+            log_message('error', 'Job posting error trace: ' . $e->getTraceAsString());
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'An error occurred while posting the job. Please try again.');

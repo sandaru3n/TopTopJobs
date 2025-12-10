@@ -127,6 +127,7 @@ try {
                         name,
                         logo,
                         website,
+                        maps_url,
                         industry,
                         description
                     FROM companies
@@ -169,6 +170,7 @@ try {
                                 'name' => $row['name'],
                                 'logo' => $logo,
                                 'website' => $row['website'],
+                                'maps_url' => $row['maps_url'] ?? null,
                                 'industry' => $row['industry'],
                                 'description' => $row['description']
                             ];

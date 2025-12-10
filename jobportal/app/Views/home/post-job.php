@@ -94,37 +94,6 @@
                             </div>
                         </div>
 
-                        <!-- Location and Remote -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label for="location" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
-                                    Location <span class="text-red-500">*</span>
-                                </label>
-                                <input 
-                                    type="text" 
-                                    id="location" 
-                                    name="location" 
-                                    required
-                                    value="<?= old('location') ?>"
-                                    class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                                    placeholder="e.g., New York, NY"
-                                />
-                            </div>
-                            <div class="flex items-end">
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input 
-                                        type="checkbox" 
-                                        id="is_remote" 
-                                        name="is_remote" 
-                                        value="1"
-                                        <?= old('is_remote') ? 'checked' : '' ?>
-                                        class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary/50 cursor-pointer"
-                                    />
-                                    <span class="text-sm font-medium text-[#111318] dark:text-gray-300">Remote Job</span>
-                                </label>
-                            </div>
-                        </div>
-
                         <!-- Job Type -->
                         <div>
                             <label for="job_type" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
@@ -143,6 +112,21 @@
                                 <option value="contract" <?= old('job_type') === 'contract' ? 'selected' : '' ?>>Contract</option>
                                 <option value="remote" <?= old('job_type') === 'remote' ? 'selected' : '' ?>>Remote</option>
                             </select>
+                        </div>
+
+                        <!-- Location -->
+                        <div id="locationContainer">
+                            <label for="location" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
+                                Location <span class="text-red-500 location-required">*</span>
+                            </label>
+                            <input 
+                                type="text" 
+                                id="location" 
+                                name="location" 
+                                value="<?= old('location') ?>"
+                                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                                placeholder="e.g., New York, NY"
+                            />
                         </div>
 
                         <!-- Application Phone Number -->
@@ -175,7 +159,7 @@
                                             id="salary_min" 
                                             name="salary_min" 
                                             min="0"
-                                            step="100"
+                                            step="any"
                                             value="<?= old('salary_min') ?>"
                                             class="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
                                             placeholder="3000"
@@ -191,7 +175,7 @@
                                             id="salary_max" 
                                             name="salary_max" 
                                             min="0"
-                                            step="100"
+                                            step="any"
                                             value="<?= old('salary_max') ?>"
                                             class="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
                                             placeholder="6000"
@@ -200,6 +184,7 @@
                                 </div>
                             </div>
                             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Leave blank if salary is not disclosed</p>
+                            <p id="salaryError" class="mt-1 text-xs text-red-600 dark:text-red-400 hidden">Minimum salary must be less than maximum salary</p>
                         </div>
 
                         <!-- Job Category -->
@@ -240,7 +225,7 @@
                                 name="min_experience" 
                                 min="0"
                                 max="50"
-                                value="<?= old('min_experience') ?>"
+                                value="<?= old('min_experience', '0') ?>"
                                 class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
                                 placeholder="0"
                             />
@@ -384,6 +369,7 @@
                                 placeholder="https://company.com"
                             />
                         </div>
+
 
                         <!-- Company Logo -->
                         <div>
@@ -552,6 +538,67 @@
                 return false;
             }
         });
+
+        // Salary Range Validation
+        (function() {
+            const salaryMinInput = document.getElementById('salary_min');
+            const salaryMaxInput = document.getElementById('salary_max');
+            const salaryError = document.getElementById('salaryError');
+            
+            function validateSalaryRange() {
+                const min = parseFloat(salaryMinInput.value);
+                const max = parseFloat(salaryMaxInput.value);
+                
+                // Only validate if both values are provided
+                if (salaryMinInput.value.trim() && salaryMaxInput.value.trim()) {
+                    if (min >= max) {
+                        // Show error
+                        salaryError.classList.remove('hidden');
+                        salaryMinInput.classList.add('border-red-500', 'dark:border-red-500');
+                        salaryMinInput.classList.remove('border-gray-300', 'dark:border-gray-600');
+                        salaryMaxInput.classList.add('border-red-500', 'dark:border-red-500');
+                        salaryMaxInput.classList.remove('border-gray-300', 'dark:border-gray-600');
+                        return false;
+                    } else {
+                        // Hide error
+                        salaryError.classList.add('hidden');
+                        salaryMinInput.classList.remove('border-red-500', 'dark:border-red-500');
+                        salaryMinInput.classList.add('border-gray-300', 'dark:border-gray-600');
+                        salaryMaxInput.classList.remove('border-red-500', 'dark:border-red-500');
+                        salaryMaxInput.classList.add('border-gray-300', 'dark:border-gray-600');
+                        return true;
+                    }
+                } else {
+                    // Hide error if one or both fields are empty
+                    salaryError.classList.add('hidden');
+                    salaryMinInput.classList.remove('border-red-500', 'dark:border-red-500');
+                    salaryMinInput.classList.add('border-gray-300', 'dark:border-gray-600');
+                    salaryMaxInput.classList.remove('border-red-500', 'dark:border-red-500');
+                    salaryMaxInput.classList.add('border-gray-300', 'dark:border-gray-600');
+                    return true;
+                }
+            }
+            
+            // Validate on input change
+            if (salaryMinInput) {
+                salaryMinInput.addEventListener('input', validateSalaryRange);
+                salaryMinInput.addEventListener('blur', validateSalaryRange);
+            }
+            
+            if (salaryMaxInput) {
+                salaryMaxInput.addEventListener('input', validateSalaryRange);
+                salaryMaxInput.addEventListener('blur', validateSalaryRange);
+            }
+            
+            // Validate on form submission
+            document.getElementById('postJobForm').addEventListener('submit', function(e) {
+                if (!validateSalaryRange()) {
+                    e.preventDefault();
+                    salaryMinInput.focus();
+                    return false;
+                }
+            });
+        })();
         
         // Company Autocomplete Functionality
         (function() {
@@ -736,6 +783,52 @@
                 const div = document.createElement('div');
                 div.textContent = text;
                 return div.innerHTML;
+            }
+        })();
+
+        // Handle Job Type and Location visibility
+        (function() {
+            const jobTypeSelect = document.getElementById('job_type');
+            const locationContainer = document.getElementById('locationContainer');
+            const locationInput = document.getElementById('location');
+            const locationLabel = locationInput ? locationInput.previousElementSibling : null;
+            const locationRequiredSpan = locationLabel ? locationLabel.querySelector('.location-required') : null;
+            
+            function toggleLocationField() {
+                if (!jobTypeSelect || !locationContainer || !locationInput) return;
+                
+                const selectedJobType = jobTypeSelect.value;
+                const isRemote = selectedJobType === 'remote';
+                
+                if (isRemote) {
+                    // Hide location field when Remote is selected
+                    locationContainer.style.display = 'none';
+                    locationInput.removeAttribute('required');
+                    if (locationRequiredSpan) {
+                        locationRequiredSpan.style.display = 'none';
+                    }
+                    // Clear location value
+                    locationInput.value = '';
+                } else {
+                    // Show location field for other job types
+                    locationContainer.style.display = 'block';
+                    locationInput.setAttribute('required', 'required');
+                    if (locationRequiredSpan) {
+                        locationRequiredSpan.style.display = 'inline';
+                    }
+                }
+            }
+            
+            // Initialize on page load
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', toggleLocationField);
+            } else {
+                toggleLocationField();
+            }
+            
+            // Listen for changes
+            if (jobTypeSelect) {
+                jobTypeSelect.addEventListener('change', toggleLocationField);
             }
         })();
     </script>

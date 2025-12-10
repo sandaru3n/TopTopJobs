@@ -100,13 +100,23 @@
                             <!-- Location Section -->
                             <div id="locationSection">
                                 <h3 class="text-xl font-bold mb-4 text-[#111318] dark:text-white">Location</h3>
-                                <div class="aspect-video w-full rounded-lg overflow-hidden border border-primary/20 dark:border-primary/10 bg-gray-100 dark:bg-gray-800">
+                                <div class="aspect-video w-full rounded-lg overflow-hidden border border-primary/20 dark:border-primary/10 bg-gray-100 dark:bg-gray-800 relative">
+                                    <!-- Google Maps Embed -->
+                                    <iframe id="googleMapEmbed" class="hidden w-full h-full border-0" frameborder="0" style="border:0" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                                    
+                                    <!-- Fallback placeholder when no map available -->
                                     <div id="mapContainer" class="w-full h-full flex items-center justify-center text-gray-400">
                                         <div class="text-center">
                                             <span class="material-symbols-outlined text-4xl mb-2">location_on</span>
                                             <p id="locationText" class="text-sm"></p>
                                         </div>
                                     </div>
+                                    
+                                    <!-- Google Maps Link Button -->
+                                    <a id="googleMapsLink" href="#" target="_blank" rel="noopener noreferrer" class="hidden absolute bottom-4 right-4 bg-white dark:bg-gray-800 text-[#111318] dark:text-white px-4 py-2 rounded-lg shadow-lg hover:shadow-xl transition-shadow flex items-center gap-2 border border-gray-300 dark:border-gray-600 z-10">
+                                        <span class="material-symbols-outlined text-lg">open_in_new</span>
+                                        <span class="text-sm font-medium">Open in Google Maps</span>
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -141,9 +151,14 @@
 
                                 <!-- Company Card -->
                                 <div class="border border-primary/20 dark:border-primary/10 rounded-lg p-6 flex flex-col items-center text-center bg-white dark:bg-gray-800/50 relative">
-                                    <a id="companyWebsiteLink" href="#" target="_blank" class="absolute top-4 right-4 text-[#111318] dark:text-gray-300 hover:text-primary transition-colors hidden">
-                                        <span class="material-symbols-outlined text-xl">arrow_outward</span>
-                                    </a>
+                                    <div class="absolute top-4 right-4 flex gap-2">
+                                        <a id="companyWebsiteLink" href="#" target="_blank" class="text-[#111318] dark:text-gray-300 hover:text-primary transition-colors hidden" title="Company Website">
+                                            <span class="material-symbols-outlined text-xl">arrow_outward</span>
+                                        </a>
+                                        <a id="companyMapsLink" href="#" target="_blank" rel="noopener noreferrer" class="text-[#111318] dark:text-gray-300 hover:text-primary transition-colors hidden" title="View on Google Maps">
+                                            <span class="material-symbols-outlined text-xl">map</span>
+                                        </a>
+                                    </div>
                                     <img id="companyLogoCard" src="" alt="Company Logo" class="size-16 object-cover rounded-2xl mb-4 border border-gray-300 dark:border-gray-600" style="background-color: #f0f0f0;" onerror="this.onerror=null; this.src=this.dataset.placeholder || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2NCIgaGVpZ2h0PSI2NCIgdmlld0JveD0iMCAwIDY0IDY0Ij48cmVjdCB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIGZpbGw9IiNlNWU3ZWIiLz48dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1mYW1pbHk9IkFyaWFsLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjIxIiBmaWxsPSIjOWNhM2FmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj5Mb2dvPC90ZXh0Pjwvc3ZnPg==';">
                                     <h4 id="companyNameCard" class="font-bold text-lg text-[#111318] dark:text-white"></h4>
                                     <p id="companyDescriptionCard" class="text-sm text-[#111318] dark:text-gray-300 mt-1"></p>
@@ -633,6 +648,245 @@
             } else {
                 companyWebsiteLink.classList.add('hidden');
             }
+
+            // Company Google Maps link and embed
+            const companyMapsLink = document.getElementById('companyMapsLink');
+            const googleMapsLink = document.getElementById('googleMapsLink');
+            const googleMapEmbed = document.getElementById('googleMapEmbed');
+            const mapContainer = document.getElementById('mapContainer');
+            const locationText = document.getElementById('locationText');
+            
+            // Function to extract coordinates or place from Google Maps URL
+            async function resolveGoogleMapsUrl(mapsUrl) {
+                if (!mapsUrl || !mapsUrl.trim()) return null;
+                
+                const url = mapsUrl.trim();
+                let resolvedUrl = url;
+                
+                // Handle short URLs (maps.app.goo.gl) - need to resolve to get full URL
+                if (url.includes('maps.app.goo.gl') || url.includes('goo.gl/maps')) {
+                    try {
+                        // Use a proxy approach - try to get the full URL
+                        // Note: CORS may block this, so we'll use a fallback
+                        const response = await fetch(url, { 
+                            method: 'HEAD', 
+                            redirect: 'follow',
+                            mode: 'no-cors' // This won't give us the URL but won't error
+                        });
+                        // If we can't get the resolved URL, we'll extract from the short URL pattern
+                        // or use the location text as fallback
+                    } catch (e) {
+                        console.log('Could not resolve short URL directly');
+                    }
+                }
+                
+                // Extract location info from URL
+                return extractLocationFromUrl(resolvedUrl);
+            }
+            
+            // Function to extract location info from Google Maps URL
+            function extractLocationFromUrl(url, companyName, location) {
+                // Priority 1: Extract coordinates (lat,lng format) - most precise
+                // Format: @lat,lng or ?ll=lat,lng or /@lat,lng
+                const coordPatterns = [
+                    /@(-?\d+\.?\d*),(-?\d+\.?\d*)/,  // @lat,lng
+                    /[?&]ll=(-?\d+\.?\d*),(-?\d+\.?\d*)/,  // ?ll=lat,lng
+                    /[?&]center=(-?\d+\.?\d*),(-?\d+\.?\d*)/,  // ?center=lat,lng
+                ];
+                
+                for (const pattern of coordPatterns) {
+                    const match = url.match(pattern);
+                    if (match) {
+                        const lat = parseFloat(match[1]);
+                        const lng = parseFloat(match[2]);
+                        // Use coordinates with location name - this will show a red pin with label
+                        // Format: q=Label+@lat,lng shows the label on the pin
+                        const label = companyName ? (location ? `${companyName}, ${location}` : companyName) : (location || `${lat},${lng}`);
+                        return {
+                            type: 'coordinates',
+                            lat: lat,
+                            lng: lng,
+                            embedUrl: `https://www.google.com/maps?q=${encodeURIComponent(label)}+@${lat},${lng}&ll=${lat},${lng}&z=16&output=embed`
+                        };
+                    }
+                }
+                
+                // Priority 2: Extract place ID (very precise)
+                const placeIdMatch = url.match(/[?&]place_id=([^&]+)/);
+                if (placeIdMatch) {
+                    const placeId = placeIdMatch[1];
+                    // Use place ID with label - this will show a marker with name
+                    const label = companyName || location || 'Location';
+                    return {
+                        type: 'place_id',
+                        placeId: placeId,
+                        embedUrl: `https://www.google.com/maps?q=place_id:${placeId}&output=embed&z=16`
+                    };
+                }
+                
+                // Priority 3: Extract place name from /place/ path
+                const placeMatch = url.match(/\/place\/([^\/\?&]+)/);
+                if (placeMatch) {
+                    const placeName = decodeURIComponent(placeMatch[1].replace(/\+/g, ' '));
+                    // Use place name - Google Maps will show a marker with the name
+                    return {
+                        type: 'place',
+                        place: placeName,
+                        embedUrl: `https://www.google.com/maps?q=${encodeURIComponent(placeName)}&output=embed&z=16`
+                    };
+                }
+                
+                // Priority 4: Extract search query
+                const searchMatch = url.match(/\/search\/([^\/\?&]+)/);
+                if (searchMatch) {
+                    const searchTerm = decodeURIComponent(searchMatch[1].replace(/\+/g, ' '));
+                    return {
+                        type: 'search',
+                        query: searchTerm,
+                        embedUrl: `https://www.google.com/maps?q=${encodeURIComponent(searchTerm)}&output=embed&z=16`
+                    };
+                }
+                
+                // Priority 5: Extract q parameter
+                const queryMatch = url.match(/[?&]q=([^&]+)/);
+                if (queryMatch) {
+                    const query = decodeURIComponent(queryMatch[1].replace(/\+/g, ' '));
+                    return {
+                        type: 'query',
+                        query: query,
+                        embedUrl: `https://www.google.com/maps?q=${encodeURIComponent(query)}&output=embed&z=16`
+                    };
+                }
+                
+                return null;
+            }
+            
+            // Function to get Google Maps embed URL with marker
+            function getGoogleMapsEmbedUrl(mapsUrl, location) {
+                // If we have a maps URL, try to extract location info
+                if (mapsUrl) {
+                    const locationInfo = extractLocationFromUrl(mapsUrl);
+                    if (locationInfo) {
+                        return locationInfo.embedUrl;
+                    }
+                }
+                
+                // Fallback: Use location text (Google Maps will automatically show a marker)
+                if (location && location.trim()) {
+                    return `https://www.google.com/maps?q=${encodeURIComponent(location.trim())}&output=embed&z=16`;
+                }
+                
+                return null;
+            }
+            
+            // Setup Google Maps with location marker
+            const jobLocation = job.location || '';
+            let embedUrl = null;
+            
+            // Function to load map with marker and location name (default: use company name)
+            async function loadGoogleMap() {
+                let embedUrl = null;
+                const companyName = job.company_name || '';
+                const location = jobLocation || '';
+                
+                // Priority 1: If Google Maps URL is available, use it
+                if (job.company_maps_url && job.company_maps_url.trim()) {
+                    const mapsUrl = job.company_maps_url.trim();
+                    
+                    companyMapsLink.href = mapsUrl;
+                    companyMapsLink.classList.remove('hidden');
+                    googleMapsLink.href = mapsUrl;
+                    googleMapsLink.classList.remove('hidden');
+                    
+                    // Try to extract location info from URL with company name and location
+                    const locationInfo = extractLocationFromUrl(mapsUrl, companyName, location);
+                    
+                    if (locationInfo) {
+                        // We have location info (coordinates, place ID, etc.)
+                        embedUrl = locationInfo.embedUrl;
+                        console.log('Using extracted location:', locationInfo.type, locationInfo);
+                    } else if (location && location.trim()) {
+                        // Fallback: Use location text with company name (will show marker with label)
+                        const label = companyName ? `${companyName}, ${location}` : location;
+                        embedUrl = `https://www.google.com/maps?q=${encodeURIComponent(label.trim())}&output=embed&z=16`;
+                        console.log('Using location text with company name as fallback');
+                    } else if (companyName) {
+                        // Fallback: Use company name only
+                        embedUrl = `https://www.google.com/maps?q=${encodeURIComponent(companyName.trim())}&output=embed&z=16`;
+                        console.log('Using company name as fallback');
+                    } else {
+                        // Try to resolve short URL (may not work due to CORS)
+                        try {
+                            const resolved = await resolveGoogleMapsUrl(mapsUrl);
+                            if (resolved) {
+                                embedUrl = resolved.embedUrl;
+                            }
+                        } catch (e) {
+                            console.log('Could not resolve URL:', e);
+                        }
+                    }
+                } else {
+                    // Priority 2: No Google Maps URL - use company name and location to create map
+                    // This ensures every company shows a map by default
+                    let searchQuery = '';
+                    
+                    if (companyName && location) {
+                        // Use both company name and location
+                        searchQuery = `${companyName}, ${location}`;
+                    } else if (companyName) {
+                        // Use company name only
+                        searchQuery = companyName;
+                    } else if (location) {
+                        // Use location only
+                        searchQuery = location;
+                    }
+                    
+                    if (searchQuery) {
+                        embedUrl = `https://www.google.com/maps?q=${encodeURIComponent(searchQuery.trim())}&output=embed&z=16`;
+                        
+                        // Create Google Maps search link
+                        const mapsSearchUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(searchQuery.trim())}`;
+                        googleMapsLink.href = mapsSearchUrl;
+                        googleMapsLink.classList.remove('hidden');
+                    }
+                    
+                    // Hide company maps link if no URL available
+                    companyMapsLink.classList.add('hidden');
+                }
+                
+                // Display map if we have an embed URL
+                if (embedUrl) {
+                    googleMapEmbed.src = embedUrl;
+                    googleMapEmbed.classList.remove('hidden');
+                    mapContainer.classList.add('hidden');
+                    
+                    // Update location text for accessibility
+                    if (location) {
+                        locationText.textContent = location;
+                    } else if (companyName) {
+                        locationText.textContent = companyName;
+                    } else {
+                        locationText.textContent = 'View location on map';
+                    }
+                } else {
+                    // Could not create embed URL, show placeholder
+                    googleMapEmbed.classList.add('hidden');
+                    mapContainer.classList.remove('hidden');
+                    companyMapsLink.classList.add('hidden');
+                    googleMapsLink.classList.add('hidden');
+                    
+                    if (location) {
+                        locationText.textContent = location;
+                    } else if (companyName) {
+                        locationText.textContent = companyName;
+                    } else {
+                        locationText.textContent = 'Location not specified';
+                    }
+                }
+            }
+            
+            // Load the map
+            loadGoogleMap();
 
             // Generate and inject Google JobPosting structured data
             generateJobPostingStructuredData(job);

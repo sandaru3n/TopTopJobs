@@ -17,6 +17,7 @@ class CompanyModel extends Model
         'slug',
         'logo',
         'website',
+        'maps_url',
         'description',
         'industry',
         'size',
@@ -86,6 +87,7 @@ class CompanyModel extends Model
             'slug' => $this->generateSlug($name),
             'logo' => $data['logo'] ?? null,
             'website' => $data['website'] ?? null,
+            'maps_url' => $data['maps_url'] ?? null,
             'description' => $data['description'] ?? null,
             'industry' => $data['industry'] ?? null,
         ];
