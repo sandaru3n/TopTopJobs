@@ -330,20 +330,30 @@
                     <h2 class="text-xl font-bold text-[#111318] dark:text-white mb-4 md:mb-6">Company Details</h2>
                     
                     <div class="space-y-4 md:space-y-5">
-                        <!-- Company Name -->
-                        <div>
+                        <!-- Company Name with Autocomplete -->
+                        <div class="relative">
                             <label for="company_name" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
                                 Company Name <span class="text-red-500">*</span>
                             </label>
-                            <input 
-                                type="text" 
-                                id="company_name" 
-                                name="company_name" 
-                                required
-                                value="<?= old('company_name') ?>"
-                                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                                placeholder="e.g., TechCorp Inc."
-                            />
+                            <div class="relative">
+                                <input 
+                                    type="text" 
+                                    id="company_name" 
+                                    name="company_name" 
+                                    required
+                                    autocomplete="off"
+                                    value="<?= old('company_name') ?>" 
+                                    class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                                    placeholder="Type to search existing companies or enter a new company name"
+                                />
+                                <input type="hidden" id="company_id" name="company_id" value="">
+                                <div id="companyAutocomplete" class="hidden absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                    <!-- Suggestions will be inserted here -->
+                                </div>
+                            </div>
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                <span id="companyStatus">Start typing to search for existing companies</span>
+                            </p>
                         </div>
 
                         <!-- Company Description -->
@@ -542,6 +552,192 @@
                 return false;
             }
         });
+        
+        // Company Autocomplete Functionality
+        (function() {
+            const companyInput = document.getElementById('company_name');
+            const companyIdInput = document.getElementById('company_id');
+            const autocompleteDiv = document.getElementById('companyAutocomplete');
+            const companyStatus = document.getElementById('companyStatus');
+            const companyDescription = document.getElementById('company_description');
+            const companyWebsite = document.getElementById('company_website');
+            
+            let searchTimeout = null;
+            let selectedCompany = null;
+            let companies = [];
+            
+            // Get API URL
+            const baseUrl = window.location.origin;
+            const apiUrl = baseUrl + '/api/companies.php';
+            
+            // Handle input changes
+            companyInput.addEventListener('input', function(e) {
+                const query = e.target.value.trim();
+                
+                // Clear selected company if user is typing
+                if (selectedCompany && selectedCompany.name !== query) {
+                    selectedCompany = null;
+                    companyIdInput.value = '';
+                    companyStatus.textContent = 'Start typing to search for existing companies';
+                }
+                
+                // Clear timeout
+                if (searchTimeout) {
+                    clearTimeout(searchTimeout);
+                }
+                
+                // If query is less than 2 characters, hide autocomplete
+                if (query.length < 2) {
+                    autocompleteDiv.classList.add('hidden');
+                    companyStatus.textContent = 'Start typing to search for existing companies';
+                    return;
+                }
+                
+                // Debounce search
+                searchTimeout = setTimeout(() => {
+                    searchCompanies(query);
+                }, 300);
+            });
+            
+            // Search companies
+            async function searchCompanies(query) {
+                try {
+                    companyStatus.textContent = 'Searching...';
+                    const response = await fetch(`${apiUrl}?q=${encodeURIComponent(query)}&limit=10`);
+                    const data = await response.json();
+                    
+                    if (data.success && data.companies.length > 0) {
+                        companies = data.companies;
+                        displaySuggestions(data.companies, query);
+                        companyStatus.textContent = `Found ${data.count} company${data.count !== 1 ? 'ies' : ''}. Click to select or continue typing to create a new company.`;
+                    } else {
+                        companies = [];
+                        displayNewCompanyOption(query);
+                        companyStatus.textContent = 'No matching companies found. This will create a new company.';
+                    }
+                } catch (error) {
+                    console.error('Error searching companies:', error);
+                    companyStatus.textContent = 'Error searching companies. You can still enter a new company name.';
+                    autocompleteDiv.classList.add('hidden');
+                }
+            }
+            
+            // Display suggestions
+            function displaySuggestions(companies, query) {
+                autocompleteDiv.innerHTML = '';
+                
+                // Add existing companies
+                companies.forEach(company => {
+                    const item = document.createElement('div');
+                    item.className = 'px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-b border-gray-200 dark:border-gray-700 last:border-b-0';
+                    item.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            ${company.logo ? `<img src="${company.logo}" alt="${company.name}" class="w-10 h-10 object-contain rounded">` : '<div class="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center"><span class="material-symbols-outlined text-gray-400">business</span></div>'}
+                            <div class="flex-1 min-w-0">
+                                <div class="font-medium text-[#111318] dark:text-white truncate">${escapeHtml(company.name)}</div>
+                                ${company.industry ? `<div class="text-xs text-gray-500 dark:text-gray-400">${escapeHtml(company.industry)}</div>` : ''}
+                            </div>
+                            <span class="text-xs text-primary">Select</span>
+                        </div>
+                    `;
+                    item.addEventListener('click', () => selectCompany(company));
+                    autocompleteDiv.appendChild(item);
+                });
+                
+                // Add option to create new company
+                const newCompanyItem = document.createElement('div');
+                newCompanyItem.className = 'px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer border-t-2 border-primary bg-primary/5';
+                newCompanyItem.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-primary">add_circle</span>
+                        <div class="flex-1">
+                            <div class="font-medium text-primary">Create new company: "${escapeHtml(query)}"</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">This company doesn't exist yet</div>
+                        </div>
+                    </div>
+                `;
+                newCompanyItem.addEventListener('click', () => createNewCompany(query));
+                autocompleteDiv.appendChild(newCompanyItem);
+                
+                autocompleteDiv.classList.remove('hidden');
+            }
+            
+            // Display new company option only
+            function displayNewCompanyOption(query) {
+                autocompleteDiv.innerHTML = '';
+                
+                const newCompanyItem = document.createElement('div');
+                newCompanyItem.className = 'px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer';
+                newCompanyItem.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-primary">add_circle</span>
+                        <div class="flex-1">
+                            <div class="font-medium text-primary">Create new company: "${escapeHtml(query)}"</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">This company will be created when you submit the form</div>
+                        </div>
+                    </div>
+                `;
+                newCompanyItem.addEventListener('click', () => createNewCompany(query));
+                autocompleteDiv.appendChild(newCompanyItem);
+                
+                autocompleteDiv.classList.remove('hidden');
+            }
+            
+            // Select existing company
+            function selectCompany(company) {
+                selectedCompany = company;
+                companyInput.value = company.name;
+                companyIdInput.value = company.id;
+                
+                // Pre-fill company details if available
+                if (company.description && !companyDescription.value) {
+                    companyDescription.value = company.description;
+                }
+                if (company.website && !companyWebsite.value) {
+                    companyWebsite.value = company.website;
+                }
+                
+                autocompleteDiv.classList.add('hidden');
+                companyStatus.textContent = `Selected: ${company.name}${company.industry ? ' (' + company.industry + ')' : ''}`;
+            }
+            
+            // Create new company
+            function createNewCompany(name) {
+                selectedCompany = null;
+                companyInput.value = name;
+                companyIdInput.value = '';
+                autocompleteDiv.classList.add('hidden');
+                companyStatus.textContent = 'New company will be created: ' + name;
+            }
+            
+            // Hide autocomplete when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!companyInput.contains(e.target) && !autocompleteDiv.contains(e.target)) {
+                    autocompleteDiv.classList.add('hidden');
+                }
+            });
+            
+            // Handle keyboard navigation
+            companyInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    autocompleteDiv.classList.add('hidden');
+                } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    // Simple keyboard navigation - could be enhanced
+                    const items = autocompleteDiv.querySelectorAll('div[class*="cursor-pointer"]');
+                    if (items.length > 0) {
+                        items[0].click();
+                    }
+                }
+            });
+            
+            // Escape HTML helper
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+        })();
     </script>
 </body>
 </html>

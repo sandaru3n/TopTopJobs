@@ -273,6 +273,7 @@ class Home extends BaseController
         $isRemote = $this->request->getPost('is_remote') == '1' || $this->request->getPost('is_remote') == 1;
         $validThroughInput = $this->request->getPost('valid_through');
         $companyName = $this->request->getPost('company_name');
+        $companyId = $this->request->getPost('company_id');
         $companyDescription = $this->request->getPost('company_description');
         $companyWebsite = $this->request->getPost('company_website');
 
@@ -291,19 +292,42 @@ class Home extends BaseController
             $logoPath = upload_path('company_logos/' . $newName);
         }
 
-        // Update or find company
-        $companyData = [
-            'website' => $companyWebsite ?: null,
-            'description' => $companyDescription ?: null,
-            'industry' => $jobCategory ?: null,
-        ];
-        
-        if ($logoPath) {
-            $companyData['logo'] = $logoPath;
+        // If company_id is provided (existing company selected), use it
+        if (!empty($companyId)) {
+            $company = $this->companyModel->find($companyId);
+            if ($company) {
+                // Update company with new data if provided
+                $companyData = [];
+                if ($companyWebsite) $companyData['website'] = $companyWebsite;
+                if ($companyDescription) $companyData['description'] = $companyDescription;
+                if ($jobCategory) $companyData['industry'] = $jobCategory;
+                if ($logoPath) $companyData['logo'] = $logoPath;
+                
+                if (!empty($companyData)) {
+                    $this->companyModel->update($companyId, $companyData);
+                }
+                $companyId = $company['id'];
+            } else {
+                // Company ID not found, fall back to findOrCreate
+                $companyId = null;
+            }
         }
         
-        $company = $this->companyModel->findOrCreate($companyName, $companyData);
-        $companyId = $company['id'];
+        // If no valid company ID, find or create company
+        if (empty($companyId)) {
+            $companyData = [
+                'website' => $companyWebsite ?: null,
+                'description' => $companyDescription ?: null,
+                'industry' => $jobCategory ?: null,
+            ];
+            
+            if ($logoPath) {
+                $companyData['logo'] = $logoPath;
+            }
+            
+            $company = $this->companyModel->findOrCreate($companyName, $companyData);
+            $companyId = $company['id'];
+        }
 
         // Build job description
         $fullDescription = $description ?: '';
