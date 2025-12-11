@@ -1,4 +1,4 @@
-<?= view('partials/head', ['title' => 'Job Portal Home Page - TopTopJobs']) ?>
+<?= view('partials/head') ?>
 <style>
     /* Ensure line-clamp-3 works for job descriptions */
     .line-clamp-3 {

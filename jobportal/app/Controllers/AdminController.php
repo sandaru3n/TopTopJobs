@@ -5,14 +5,16 @@ namespace App\Controllers;
 use App\Models\CollectionModel;
 use App\Models\JobModel;
 use App\Models\CompanyModel;
+use App\Models\SiteSettingsModel;
 
 class AdminController extends BaseController
 {
-    protected $helpers = ['url', 'form'];
+    protected $helpers = ['url', 'form', 'image'];
     protected $session;
     protected $collectionModel;
     protected $jobModel;
     protected $companyModel;
+    protected $siteSettingsModel;
 
     public function __construct()
     {
@@ -20,6 +22,7 @@ class AdminController extends BaseController
         $this->collectionModel = new CollectionModel();
         $this->jobModel = new JobModel();
         $this->companyModel = new CompanyModel();
+        $this->siteSettingsModel = new SiteSettingsModel();
     }
 
     /**
@@ -391,6 +394,110 @@ class AdminController extends BaseController
 
         return redirect()->back()
             ->with('error', 'Failed to remove job from collection.');
+    }
+
+    /**
+     * Site Settings Page
+     */
+    public function settings(): string
+    {
+        $siteSettings = $this->siteSettingsModel->getAllSettings();
+        
+        $data = [
+            'title' => 'Site Settings',
+            'user' => [
+                'name' => $this->session->get('first_name') . ' ' . $this->session->get('last_name'),
+                'email' => $this->session->get('email'),
+                'user_type' => $this->session->get('user_type'),
+            ],
+            'settings' => $siteSettings
+        ];
+
+        return view('admin/settings', $data);
+    }
+
+    /**
+     * Update Site Settings
+     */
+    public function updateSettings()
+    {
+        // Handle favicon upload
+        $faviconFile = $this->request->getFile('favicon');
+        if ($faviconFile && $faviconFile->isValid() && !$faviconFile->hasMoved()) {
+            // Validate file type
+            $allowedTypes = ['image/png', 'image/x-icon', 'image/vnd.microsoft.icon', 'image/jpeg', 'image/svg+xml'];
+            if (!in_array($faviconFile->getMimeType(), $allowedTypes)) {
+                return redirect()->back()
+                    ->with('error', 'Invalid file type. Please upload a PNG, ICO, JPEG, or SVG file.');
+            }
+
+            // Validate file size (max 2MB)
+            if ($faviconFile->getSize() > 2097152) {
+                return redirect()->back()
+                    ->with('error', 'File size too large. Maximum size is 2MB.');
+            }
+
+            // Create uploads directory if it doesn't exist
+            $uploadPath = WRITEPATH . '../public/uploads/favicons/';
+            if (!is_dir($uploadPath)) {
+                mkdir($uploadPath, 0755, true);
+            }
+
+            // Delete old favicon if exists
+            $oldFavicon = $this->siteSettingsModel->getSetting('site_favicon');
+            if ($oldFavicon && file_exists(WRITEPATH . '../public/' . $oldFavicon)) {
+                @unlink(WRITEPATH . '../public/' . $oldFavicon);
+            }
+
+            // Generate unique filename
+            $newName = 'favicon_' . time() . '.' . $faviconFile->getExtension();
+            $faviconFile->move($uploadPath, $newName);
+
+            // Save favicon path (relative to public directory)
+            $faviconPath = 'uploads/favicons/' . $newName;
+            $this->siteSettingsModel->setSetting('site_favicon', $faviconPath, 'file');
+        }
+
+        // Update other settings
+        $siteName = $this->request->getPost('site_name');
+        if ($siteName) {
+            $this->siteSettingsModel->setSetting('site_name', $siteName, 'text');
+        }
+
+        $siteDescription = $this->request->getPost('site_description');
+        if ($siteDescription !== null) {
+            $this->siteSettingsModel->setSetting('site_description', $siteDescription, 'text');
+        }
+
+        // Page meta settings
+        $homeTitle = $this->request->getPost('home_title');
+        $homeDescription = $this->request->getPost('home_description');
+        $jobsTitle = $this->request->getPost('jobs_title');
+        $jobsDescription = $this->request->getPost('jobs_description');
+        $postJobTitle = $this->request->getPost('postjob_title');
+        $postJobDescription = $this->request->getPost('postjob_description');
+
+        if ($homeTitle !== null) {
+            $this->siteSettingsModel->setSetting('home_title', $homeTitle, 'text');
+        }
+        if ($homeDescription !== null) {
+            $this->siteSettingsModel->setSetting('home_description', $homeDescription, 'text');
+        }
+        if ($jobsTitle !== null) {
+            $this->siteSettingsModel->setSetting('jobs_title', $jobsTitle, 'text');
+        }
+        if ($jobsDescription !== null) {
+            $this->siteSettingsModel->setSetting('jobs_description', $jobsDescription, 'text');
+        }
+        if ($postJobTitle !== null) {
+            $this->siteSettingsModel->setSetting('postjob_title', $postJobTitle, 'text');
+        }
+        if ($postJobDescription !== null) {
+            $this->siteSettingsModel->setSetting('postjob_description', $postJobDescription, 'text');
+        }
+
+        return redirect()->back()
+            ->with('success', 'Settings updated successfully!');
     }
 }
 

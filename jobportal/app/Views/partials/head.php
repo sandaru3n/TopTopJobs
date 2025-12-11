@@ -3,7 +3,59 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title><?= esc($title ?? 'Job Portal - TopTopJobs') ?></title>
+    <?php
+    // Load site settings
+    $siteSettingsModel = new \App\Models\SiteSettingsModel();
+    
+    // Detect current page from URI using CodeIgniter's URI service
+    $uri = service('uri');
+    $uriPath = trim($uri->getPath(), '/');
+    
+    // Determine page type
+    $pageType = 'home';
+    // Check for jobs page - exact match 'jobs' or starts with 'jobs/'
+    if ($uriPath === 'jobs' || strpos($uriPath, 'jobs/') === 0) {
+        // Make sure it's not a job detail page (which has 'job/' not 'jobs')
+        if (strpos($uriPath, 'job/') === false) {
+            $pageType = 'jobs';
+        }
+    } elseif ($uriPath === 'post-job' || strpos($uriPath, 'post-job') !== false) {
+        $pageType = 'postjob';
+    }
+    
+    // Get page-specific title and description from settings first
+    // Only use passed $title/$meta_description if explicitly provided (not null)
+    $pageTitle = null;
+    $pageDescription = null;
+    
+    // Get settings-based title and description for current page
+    switch ($pageType) {
+        case 'jobs':
+            $pageTitle = $siteSettingsModel->getSetting('jobs_title', 'Job Search & Listings - TopTopJobs');
+            $pageDescription = $siteSettingsModel->getSetting('jobs_description', 'Browse thousands of job listings on TopTopJobs. Search by location, job type, and more.');
+            break;
+        case 'postjob':
+            $pageTitle = $siteSettingsModel->getSetting('postjob_title', 'Post a Job - TopTopJobs');
+            $pageDescription = $siteSettingsModel->getSetting('postjob_description', 'Post your job listing for free on TopTopJobs. Reach thousands of qualified candidates.');
+            break;
+        default:
+            $pageTitle = $siteSettingsModel->getSetting('home_title', 'TopTopJobs - Find Your Dream Job');
+            $pageDescription = $siteSettingsModel->getSetting('home_description', 'Find your dream job on TopTopJobs. Browse thousands of job listings.');
+            break;
+    }
+    
+    // Override with explicitly passed values if provided
+    if (isset($title) && $title !== null) {
+        $pageTitle = $title;
+    }
+    if (isset($meta_description) && $meta_description !== null) {
+        $pageDescription = $meta_description;
+    }
+    ?>
+    <title><?= esc($pageTitle) ?></title>
+    <?php if (!empty($pageDescription)): ?>
+        <meta name="description" content="<?= esc($pageDescription) ?>">
+    <?php endif; ?>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
@@ -145,6 +197,14 @@
     </style>
     <?php if (!empty($css_file)): ?>
         <link rel="stylesheet" href="<?= base_url($css_file) ?>">
+    <?php endif; ?>
+    <?php
+    // Load site settings for favicon
+    $siteSettingsModel = new \App\Models\SiteSettingsModel();
+    $favicon = $siteSettingsModel->getSetting('site_favicon');
+    if ($favicon && file_exists(ROOTPATH . 'public/' . $favicon)): ?>
+        <link rel="icon" type="image/x-icon" href="<?= base_url($favicon) ?>">
+        <link rel="shortcut icon" type="image/x-icon" href="<?= base_url($favicon) ?>">
     <?php endif; ?>
 </head>
 

@@ -1,4 +1,8 @@
-<?= view('partials/head', ['title' => 'Job Search & Listings - TopTopJobs', 'css_file' => 'css/jobs.css']) ?>
+<?= view('partials/head', [
+    'title' => $title ?? null,
+    'meta_description' => $meta_description ?? null,
+    'css_file' => 'css/jobs.css'
+]) ?>
 <body class="font-display bg-background-light dark:bg-background-dark text-[#111318] dark:text-gray-200">
     <div class="relative flex min-h-screen w-full flex-col">
         <?= view('partials/header') ?>

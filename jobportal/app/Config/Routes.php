@@ -69,4 +69,8 @@ $routes->group('admin', ['filter' => 'auth:admin'], function($routes) {
     $routes->get('collections/create', 'AdminController::createCollection');
     $routes->post('collections/store', 'AdminController::storeCollection');
     $routes->get('collections', 'AdminController::collections');
+    
+    // Site Settings
+    $routes->get('settings', 'AdminController::settings');
+    $routes->post('settings/update', 'AdminController::updateSettings');
 });

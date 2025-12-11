@@ -166,7 +166,7 @@
                             <p class="text-sm text-gray-500 dark:text-gray-400">Manage collections</p>
                         </div>
                     </a>
-                    <a href="#" class="flex items-center gap-3 p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                    <a href="<?= base_url('/admin/settings') ?>" class="flex items-center gap-3 p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                         <span class="material-symbols-outlined text-primary">settings</span>
                         <div>
                             <p class="font-medium text-[#111318] dark:text-white">Settings</p>
