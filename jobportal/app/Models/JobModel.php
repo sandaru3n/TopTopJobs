@@ -29,6 +29,8 @@ class JobModel extends Model
         'salary_period',
         'is_salary_disclosed',
         'location',
+        'country',
+        'country_code',
         'application_email',
         'application_url',
         'application_phone',
@@ -60,6 +62,8 @@ class JobModel extends Model
         'slug' => 'required|max_length[255]|is_unique[jobs.slug,id,{id}]',
         'description' => 'permit_empty',
         'location' => 'required|max_length[255]',
+        'country' => 'permit_empty|max_length[100]',
+        'country_code' => 'permit_empty|max_length[2]',
         'job_type' => 'required|in_list[full-time,part-time,contract,internship,remote,freelance]',
     ];
 

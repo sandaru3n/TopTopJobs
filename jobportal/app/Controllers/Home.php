@@ -652,13 +652,30 @@ class Home extends BaseController
 
     public function postJob(): string
     {
+        // Load geo location helper - use direct require for reliability
+        if (!function_exists('getCountryFromIP')) {
+            $helperPath = APPPATH . 'Helpers' . DIRECTORY_SEPARATOR . 'geolocation_helper.php';
+            if (file_exists($helperPath)) {
+                require_once $helperPath;
+            } else {
+                // Try with forward slash as fallback
+                require_once APPPATH . 'Helpers/geolocation_helper.php';
+            }
+        }
+        
         // Get active collections for dropdown (only existing collections created by admin)
         $collections = $this->collectionModel->where('status', 'active')
             ->orderBy('name', 'ASC')
             ->findAll();
         
+        // Auto-detect country from IP
+        $detectedCountry = getCountryFromIP();
+        $countryList = getCountryList();
+        
         $data = [
-            'collections' => $collections ?? []
+            'collections' => $collections ?? [],
+            'detectedCountry' => $detectedCountry,
+            'countryList' => $countryList
         ];
         
         return view('home/post-job', $data);
@@ -672,8 +689,18 @@ class Home extends BaseController
                 ->with('error', 'Please log in to post a job.');
         }
 
+        // Load geo location helper - use direct require for reliability
+        if (!function_exists('getCountryFromIP')) {
+            $helperPath = APPPATH . 'Helpers' . DIRECTORY_SEPARATOR . 'geolocation_helper.php';
+            if (file_exists($helperPath)) {
+                require_once $helperPath;
+            } else {
+                // Try with forward slash as fallback
+                require_once APPPATH . 'Helpers/geolocation_helper.php';
+            }
+        }
+
         // Validate and process the job posting
-        // This is a placeholder - implement actual job posting logic here
         $validation = \Config\Services::validation();
         
         $jobType = $this->request->getPost('job_type');
@@ -702,6 +729,8 @@ class Home extends BaseController
             'company_logo' => 'permit_empty|uploaded[company_logo]|max_size[company_logo,2048]|ext_in[company_logo,png,jpg,jpeg,gif]',
             'job_image' => 'permit_empty|uploaded[job_image]|max_size[job_image,5120]|ext_in[job_image,png,jpg,jpeg,gif]',
             'collection_id' => 'permit_empty|integer|is_natural',
+            'country' => 'permit_empty|max_length[100]',
+            'country_code' => 'permit_empty|max_length[2]',
         ];
 
         if (!$this->validate($rules)) {
@@ -803,6 +832,24 @@ class Home extends BaseController
             $applicationEmail = $this->request->getPost('application_email');
             $applicationUrl = $this->request->getPost('application_url');
             $applicationPhone = $this->request->getPost('application_phone');
+            
+            // Get country from form or auto-detect
+            $country = $this->request->getPost('country');
+            $countryCode = $this->request->getPost('country_code');
+            
+            // If country not provided, auto-detect from IP
+            if (empty($country) || empty($countryCode)) {
+                $detectedCountry = getCountryFromIP();
+                $country = $country ?: $detectedCountry['country'];
+                $countryCode = $countryCode ?: $detectedCountry['country_code'];
+            }
+            
+            // Default to Sri Lanka if still empty
+            if (empty($country) || empty($countryCode)) {
+                $country = 'Sri Lanka';
+                $countryCode = 'LK';
+            }
+            
             // Determine if remote from job_type (checkbox removed from form)
             $isRemote = ($jobType === 'remote');
             
@@ -912,6 +959,8 @@ class Home extends BaseController
                 'salary_period' => 'monthly',
                 'is_salary_disclosed' => ($finalSalaryMin || $finalSalaryMax) ? 1 : 0,
                 'location' => $location,
+                'country' => $country,
+                'country_code' => strtoupper($countryCode),
                 'is_remote' => $isRemote ? 1 : 0,
                 'skills_required' => $skillsString ?: $jobCategory, // Use skills if provided, otherwise use category
                 'status' => 'active',

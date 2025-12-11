@@ -129,6 +129,36 @@
                             />
                         </div>
 
+                        <!-- Country -->
+                        <div>
+                            <label for="country_code" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
+                                Country <span class="text-xs text-gray-500 dark:text-gray-400">(Auto-detected from your location)</span>
+                            </label>
+                            <select 
+                                id="country_code" 
+                                name="country_code" 
+                                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors cursor-pointer"
+                            >
+                                <?php 
+                                $selectedCountryCode = old('country_code', $detectedCountry['country_code'] ?? 'LK');
+                                $selectedCountry = old('country', $detectedCountry['country'] ?? 'Sri Lanka');
+                                foreach ($countryList as $code => $name): 
+                                    $selected = ($code === $selectedCountryCode) ? 'selected' : '';
+                                ?>
+                                    <option value="<?= esc($code) ?>" <?= $selected ?> data-country="<?= esc($name) ?>">
+                                        <?= esc($name) ?> (<?= esc($code) ?>)
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <input type="hidden" id="country" name="country" value="<?= esc($selectedCountry) ?>">
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                <span id="countryAutoDetectMsg">Auto-detected: <strong><?= esc($selectedCountry) ?></strong></span>
+                            </p>
+                            <?php if (session()->getFlashdata('errors')['country_code'] ?? false): ?>
+                                <p class="mt-1 text-xs text-red-600 dark:text-red-400"><?= esc(session()->getFlashdata('errors')['country_code']) ?></p>
+                            <?php endif; ?>
+                        </div>
+
                         <!-- Application Phone Number -->
                         <div>
                             <label for="application_phone" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
@@ -971,6 +1001,24 @@
             // Listen for changes
             if (jobTypeSelect) {
                 jobTypeSelect.addEventListener('change', toggleLocationField);
+            }
+        })();
+
+        // Update country name when country code changes
+        (function() {
+            const countryCodeSelect = document.getElementById('country_code');
+            const countryInput = document.getElementById('country');
+            const countryMsg = document.getElementById('countryAutoDetectMsg');
+            
+            if (countryCodeSelect && countryInput && countryMsg) {
+                countryCodeSelect.addEventListener('change', function() {
+                    const selectedOption = this.options[this.selectedIndex];
+                    const countryName = selectedOption.getAttribute('data-country');
+                    if (countryName) {
+                        countryInput.value = countryName;
+                        countryMsg.innerHTML = 'Selected: <strong>' + countryName + '</strong>';
+                    }
+                });
             }
         })();
     </script>

@@ -633,23 +633,39 @@
             }
 
             // Responsibilities
-            if (job.responsibilities && (Array.isArray(job.responsibilities) ? job.responsibilities.length > 0 : job.responsibilities.trim())) {
-                const responsibilities = Array.isArray(job.responsibilities) 
-                    ? job.responsibilities 
-                    : job.responsibilities.split('\n').filter(r => r.trim());
-                const responsibilitiesList = document.getElementById('responsibilitiesList');
-                responsibilitiesList.innerHTML = responsibilities.map(r => `<li>${r.trim()}</li>`).join('');
-                document.getElementById('responsibilitiesSection').classList.remove('hidden');
+            if (job.responsibilities) {
+                let responsibilities = [];
+                if (Array.isArray(job.responsibilities)) {
+                    responsibilities = job.responsibilities.filter(r => r != null);
+                } else if (typeof job.responsibilities === 'string' && job.responsibilities.trim()) {
+                    responsibilities = job.responsibilities.split('\n').filter(r => r && typeof r === 'string' && r.trim());
+                }
+                if (responsibilities.length > 0) {
+                    const responsibilitiesList = document.getElementById('responsibilitiesList');
+                    responsibilitiesList.innerHTML = responsibilities.map(r => {
+                        const rText = typeof r === 'string' ? r.trim() : String(r || '').trim();
+                        return rText ? `<li>${rText}</li>` : '';
+                    }).filter(html => html).join('');
+                    document.getElementById('responsibilitiesSection').classList.remove('hidden');
+                }
             }
 
             // Requirements
-            if (job.requirements && (Array.isArray(job.requirements) ? job.requirements.length > 0 : job.requirements.trim())) {
-                const requirements = Array.isArray(job.requirements) 
-                    ? job.requirements 
-                    : job.requirements.split('\n').filter(r => r.trim());
-                const requirementsList = document.getElementById('requirementsList');
-                requirementsList.innerHTML = requirements.map(r => `<li>${r.trim()}</li>`).join('');
-                document.getElementById('requirementsSection').classList.remove('hidden');
+            if (job.requirements) {
+                let requirements = [];
+                if (Array.isArray(job.requirements)) {
+                    requirements = job.requirements.filter(r => r != null);
+                } else if (typeof job.requirements === 'string' && job.requirements.trim()) {
+                    requirements = job.requirements.split('\n').filter(r => r && typeof r === 'string' && r.trim());
+                }
+                if (requirements.length > 0) {
+                    const requirementsList = document.getElementById('requirementsList');
+                    requirementsList.innerHTML = requirements.map(r => {
+                        const rText = typeof r === 'string' ? r.trim() : String(r || '').trim();
+                        return rText ? `<li>${rText}</li>` : '';
+                    }).filter(html => html).join('');
+                    document.getElementById('requirementsSection').classList.remove('hidden');
+                }
             }
 
             // Skills
@@ -1225,13 +1241,19 @@
             
             // Add responsibilities
             if (job.responsibilities) {
-                const responsibilities = Array.isArray(job.responsibilities) 
-                    ? job.responsibilities 
-                    : job.responsibilities.split('\n').filter(r => r.trim());
+                let responsibilities = [];
+                if (Array.isArray(job.responsibilities)) {
+                    responsibilities = job.responsibilities;
+                } else if (typeof job.responsibilities === 'string') {
+                    responsibilities = job.responsibilities.split('\n').filter(r => r && typeof r === 'string' && r.trim());
+                }
                 if (responsibilities.length > 0) {
                     description += '<p><strong>Responsibilities:</strong></p><ul>';
                     responsibilities.forEach(resp => {
-                        description += `<li>${resp.trim()}</li>`;
+                        const respText = typeof resp === 'string' ? resp.trim() : String(resp || '').trim();
+                        if (respText) {
+                            description += `<li>${respText}</li>`;
+                        }
                     });
                     description += '</ul>';
                 }
@@ -1239,13 +1261,19 @@
             
             // Add requirements
             if (job.requirements) {
-                const requirements = Array.isArray(job.requirements) 
-                    ? job.requirements 
-                    : job.requirements.split('\n').filter(r => r.trim());
+                let requirements = [];
+                if (Array.isArray(job.requirements)) {
+                    requirements = job.requirements;
+                } else if (typeof job.requirements === 'string') {
+                    requirements = job.requirements.split('\n').filter(r => r && typeof r === 'string' && r.trim());
+                }
                 if (requirements.length > 0) {
                     description += '<p><strong>Requirements:</strong></p><ul>';
                     requirements.forEach(req => {
-                        description += `<li>${req.trim()}</li>`;
+                        const reqText = typeof req === 'string' ? req.trim() : String(req || '').trim();
+                        if (reqText) {
+                            description += `<li>${reqText}</li>`;
+                        }
                     });
                     description += '</ul>';
                 }
@@ -1294,12 +1322,16 @@
             // Build job location
             let jobLocation = null;
             if (!job.is_remote && job.location) {
+                // Use country_code from job if available, otherwise default to LK (Sri Lanka)
+                const countryCode = job.country_code || 'LK';
+                const countryName = job.country || 'Sri Lanka';
+                
                 // Parse location (assuming format like "City, State" or "City, Country")
                 const locationParts = job.location.split(',').map(s => s.trim());
                 const address = {
                     "@type": "PostalAddress",
                     "addressLocality": locationParts[0] || job.location,
-                    "addressCountry": locationParts.length > 1 ? locationParts[locationParts.length - 1] : "US"
+                    "addressCountry": countryCode
                 };
                 if (locationParts.length > 2) {
                     address.addressRegion = locationParts[1];
@@ -1329,9 +1361,12 @@
             // Add job location or remote job properties
             if (job.is_remote) {
                 structuredData.jobLocationType = "TELECOMMUTE";
+                // Use country_code from job if available, otherwise default to LK (Sri Lanka)
+                const countryCode = job.country_code || 'LK';
+                const countryName = job.country || 'Sri Lanka';
                 structuredData.applicantLocationRequirements = {
                     "@type": "Country",
-                    "name": "USA"
+                    "name": countryName
                 };
             } else if (jobLocation) {
                 structuredData.jobLocation = jobLocation;
