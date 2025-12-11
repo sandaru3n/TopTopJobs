@@ -65,6 +65,19 @@ $headData = [
     <link rel="canonical" href="<?= $headData['canonical_url'] ?>">
     <?php endif; ?>
     
+    <!-- Favicon -->
+    <?php
+    // Load site settings for favicon
+    $siteSettingsModel = new \App\Models\SiteSettingsModel();
+    $favicon = $siteSettingsModel->getSetting('site_favicon');
+    if ($favicon && file_exists(ROOTPATH . 'public/' . $favicon)): ?>
+        <link rel="icon" type="image/x-icon" href="<?= base_url($favicon) ?>">
+        <link rel="shortcut icon" type="image/x-icon" href="<?= base_url($favicon) ?>">
+    <?php else: ?>
+        <!-- Default favicon fallback -->
+        <link rel="icon" type="image/x-icon" href="<?= base_url('favicon.ico') ?>">
+    <?php endif; ?>
+    
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>

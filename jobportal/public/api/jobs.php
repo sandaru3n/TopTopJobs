@@ -487,6 +487,7 @@ $datePosted = isset($_GET['date_posted']) && !empty($_GET['date_posted']) ? arra
 $company = $_GET['company'] ?? '';
 $skills = isset($_GET['skills']) && !empty($_GET['skills']) ? array_filter(array_map('trim', explode(',', $_GET['skills']))) : [];
 $categories = isset($_GET['category']) && !empty($_GET['category']) ? array_filter(array_map('trim', explode(',', $_GET['category']))) : [];
+$subcategories = isset($_GET['subcategory']) && !empty($_GET['subcategory']) ? array_filter(array_map('trim', explode(',', $_GET['subcategory']))) : [];
 $userLat = isset($_GET['lat']) ? (float)$_GET['lat'] : null;
 $userLng = isset($_GET['lng']) ? (float)$_GET['lng'] : null;
 $sort = $_GET['sort'] ?? 'relevant';
@@ -514,6 +515,7 @@ $filteredJobs = filterJobs($allJobs, [
     'company' => $company,
     'skills' => $skills,
     'categories' => $categories,
+    'subcategories' => $subcategories,
     'user_lat' => $userLat,
     'user_lng' => $userLng
 ]);
@@ -971,6 +973,18 @@ function filterJobs($jobs, $filters) {
         $filtered = array_filter($filtered, function($job) use ($filters) {
             $jobCategory = $job['category'] ?? 'Other';
             return in_array($jobCategory, $filters['categories']);
+        });
+    }
+
+    // Subcategory filter - use the subcategory field directly from formatted data
+    if (!empty($filters['subcategories'])) {
+        $filtered = array_filter($filtered, function($job) use ($filters) {
+            $jobSubcategory = $job['subcategory'] ?? null;
+            // If job has no subcategory, exclude it from results unless null is in filter list
+            if (empty($jobSubcategory)) {
+                return false;
+            }
+            return in_array($jobSubcategory, $filters['subcategories']);
         });
     }
 

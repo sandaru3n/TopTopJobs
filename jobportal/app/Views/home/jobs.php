@@ -42,55 +42,6 @@
                     </div>
                 </div>
 
-                <!-- Experience -->
-                <div class="mb-6 filter-section">
-                    <button class="filter-section-header w-full flex items-center justify-between py-3 cursor-pointer" onclick="toggleFilterSection(this)">
-                        <div class="flex items-center gap-2">
-                            <span class="material-symbols-outlined text-lg text-gray-600 dark:text-gray-400">trending_up</span>
-                            <h3 class="text-sm font-semibold text-[#111318] dark:text-white">Experience</h3>
-                        </div>
-                        <span class="material-symbols-outlined text-lg text-gray-600 dark:text-gray-400 filter-caret transition-transform">expand_less</span>
-                    </button>
-                    <div class="filter-section-content flex flex-wrap gap-2 mt-2">
-                        <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="experience" data-value="fresher">
-                            Fresher (0-1 yrs)
-                        </button>
-                        <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="experience" data-value="junior">
-                            Junior (2-4 yrs)
-                        </button>
-                        <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="experience" data-value="senior">
-                            Senior (5+ yrs)
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Salary Range -->
-                <div class="mb-6 filter-section">
-                    <button class="filter-section-header w-full flex items-center justify-between py-3 cursor-pointer" onclick="toggleFilterSection(this)">
-                        <div class="flex items-center gap-2">
-                            <span class="material-symbols-outlined text-lg text-gray-600 dark:text-gray-400">attach_money</span>
-                            <h3 class="text-sm font-semibold text-[#111318] dark:text-white">Salary Range</h3>
-                        </div>
-                        <span class="material-symbols-outlined text-lg text-gray-600 dark:text-gray-400 filter-caret transition-transform">expand_less</span>
-                    </button>
-                    <div class="filter-section-content mt-2">
-                        <input 
-                            type="range" 
-                            id="salaryRange" 
-                            min="0" 
-                            max="200000" 
-                            step="5000" 
-                            value="0" 
-                            class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
-                        />
-                        <div class="flex justify-between mt-2">
-                            <span id="salaryMin" class="text-xs text-gray-600 dark:text-gray-400">$0</span>
-                            <span id="salaryMax" class="text-xs text-gray-600 dark:text-gray-400">$200K+</span>
-                        </div>
-                        <div id="salaryDisplay" class="text-sm font-medium text-primary mt-2 text-center">$0 - $200K+</div>
-                    </div>
-                </div>
-
                 <!-- Location -->
                 <div class="mb-6 filter-section">
                     <button class="filter-section-header w-full flex items-center justify-between py-3 cursor-pointer" onclick="toggleFilterSection(this)">
@@ -107,23 +58,6 @@
                             placeholder="Enter city, state, or country"
                             class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
                         />
-                        <div class="flex flex-wrap gap-2 mt-3">
-                            <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="location" data-value="Remote">
-                                Remote
-                            </button>
-                            <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="location" data-value="New York">
-                                New York
-                            </button>
-                            <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="location" data-value="Los Angeles">
-                                Los Angeles
-                            </button>
-                            <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="location" data-value="San Francisco">
-                                San Francisco
-                            </button>
-                            <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="location" data-value="Chicago">
-                                Chicago
-                            </button>
-                        </div>
                     </div>
                 </div>
 
@@ -136,43 +70,26 @@
                         </div>
                         <span class="material-symbols-outlined text-lg text-gray-600 dark:text-gray-400 filter-caret transition-transform">expand_less</span>
                     </button>
-                    <div class="filter-section-content flex flex-wrap gap-2 mt-2">
-                        <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="category" data-value="Cashier">
-                            Cashier
-                        </button>
-                        <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="category" data-value="Data Entry">
-                            Data Entry
-                        </button>
-                        <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="category" data-value="IT/Software">
-                            IT/Software
-                        </button>
-                        <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="category" data-value="Marketing">
-                            Marketing
-                        </button>
-                        <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="category" data-value="Sales">
-                            Sales
-                        </button>
-                        <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="category" data-value="Customer Service">
-                            Customer Service
-                        </button>
-                        <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="category" data-value="Design">
-                            Design
-                        </button>
-                        <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="category" data-value="Engineering">
-                            Engineering
-                        </button>
-                        <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="category" data-value="Finance">
-                            Finance
-                        </button>
-                        <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="category" data-value="Healthcare">
-                            Healthcare
-                        </button>
-                        <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="category" data-value="Education">
-                            Education
-                        </button>
-                        <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="category" data-value="Other">
-                            Other
-                        </button>
+                    <div id="categoryFilters" class="filter-section-content flex flex-wrap gap-2 mt-2">
+                        <!-- Categories will be loaded dynamically via JavaScript -->
+                        <div class="w-full text-sm text-gray-500 dark:text-gray-400 text-center py-2">Loading categories...</div>
+                    </div>
+                    <button id="showAllCategories" class="hidden mt-2 text-sm text-primary hover:text-primary/80 font-medium transition-colors cursor-pointer" onclick="jobSearch.showAllCategoriesAndClear()">
+                        Show All Categories
+                    </button>
+                </div>
+
+                <!-- Subcategory -->
+                <div class="mb-6 filter-section" id="subcategorySection" style="display: none;">
+                    <button class="filter-section-header w-full flex items-center justify-between py-3 cursor-pointer" onclick="toggleFilterSection(this)">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-lg text-gray-600 dark:text-gray-400">subdirectory_arrow_right</span>
+                            <h3 class="text-sm font-semibold text-[#111318] dark:text-white">Subcategory</h3>
+                        </div>
+                        <span class="material-symbols-outlined text-lg text-gray-600 dark:text-gray-400 filter-caret transition-transform">expand_less</span>
+                    </button>
+                    <div id="subcategoryFilters" class="filter-section-content flex flex-wrap gap-2 mt-2">
+                        <!-- Subcategories will be loaded dynamically via JavaScript -->
                     </div>
                 </div>
 
@@ -248,51 +165,6 @@
                         </div>
                     </div>
 
-                    <!-- Experience -->
-                    <div class="mb-6 filter-section">
-                        <button class="filter-section-header w-full flex items-center justify-between py-3 cursor-pointer" onclick="toggleFilterSection(this)">
-                            <div class="flex items-center gap-2">
-                                <span class="material-symbols-outlined text-lg text-gray-600 dark:text-gray-400">trending_up</span>
-                                <h3 class="text-sm font-semibold text-[#111318] dark:text-white">Experience</h3>
-                            </div>
-                            <span class="material-symbols-outlined text-lg text-gray-600 dark:text-gray-400 filter-caret transition-transform">expand_less</span>
-                        </button>
-                        <div class="filter-section-content flex flex-wrap gap-2 mt-2">
-                            <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="experience" data-value="fresher">
-                                Fresher (0-1 yrs)
-                            </button>
-                            <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="experience" data-value="junior">
-                                Junior (2-4 yrs)
-                            </button>
-                            <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="experience" data-value="senior">
-                                Senior (5+ yrs)
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Salary Range -->
-                    <div class="mb-6 filter-section">
-                        <button class="filter-section-header w-full flex items-center justify-between py-3 cursor-pointer" onclick="toggleFilterSection(this)">
-                            <div class="flex items-center gap-2">
-                                <span class="material-symbols-outlined text-lg text-gray-600 dark:text-gray-400">attach_money</span>
-                                <h3 class="text-sm font-semibold text-[#111318] dark:text-white">Salary Range</h3>
-                            </div>
-                            <span class="material-symbols-outlined text-lg text-gray-600 dark:text-gray-400 filter-caret transition-transform">expand_less</span>
-                        </button>
-                        <div class="filter-section-content mt-2">
-                            <input 
-                                type="range" 
-                                id="salaryRangeMobile" 
-                                min="0" 
-                                max="200000" 
-                                step="5000" 
-                                value="0" 
-                                class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
-                            />
-                            <div id="salaryDisplayMobile" class="text-sm font-medium text-primary mt-2 text-center">$0 - $200K+</div>
-                        </div>
-                    </div>
-
                     <!-- Location -->
                     <div class="mb-6 filter-section">
                         <button class="filter-section-header w-full flex items-center justify-between py-3 cursor-pointer" onclick="toggleFilterSection(this)">
@@ -309,23 +181,6 @@
                                 placeholder="Enter city, state, or country"
                                 class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
                             />
-                            <div class="flex flex-wrap gap-2 mt-3">
-                                <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="location" data-value="Remote">
-                                    Remote
-                                </button>
-                                <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="location" data-value="New York">
-                                    New York
-                                </button>
-                                <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="location" data-value="Los Angeles">
-                                    Los Angeles
-                                </button>
-                                <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="location" data-value="San Francisco">
-                                    San Francisco
-                                </button>
-                                <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="location" data-value="Chicago">
-                                    Chicago
-                                </button>
-                            </div>
                         </div>
                     </div>
 
@@ -338,43 +193,26 @@
                             </div>
                             <span class="material-symbols-outlined text-lg text-gray-600 dark:text-gray-400 filter-caret transition-transform">expand_less</span>
                         </button>
-                        <div class="filter-section-content flex flex-wrap gap-2 mt-2">
-                            <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="category" data-value="Cashier">
-                                Cashier
-                            </button>
-                            <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="category" data-value="Data Entry">
-                                Data Entry
-                            </button>
-                            <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="category" data-value="IT/Software">
-                                IT/Software
-                            </button>
-                            <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="category" data-value="Marketing">
-                                Marketing
-                            </button>
-                            <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="category" data-value="Sales">
-                                Sales
-                            </button>
-                            <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="category" data-value="Customer Service">
-                                Customer Service
-                            </button>
-                            <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="category" data-value="Design">
-                                Design
-                            </button>
-                            <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="category" data-value="Engineering">
-                                Engineering
-                            </button>
-                            <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="category" data-value="Finance">
-                                Finance
-                            </button>
-                            <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="category" data-value="Healthcare">
-                                Healthcare
-                            </button>
-                            <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="category" data-value="Education">
-                                Education
-                            </button>
-                            <button type="button" class="filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600" data-filter="category" data-value="Other">
-                                Other
-                            </button>
+                        <div id="categoryFiltersMobile" class="filter-section-content flex flex-wrap gap-2 mt-2">
+                            <!-- Categories will be loaded dynamically via JavaScript -->
+                            <div class="w-full text-sm text-gray-500 dark:text-gray-400 text-center py-2">Loading categories...</div>
+                        </div>
+                        <button id="showAllCategoriesMobile" class="hidden mt-2 text-sm text-primary hover:text-primary/80 font-medium transition-colors cursor-pointer" onclick="jobSearch.showAllCategoriesAndClear()">
+                            Show All Categories
+                        </button>
+                    </div>
+
+                    <!-- Subcategory -->
+                    <div class="mb-6 filter-section" id="subcategorySectionMobile" style="display: none;">
+                        <button class="filter-section-header w-full flex items-center justify-between py-3 cursor-pointer" onclick="toggleFilterSection(this)">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-lg text-gray-600 dark:text-gray-400">subdirectory_arrow_right</span>
+                                <h3 class="text-sm font-semibold text-[#111318] dark:text-white">Subcategory</h3>
+                            </div>
+                            <span class="material-symbols-outlined text-lg text-gray-600 dark:text-gray-400 filter-caret transition-transform">expand_less</span>
+                        </button>
+                        <div id="subcategoryFiltersMobile" class="filter-section-content flex flex-wrap gap-2 mt-2">
+                            <!-- Subcategories will be loaded dynamically via JavaScript -->
                         </div>
                     </div>
 

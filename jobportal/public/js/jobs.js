@@ -55,6 +55,7 @@ class JobSearch {
         this.savedJobs = new Set(JSON.parse(localStorage.getItem('savedJobs') || '[]'));
         this.locationDebounceTimer = null;
         this.salaryDebounceTimer = null;
+        this.categoriesMap = {}; // Store categories with IDs for subcategory loading
 
         this.init();
     }
@@ -62,6 +63,7 @@ class JobSearch {
     init() {
         this.setupEventListeners();
         this.setupMobileFeatures();
+        this.loadCategories(); // Load categories on init
         this.loadInitialJobs();
         this.setupInfiniteScroll();
         this.setupPullToRefresh();
@@ -123,31 +125,51 @@ class JobSearch {
             
             const isActive = btn.classList.contains('active');
             
-            // Special handling for location pills - set text input value
-            if (filterType === 'location') {
-                const locationInput = document.getElementById('locationFilter');
-                const locationInputMobile = document.getElementById('locationFilterMobile');
+            if (filterType === 'category') {
+                // Handle category filter - only one main category can be selected at a time
                 if (isActive) {
-                    // Remove filter - clear location
-                    if (locationInput) locationInput.value = '';
-                    if (locationInputMobile) locationInputMobile.value = '';
-                    self.filters.loc = '';
+                    // Remove filter - deselect button and show all categories again
                     btn.classList.remove('active');
                     btn.classList.add('bg-white', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+                    self.updateArrayFilter(filterType, filterValue, false);
+                    // Sync all buttons with same filter and value (desktop and mobile)
+                    self.syncFilterPills(filterType, filterValue, true);
+                    // Show all category buttons again
+                    self.showAllCategories();
+                    // Hide subcategories
+                    self.reloadSubcategoriesForSelectedCategories();
                 } else {
-                    // Add filter - set location
-                    if (locationInput) locationInput.value = filterValue;
-                    if (locationInputMobile) locationInputMobile.value = filterValue;
-                    self.filters.loc = filterValue;
+                    // When selecting a new category, first clear all other category selections
+                    // Deselect all category buttons
+                    document.querySelectorAll('.filter-pill-btn[data-filter="category"]').forEach(categoryBtn => {
+                        if (categoryBtn !== btn) {
+                            categoryBtn.classList.remove('active');
+                            categoryBtn.classList.add('bg-white', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+                        }
+                    });
+                    
+                    // Clear all categories from filter array
+                    self.filters.category = [];
+                    
+                    // Add the selected category
                     btn.classList.add('active');
                     btn.classList.remove('bg-white', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+                    self.filters.category.push(filterValue);
+                    
+                    // Sync all buttons with same filter and value (desktop and mobile)
+                    self.syncFilterPills(filterType, filterValue, false);
+                    
+                    // Hide all other category buttons, show only selected one
+                    self.hideOtherCategories(btn);
+                    
+                    // Load subcategories for selected categories
+                    self.reloadSubcategoriesForSelectedCategories();
+                    
+                    // Reload jobs with updated filter
+                    self.resetAndLoad();
                 }
-                // Sync location pills
-                self.syncFilterPills(filterType, filterValue, !isActive);
-                // Auto-apply location filter
-                self.resetAndLoad();
             } else {
-                // For other filter types (job_type, experience, category, date_posted)
+                // For other filter types (job_type, subcategory, date_posted)
                 if (isActive) {
                     // Remove filter - deselect button
                     btn.classList.remove('active');
@@ -173,14 +195,6 @@ class JobSearch {
             });
         });
 
-        // Legacy checkbox support (if any remain)
-        document.querySelectorAll('input[name="experience"], input[name="experience_mobile"]').forEach(checkbox => {
-            checkbox.addEventListener('change', (e) => {
-                this.updateArrayFilter('experience', e.target.value, e.target.checked);
-                this.syncCheckboxes('experience', e.target.value, e.target.checked);
-            });
-        });
-
         // Location input (desktop and mobile)
         const locationFilter = document.getElementById('locationFilter');
         const locationFilterMobile = document.getElementById('locationFilterMobile');
@@ -196,15 +210,6 @@ class JobSearch {
                         if (locationFilter) locationFilter.value = e.target.value;
                     }
                     
-                    // Clear location pill buttons if user types custom location
-                    if (this.filters.loc) {
-                        document.querySelectorAll('.filter-pill-btn[data-filter="location"]').forEach(btn => {
-                            btn.classList.remove('active');
-                            // Restore default styles
-                            btn.classList.add('bg-white', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
-                        });
-                    }
-                    
                     // Auto-apply location filter with debounce
                     clearTimeout(this.locationDebounceTimer);
                     this.locationDebounceTimer = setTimeout(() => {
@@ -217,25 +222,6 @@ class JobSearch {
                         clearTimeout(this.locationDebounceTimer);
                         this.resetAndLoad();
                     }
-                });
-            }
-        });
-
-        // Salary range (desktop and mobile)
-        const salaryRange = document.getElementById('salaryRange');
-        const salaryRangeMobile = document.getElementById('salaryRangeMobile');
-        
-        [salaryRange, salaryRangeMobile].forEach(range => {
-            if (range) {
-                range.addEventListener('input', (e) => {
-                    this.filters.salary_min = parseInt(e.target.value);
-                    // Sync both sliders
-                    if (e.target.id === 'salaryRange') {
-                        if (salaryRangeMobile) salaryRangeMobile.value = e.target.value;
-                    } else {
-                        if (salaryRange) salaryRange.value = e.target.value;
-                    }
-                    this.updateSalaryDisplay();
                 });
             }
         });
@@ -442,15 +428,19 @@ class JobSearch {
             salary_min: 0,
             date_posted: [],
             category: [],
+            subcategory: [],
         };
 
         // Reset UI (desktop and mobile)
-        const salaryRanges = [document.getElementById('salaryRange'), document.getElementById('salaryRangeMobile')];
-        salaryRanges.forEach(el => { if (el) el.value = 0; });
-        
         // Reset location inputs
         const locationInputs = [document.getElementById('locationFilter'), document.getElementById('locationFilterMobile')];
         locationInputs.forEach(el => { if (el) el.value = ''; });
+        
+        // Hide subcategory sections
+        const subcategorySection = document.getElementById('subcategorySection');
+        const subcategorySectionMobile = document.getElementById('subcategorySectionMobile');
+        if (subcategorySection) subcategorySection.style.display = 'none';
+        if (subcategorySectionMobile) subcategorySectionMobile.style.display = 'none';
         
         // Reset pill buttons
         document.querySelectorAll('.filter-pill-btn').forEach(btn => {
@@ -459,9 +449,11 @@ class JobSearch {
             btn.classList.add('bg-white', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
         });
         
+        // Show all category buttons again
+        this.showAllCategories();
+        
         // Reset legacy checkboxes if any
         document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-        this.updateSalaryDisplay();
         this.resetAndLoad();
     }
     
@@ -509,15 +501,8 @@ class JobSearch {
     }
 
     syncFiltersToMobile() {
-        // Sync salary range
-        const salaryRange = document.getElementById('salaryRange');
-        const salaryRangeMobile = document.getElementById('salaryRangeMobile');
-        if (salaryRange && salaryRangeMobile) {
-            salaryRangeMobile.value = salaryRange.value;
-        }
-
         // Sync checkboxes
-        ['job_type', 'experience', 'date_posted'].forEach(filterName => {
+        ['job_type', 'date_posted'].forEach(filterName => {
             const desktopName = filterName === 'date_posted' ? 'date_posted' : filterName;
             const mobileName = filterName === 'date_posted' ? 'date_posted_mobile' : 
                               filterName === 'job_type' ? 'job_type_mobile' : 
@@ -595,6 +580,9 @@ class JobSearch {
             }
             if (this.filters.category && this.filters.category.length > 0) {
                 params.append('category', this.filters.category.join(','));
+            }
+            if (this.filters.subcategory && this.filters.subcategory.length > 0) {
+                params.append('subcategory', this.filters.subcategory.join(','));
             }
 
             if (this.userLocation) {
@@ -1120,6 +1108,266 @@ class JobSearch {
             clearTimeout(timeout);
             timeout = setTimeout(later, wait);
         };
+    }
+
+    /**
+     * Load categories from API and render them
+     */
+    async loadCategories() {
+        try {
+            const categoriesUrl = this.baseUrl ? `${this.baseUrl}/api/categories.php` : '/api/categories.php';
+            const response = await fetch(categoriesUrl);
+            if (!response.ok) {
+                throw new Error('Failed to load categories');
+            }
+            const data = await response.json();
+            if (data.success && data.categories) {
+                this.renderCategories(data.categories);
+            }
+        } catch (error) {
+            console.error('Error loading categories:', error);
+            const categoryContainer = document.getElementById('categoryFilters');
+            const categoryContainerMobile = document.getElementById('categoryFiltersMobile');
+            if (categoryContainer) {
+                categoryContainer.innerHTML = '<div class="w-full text-sm text-red-500 text-center py-2">Failed to load categories</div>';
+            }
+            if (categoryContainerMobile) {
+                categoryContainerMobile.innerHTML = '<div class="w-full text-sm text-red-500 text-center py-2">Failed to load categories</div>';
+            }
+        }
+    }
+
+    /**
+     * Render category buttons
+     */
+    renderCategories(categories) {
+        const categoryContainer = document.getElementById('categoryFilters');
+        const categoryContainerMobile = document.getElementById('categoryFiltersMobile');
+        
+        if (!categoryContainer || !categoryContainerMobile) return;
+        
+        // Store categories with IDs for later use
+        this.categoriesMap = {};
+        categories.forEach(cat => {
+            this.categoriesMap[cat.name] = cat;
+        });
+        
+        // Ensure only one category is selected (enforce single selection)
+        if (this.filters.category && this.filters.category.length > 1) {
+            // Keep only the first category
+            this.filters.category = [this.filters.category[0]];
+        }
+        
+        // Get the selected category (if any)
+        const selectedCategory = this.filters.category && this.filters.category.length > 0 
+            ? this.filters.category[0] 
+            : null;
+        
+        const renderButtons = (container) => {
+            container.innerHTML = '';
+            categories.forEach(category => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                
+                // Check if this category is selected
+                const isSelected = selectedCategory === category.name;
+                
+                // Set button classes based on selection state
+                if (isSelected) {
+                    btn.className = 'filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 active';
+                } else {
+                    btn.className = 'filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600';
+                }
+                
+                btn.dataset.filter = 'category';
+                btn.dataset.value = category.name;
+                btn.dataset.categoryId = category.id || '';
+                btn.textContent = category.name;
+                container.appendChild(btn);
+            });
+        };
+        
+        renderButtons(categoryContainer);
+        renderButtons(categoryContainerMobile);
+        
+        // If a category is selected, hide other categories
+        if (selectedCategory) {
+            const selectedBtn = document.querySelector(`.filter-pill-btn[data-filter="category"][data-value="${selectedCategory}"]`);
+            if (selectedBtn) {
+                this.hideOtherCategories(selectedBtn);
+            }
+        }
+    }
+
+    /**
+     * Hide all category buttons except the selected one
+     */
+    hideOtherCategories(selectedBtn) {
+        document.querySelectorAll('.filter-pill-btn[data-filter="category"]').forEach(btn => {
+            if (btn !== selectedBtn) {
+                btn.style.display = 'none';
+            } else {
+                btn.style.display = '';
+            }
+        });
+        
+        // Show "Show All Categories" button if it exists
+        const showAllBtn = document.getElementById('showAllCategories');
+        const showAllBtnMobile = document.getElementById('showAllCategoriesMobile');
+        if (showAllBtn) showAllBtn.style.display = 'block';
+        if (showAllBtnMobile) showAllBtnMobile.style.display = 'block';
+    }
+
+    /**
+     * Show all category buttons
+     */
+    showAllCategories() {
+        document.querySelectorAll('.filter-pill-btn[data-filter="category"]').forEach(btn => {
+            btn.style.display = '';
+        });
+        
+        // Hide "Show All Categories" button if it exists
+        const showAllBtn = document.getElementById('showAllCategories');
+        const showAllBtnMobile = document.getElementById('showAllCategoriesMobile');
+        if (showAllBtn) showAllBtn.style.display = 'none';
+        if (showAllBtnMobile) showAllBtnMobile.style.display = 'none';
+    }
+
+    /**
+     * Show all categories and clear category filter
+     */
+    showAllCategoriesAndClear() {
+        // Clear category filter
+        this.filters.category = [];
+        
+        // Deselect all category buttons
+        document.querySelectorAll('.filter-pill-btn[data-filter="category"]').forEach(btn => {
+            btn.classList.remove('active');
+            btn.classList.add('bg-white', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+        });
+        
+        // Show all categories
+        this.showAllCategories();
+        
+        // Hide subcategories
+        const subcategorySection = document.getElementById('subcategorySection');
+        const subcategorySectionMobile = document.getElementById('subcategorySectionMobile');
+        if (subcategorySection) subcategorySection.style.display = 'none';
+        if (subcategorySectionMobile) subcategorySectionMobile.style.display = 'none';
+        
+        // Reload jobs
+        this.resetAndLoad();
+    }
+
+    /**
+     * Load subcategories for selected categories
+     */
+    async loadSubcategories(categoryIds) {
+        if (!categoryIds || categoryIds.length === 0) {
+            const subcategorySection = document.getElementById('subcategorySection');
+            const subcategorySectionMobile = document.getElementById('subcategorySectionMobile');
+            if (subcategorySection) subcategorySection.style.display = 'none';
+            if (subcategorySectionMobile) subcategorySectionMobile.style.display = 'none';
+            return;
+        }
+
+        const validIds = categoryIds.filter(id => id !== null && id !== undefined && id !== '');
+        if (validIds.length === 0) {
+            const subcategorySection = document.getElementById('subcategorySection');
+            const subcategorySectionMobile = document.getElementById('subcategorySectionMobile');
+            if (subcategorySection) subcategorySection.style.display = 'none';
+            if (subcategorySectionMobile) subcategorySectionMobile.style.display = 'none';
+            return;
+        }
+
+        try {
+            const subcategoryPromises = validIds.map(async (categoryId) => {
+                const subcategoriesUrl = this.baseUrl ? `${this.baseUrl}/api/subcategories.php?category_id=${categoryId}` : `/api/subcategories.php?category_id=${categoryId}`;
+                const response = await fetch(subcategoriesUrl);
+                if (!response.ok) {
+                    throw new Error(`Failed to load subcategories for category ${categoryId}`);
+                }
+                const data = await response.json();
+                return data.success ? data.subcategories : [];
+            });
+
+            const subcategoriesArrays = await Promise.all(subcategoryPromises);
+            const allSubcategories = [];
+            const seen = new Set();
+            subcategoriesArrays.forEach(subcategories => {
+                subcategories.forEach(sub => {
+                    if (!seen.has(sub.name)) {
+                        seen.add(sub.name);
+                        allSubcategories.push(sub);
+                    }
+                });
+            });
+
+            this.renderSubcategories(allSubcategories);
+        } catch (error) {
+            console.error('Error loading subcategories:', error);
+        }
+    }
+
+    /**
+     * Render subcategory buttons
+     */
+    renderSubcategories(subcategories) {
+        const subcategoryContainer = document.getElementById('subcategoryFilters');
+        const subcategoryContainerMobile = document.getElementById('subcategoryFiltersMobile');
+        const subcategorySection = document.getElementById('subcategorySection');
+        const subcategorySectionMobile = document.getElementById('subcategorySectionMobile');
+        
+        const renderButtons = (container) => {
+            container.innerHTML = '';
+            if (subcategories.length === 0) {
+                container.innerHTML = '<div class="w-full text-sm text-gray-500 dark:text-gray-400 text-center py-2">No subcategories available</div>';
+                return;
+            }
+            
+            subcategories.forEach(subcategory => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'filter-pill-btn px-4 py-2 rounded-full text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600';
+                btn.dataset.filter = 'subcategory';
+                btn.dataset.value = subcategory.name;
+                btn.textContent = subcategory.name;
+                container.appendChild(btn);
+            });
+        };
+        
+        renderButtons(subcategoryContainer);
+        renderButtons(subcategoryContainerMobile);
+        
+        if (subcategories.length > 0) {
+            if (subcategorySection) subcategorySection.style.display = 'block';
+            if (subcategorySectionMobile) subcategorySectionMobile.style.display = 'block';
+        } else {
+            if (subcategorySection) subcategorySection.style.display = 'none';
+            if (subcategorySectionMobile) subcategorySectionMobile.style.display = 'none';
+        }
+    }
+
+    /**
+     * Reload subcategories based on currently selected categories
+     */
+    async reloadSubcategoriesForSelectedCategories() {
+        if (!this.filters.category || this.filters.category.length === 0) {
+            const subcategorySection = document.getElementById('subcategorySection');
+            const subcategorySectionMobile = document.getElementById('subcategorySectionMobile');
+            if (subcategorySection) subcategorySection.style.display = 'none';
+            if (subcategorySectionMobile) subcategorySectionMobile.style.display = 'none';
+            return;
+        }
+
+        const categoryIds = this.filters.category
+            .map(categoryName => {
+                const category = this.categoriesMap && this.categoriesMap[categoryName];
+                return category ? category.id : null;
+            })
+            .filter(id => id !== null);
+
+        await this.loadSubcategories(categoryIds);
     }
 }
 

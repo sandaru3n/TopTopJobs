@@ -137,34 +137,58 @@ try {
     ];
     
     if ($conn) {
-        // Get job counts for each category
-        foreach ($categoryList as $category) {
-            // Check if category is in skills_required (as first item) or company industry
-            $stmt = $conn->prepare("
-                SELECT COUNT(*) as count
-                FROM jobs j
-                LEFT JOIN companies c ON j.company_id = c.id
-                WHERE j.status = 'active'
-                AND (
-                    (j.skills_required LIKE ? OR j.skills_required = ?)
-                    OR c.industry = ?
-                )
-            ");
-            
-            $categoryPattern = $category . ',%';
-            $stmt->bind_param('sss', $categoryPattern, $category, $category);
+        // Get categories from database with job counts
+        $stmt = $conn->prepare("
+            SELECT cat.id, cat.name, COUNT(j.id) as count
+            FROM categories cat
+            LEFT JOIN jobs j ON j.category_id = cat.id AND j.status = 'active'
+            WHERE cat.status = 'active'
+            GROUP BY cat.id, cat.name
+            ORDER BY cat.sort_order ASC, cat.name ASC
+        ");
+        
+        if ($stmt) {
             $stmt->execute();
             $result = $stmt->get_result();
-            $row = $result->fetch_assoc();
-            $count = (int)$row['count'];
-            $stmt->close();
-            
-            // Only include categories with jobs
-            if ($count > 0) {
+            while ($row = $result->fetch_assoc()) {
                 $categories[] = [
-                    'name' => $category,
-                    'count' => $count
+                    'id' => (int)$row['id'],
+                    'name' => $row['name'],
+                    'count' => (int)$row['count']
                 ];
+            }
+            $stmt->close();
+        }
+        
+        // If no categories found in database, fallback to checking jobs by name
+        if (empty($categories)) {
+            foreach ($categoryList as $category) {
+                $stmt = $conn->prepare("
+                    SELECT COUNT(*) as count
+                    FROM jobs j
+                    LEFT JOIN companies c ON j.company_id = c.id
+                    WHERE j.status = 'active'
+                    AND (
+                        (j.skills_required LIKE ? OR j.skills_required = ?)
+                        OR c.industry = ?
+                    )
+                ");
+                
+                $categoryPattern = $category . ',%';
+                $stmt->bind_param('sss', $categoryPattern, $category, $category);
+                $stmt->execute();
+                $result = $stmt->get_result();
+                $row = $result->fetch_assoc();
+                $count = (int)$row['count'];
+                $stmt->close();
+                
+                if ($count > 0) {
+                    $categories[] = [
+                        'id' => null, // No ID if not in database
+                        'name' => $category,
+                        'count' => $count
+                    ];
+                }
             }
         }
         

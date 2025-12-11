@@ -48,7 +48,13 @@ class AdminController extends BaseController
      */
     public function collections(): string
     {
-        $collections = $this->collectionModel->getAllWithJobCount();
+        try {
+            $collections = $this->collectionModel->getAllWithJobCount();
+        } catch (\Exception $e) {
+            // Log error but don't crash - return empty array
+            log_message('error', 'Error loading collections: ' . $e->getMessage());
+            $collections = [];
+        }
         
         $data = [
             'title' => 'Manage Collections',
@@ -57,7 +63,7 @@ class AdminController extends BaseController
                 'email' => $this->session->get('email'),
                 'user_type' => $this->session->get('user_type'),
             ],
-            'collections' => $collections
+            'collections' => $collections ?? []
         ];
 
         return view('admin/collections/index', $data);
@@ -333,15 +339,33 @@ class AdminController extends BaseController
      */
     public function manageCollectionJobs($id = null)
     {
-        // Get ID from parameter or URI segment if not provided
-        if ($id === null) {
-            // Try segment 4 (admin=1, collections=2, id=3, jobs=4) or segment 3 as fallback
-            $id = $this->request->getUri()->getSegment(4) ?? $this->request->getUri()->getSegment(3);
+        // CodeIgniter should automatically pass the (:num) parameter from the route
+        // Route: collections/(:num)/jobs
+        // URL: /admin/collections/1/jobs
+        // Full URI segments: [0] => 'admin', [1] => 'collections', [2] => '1', [3] => 'jobs'
+        
+        // If ID not passed as parameter, try to extract from URI
+        if ($id === null || $id === '' || !is_numeric($id)) {
+            $segments = $this->request->getUri()->getSegments();
+            
+            // Find 'collections' in segments and get the next segment (should be the ID)
+            $collectionsIndex = array_search('collections', $segments);
+            if ($collectionsIndex !== false && isset($segments[$collectionsIndex + 1]) && is_numeric($segments[$collectionsIndex + 1])) {
+                $id = $segments[$collectionsIndex + 1];
+            } else {
+                // Fallback: try segment 2 (0-indexed: admin=0, collections=1, id=2, jobs=3)
+                // Or segment 3 (1-indexed: admin=1, collections=2, id=3, jobs=4)
+                $id = $this->request->getUri()->getSegment(3); // 1-indexed, so segment 3 = '1'
+            }
         }
         
-        if (!$id || !is_numeric($id)) {
+        // Validate ID
+        if (empty($id) || !is_numeric($id)) {
+            $segments = $this->request->getUri()->getSegments();
+            $path = $this->request->getUri()->getPath();
+            error_log('ManageCollectionJobs: Could not extract ID. Param received: ' . var_export(func_get_args(), true) . ', Segments: ' . json_encode($segments) . ', Path: ' . $path . ', Segment 3: ' . $this->request->getUri()->getSegment(3));
             return redirect()->to('/admin/collections')
-                ->with('error', 'Invalid collection ID.');
+                ->with('error', 'Invalid collection ID. Please check the URL.');
         }
         
         $id = (int) $id;
