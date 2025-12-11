@@ -11,6 +11,21 @@ Options -Indexes +FollowSymLinks
 <IfModule mod_rewrite.c>
     RewriteEngine On
     
+    # # PRIORITY 0: Force HTTPS and redirect www to non-www
+    # # Step 1: Redirect www.toptopjobs.com (both HTTP and HTTPS) to https://toptopjobs.com
+    # # Use explicit matching to ensure www redirects work
+    # RewriteCond %{HTTP_HOST} ^www\.toptopjobs\.com$ [NC]
+    # RewriteRule ^(.*)$ https://toptopjobs.com/$1 [R=301,L]
+    
+    # # Step 2: Redirect HTTP (non-www) to HTTPS
+    # RewriteCond %{HTTPS} !=on
+    # RewriteCond %{HTTP_HOST} ^toptopjobs\.com$ [NC]
+    # RewriteRule ^(.*)$ https://toptopjobs.com/$1 [R=301,L]
+    
+    # # Step 3: Redirect any other domain (not toptopjobs.com) to https://toptopjobs.com
+    # RewriteCond %{HTTP_HOST} !^toptopjobs\.com$ [NC]
+    # RewriteRule ^(.*)$ https://toptopjobs.com/$1 [R=301,L]
+    
     # PRIORITY 1: If accessing root directory, rewrite to public/ FIRST (before blocking rules)
     # This prevents 403 errors when accessing the root
     RewriteCond %{REQUEST_URI} ^/?$
