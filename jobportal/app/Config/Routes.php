@@ -15,6 +15,10 @@ $routes->get('/job/(:segment)/', 'Home::jobDetails');
 $routes->get('/public/job/(:segment)', 'Home::jobDetails');
 $routes->get('/public/job/(:segment)/', 'Home::jobDetails');
 $routes->get('/job-details', 'Home::jobDetails');
+$routes->get('/about', 'Home::about');
+$routes->get('/contact', 'Home::contact');
+$routes->get('/terms', 'Home::terms');
+$routes->get('/privacy', 'Home::privacy');
 $routes->get('/post-job', 'Home::postJob');
 $routes->post('/post-job', 'Home::processPostJob');
 

@@ -20,6 +20,14 @@ INSERT INTO `site_settings` (`setting_key`, `setting_value`, `setting_type`) VAL
 ('jobs_title', 'Job Search & Listings - TopTopJobs', 'text'),
 ('jobs_description', 'Browse thousands of job listings on TopTopJobs. Search by location, job type, and more.', 'text'),
 ('postjob_title', 'Post a Job - TopTopJobs', 'text'),
-('postjob_description', 'Post your job listing for free on TopTopJobs. Reach thousands of qualified candidates.', 'text')
+('postjob_description', 'Post your job listing for free on TopTopJobs. Reach thousands of qualified candidates.', 'text'),
+('about_title', 'About Us - TopTopJobs', 'text'),
+('about_description', 'Learn more about TopTopJobs and our mission to connect talent with opportunity.', 'text'),
+('contact_title', 'Contact Us - TopTopJobs', 'text'),
+('contact_description', 'Get in touch with the TopTopJobs team for support or inquiries.', 'text'),
+('terms_title', 'Terms & Conditions - TopTopJobs', 'text'),
+('terms_description', 'Review the terms and conditions for using TopTopJobs.', 'text'),
+('privacy_title', 'Privacy Policy - TopTopJobs', 'text'),
+('privacy_description', 'Read how TopTopJobs handles your data and privacy.', 'text')
 ON DUPLICATE KEY UPDATE `setting_key` = `setting_key`;
 

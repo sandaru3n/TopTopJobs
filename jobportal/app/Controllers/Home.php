@@ -57,6 +57,29 @@ class Home extends BaseController
     }
 
     /**
+     * Static pages
+     */
+    public function about(): string
+    {
+        return view('home/about');
+    }
+
+    public function contact(): string
+    {
+        return view('home/contact');
+    }
+
+    public function terms(): string
+    {
+        return view('home/terms');
+    }
+
+    public function privacy(): string
+    {
+        return view('home/privacy');
+    }
+
+    /**
      * Manage Jobs - List user's posted jobs
      */
     public function manageJobs(): string

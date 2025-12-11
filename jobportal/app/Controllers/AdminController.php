@@ -476,6 +476,14 @@ class AdminController extends BaseController
         $jobsDescription = $this->request->getPost('jobs_description');
         $postJobTitle = $this->request->getPost('postjob_title');
         $postJobDescription = $this->request->getPost('postjob_description');
+        $aboutTitle = $this->request->getPost('about_title');
+        $aboutDescription = $this->request->getPost('about_description');
+        $contactTitle = $this->request->getPost('contact_title');
+        $contactDescription = $this->request->getPost('contact_description');
+        $termsTitle = $this->request->getPost('terms_title');
+        $termsDescription = $this->request->getPost('terms_description');
+        $privacyTitle = $this->request->getPost('privacy_title');
+        $privacyDescription = $this->request->getPost('privacy_description');
 
         if ($homeTitle !== null) {
             $this->siteSettingsModel->setSetting('home_title', $homeTitle, 'text');
@@ -494,6 +502,30 @@ class AdminController extends BaseController
         }
         if ($postJobDescription !== null) {
             $this->siteSettingsModel->setSetting('postjob_description', $postJobDescription, 'text');
+        }
+        if ($aboutTitle !== null) {
+            $this->siteSettingsModel->setSetting('about_title', $aboutTitle, 'text');
+        }
+        if ($aboutDescription !== null) {
+            $this->siteSettingsModel->setSetting('about_description', $aboutDescription, 'text');
+        }
+        if ($contactTitle !== null) {
+            $this->siteSettingsModel->setSetting('contact_title', $contactTitle, 'text');
+        }
+        if ($contactDescription !== null) {
+            $this->siteSettingsModel->setSetting('contact_description', $contactDescription, 'text');
+        }
+        if ($termsTitle !== null) {
+            $this->siteSettingsModel->setSetting('terms_title', $termsTitle, 'text');
+        }
+        if ($termsDescription !== null) {
+            $this->siteSettingsModel->setSetting('terms_description', $termsDescription, 'text');
+        }
+        if ($privacyTitle !== null) {
+            $this->siteSettingsModel->setSetting('privacy_title', $privacyTitle, 'text');
+        }
+        if ($privacyDescription !== null) {
+            $this->siteSettingsModel->setSetting('privacy_description', $privacyDescription, 'text');
         }
 
         return redirect()->back()

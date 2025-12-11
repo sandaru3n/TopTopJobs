@@ -21,6 +21,14 @@
         }
     } elseif ($uriPath === 'post-job' || strpos($uriPath, 'post-job') !== false) {
         $pageType = 'postjob';
+    } elseif ($uriPath === 'about' || strpos($uriPath, 'about') === 0) {
+        $pageType = 'about';
+    } elseif ($uriPath === 'contact' || strpos($uriPath, 'contact') === 0) {
+        $pageType = 'contact';
+    } elseif ($uriPath === 'terms' || strpos($uriPath, 'terms') === 0) {
+        $pageType = 'terms';
+    } elseif ($uriPath === 'privacy' || strpos($uriPath, 'privacy') === 0) {
+        $pageType = 'privacy';
     }
     
     // Get page-specific title and description from settings first
@@ -37,6 +45,22 @@
         case 'postjob':
             $pageTitle = $siteSettingsModel->getSetting('postjob_title', 'Post a Job - TopTopJobs');
             $pageDescription = $siteSettingsModel->getSetting('postjob_description', 'Post your job listing for free on TopTopJobs. Reach thousands of qualified candidates.');
+            break;
+        case 'about':
+            $pageTitle = $siteSettingsModel->getSetting('about_title', 'About Us - TopTopJobs');
+            $pageDescription = $siteSettingsModel->getSetting('about_description', 'Learn more about TopTopJobs and our mission to connect talent with opportunity.');
+            break;
+        case 'contact':
+            $pageTitle = $siteSettingsModel->getSetting('contact_title', 'Contact Us - TopTopJobs');
+            $pageDescription = $siteSettingsModel->getSetting('contact_description', 'Get in touch with the TopTopJobs team for support or inquiries.');
+            break;
+        case 'terms':
+            $pageTitle = $siteSettingsModel->getSetting('terms_title', 'Terms & Conditions - TopTopJobs');
+            $pageDescription = $siteSettingsModel->getSetting('terms_description', 'Review the terms and conditions for using TopTopJobs.');
+            break;
+        case 'privacy':
+            $pageTitle = $siteSettingsModel->getSetting('privacy_title', 'Privacy Policy - TopTopJobs');
+            $pageDescription = $siteSettingsModel->getSetting('privacy_description', 'Read how TopTopJobs handles your data and privacy.');
             break;
         default:
             $pageTitle = $siteSettingsModel->getSetting('home_title', 'TopTopJobs - Find Your Dream Job');

@@ -264,6 +264,135 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- About Page -->
+                        <div class="mb-6">
+                            <h4 class="text-sm font-medium text-[#111318] dark:text-white mb-3">About Page (/about)</h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label for="about_title" class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                        Page Title
+                                    </label>
+                                    <input 
+                                        type="text" 
+                                        id="about_title" 
+                                        name="about_title" 
+                                        value="<?= esc($settings['about_title'] ?? 'About Us - TopTopJobs') ?>"
+                                        class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                                        placeholder="About Us - TopTopJobs"
+                                    />
+                                </div>
+                                <div>
+                                    <label for="about_description" class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                        Meta Description
+                                    </label>
+                                    <textarea 
+                                        id="about_description" 
+                                        name="about_description" 
+                                        rows="2"
+                                        class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                                        placeholder="Learn more about TopTopJobs and our mission to connect talent with opportunity."
+                                    ><?= esc($settings['about_description'] ?? 'Learn more about TopTopJobs and our mission to connect talent with opportunity.') ?></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contact Page -->
+                        <div class="mb-6">
+                            <h4 class="text-sm font-medium text-[#111318] dark:text-white mb-3">Contact Page (/contact)</h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label for="contact_title" class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                        Page Title
+                                    </label>
+                                    <input 
+                                        type="text" 
+                                        id="contact_title" 
+                                        name="contact_title" 
+                                        value="<?= esc($settings['contact_title'] ?? 'Contact Us - TopTopJobs') ?>"
+                                        class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                                        placeholder="Contact Us - TopTopJobs"
+                                    />
+                                </div>
+                                <div>
+                                    <label for="contact_description" class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                        Meta Description
+                                    </label>
+                                    <textarea 
+                                        id="contact_description" 
+                                        name="contact_description" 
+                                        rows="2"
+                                        class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                                        placeholder="Get in touch with the TopTopJobs team for support or inquiries."
+                                    ><?= esc($settings['contact_description'] ?? 'Get in touch with the TopTopJobs team for support or inquiries.') ?></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Terms Page -->
+                        <div class="mb-6">
+                            <h4 class="text-sm font-medium text-[#111318] dark:text-white mb-3">Terms Page (/terms)</h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label for="terms_title" class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                        Page Title
+                                    </label>
+                                    <input 
+                                        type="text" 
+                                        id="terms_title" 
+                                        name="terms_title" 
+                                        value="<?= esc($settings['terms_title'] ?? 'Terms & Conditions - TopTopJobs') ?>"
+                                        class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                                        placeholder="Terms & Conditions - TopTopJobs"
+                                    />
+                                </div>
+                                <div>
+                                    <label for="terms_description" class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                        Meta Description
+                                    </label>
+                                    <textarea 
+                                        id="terms_description" 
+                                        name="terms_description" 
+                                        rows="2"
+                                        class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                                        placeholder="Review the terms and conditions for using TopTopJobs."
+                                    ><?= esc($settings['terms_description'] ?? 'Review the terms and conditions for using TopTopJobs.') ?></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Privacy Page -->
+                        <div class="mb-6">
+                            <h4 class="text-sm font-medium text-[#111318] dark:text-white mb-3">Privacy Page (/privacy)</h4>
+                            <div class="space-y-3">
+                                <div>
+                                    <label for="privacy_title" class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                        Page Title
+                                    </label>
+                                    <input 
+                                        type="text" 
+                                        id="privacy_title" 
+                                        name="privacy_title" 
+                                        value="<?= esc($settings['privacy_title'] ?? 'Privacy Policy - TopTopJobs') ?>"
+                                        class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                                        placeholder="Privacy Policy - TopTopJobs"
+                                    />
+                                </div>
+                                <div>
+                                    <label for="privacy_description" class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                        Meta Description
+                                    </label>
+                                    <textarea 
+                                        id="privacy_description" 
+                                        name="privacy_description" 
+                                        rows="2"
+                                        class="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                                        placeholder="Read how TopTopJobs handles your data and privacy."
+                                    ><?= esc($settings['privacy_description'] ?? 'Read how TopTopJobs handles your data and privacy.') ?></textarea>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
 
                     <!-- Submit Button -->
