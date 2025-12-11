@@ -799,6 +799,7 @@ function formatJobData($job) {
         'job_type' => $job['job_type'],
         'experience' => $mappedExperience,  // Use mapped experience for frontend filters
         'experience_level' => $experienceLevel,  // Keep original for reference
+        'min_experience' => isset($job['min_experience']) ? (int)$job['min_experience'] : null,  // Min experience in years
         'salary' => $salary,
         'salary_min' => !empty($job['salary_min']) ? (float)$job['salary_min'] : null,
         'salary_max' => !empty($job['salary_max']) ? (float)$job['salary_max'] : null,

@@ -151,6 +151,11 @@
                                             <span class="text-sm font-medium text-[#111318] dark:text-gray-300">Location</span>
                                             <span id="locationType" class="text-sm font-semibold text-[#111318] dark:text-gray-200"></span>
                                         </div>
+                                        <!-- Phone Number - Only show if application_phone exists -->
+                                        <div id="phoneNumberSection" class="flex justify-between items-center hidden">
+                                            <span class="text-sm font-medium text-[#111318] dark:text-gray-300">Phone</span>
+                                            <a id="phoneNumberLink" href="#" class="text-sm font-semibold text-[#111318] dark:text-gray-200 hover:text-primary transition-colors"></a>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -595,9 +600,15 @@
             document.getElementById('companyName').textContent = job.company_name;
             document.getElementById('companyNameCard').textContent = job.company_name;
 
-            // Location and date
-            document.getElementById('jobLocation').textContent = job.location;
-            document.getElementById('locationText').textContent = job.location;
+            // Location and date - show location if available, otherwise show Remote/On-site
+            let displayLocation = '';
+            if (job.location && job.location.trim() && job.location.toLowerCase() !== 'remote') {
+                displayLocation = job.location;
+            } else {
+                displayLocation = job.is_remote ? 'Remote' : 'On-site';
+            }
+            document.getElementById('jobLocation').textContent = displayLocation;
+            document.getElementById('locationText').textContent = displayLocation;
             
             // Calculate and display time ago
             const timeAgo = getTimeAgo(job.posted_at);
@@ -947,8 +958,39 @@
             }
 
             document.getElementById('jobType').textContent = formatJobType(job.job_type);
-            document.getElementById('experienceLevel').textContent = formatExperience(job.experience_level || job.experience);
-            document.getElementById('locationType').textContent = job.is_remote ? 'Remote' : 'On-site';
+            // Format experience - use ONLY min_experience (including 0)
+            // Convert to number if it's a string, handle 0 properly
+            let experienceValue = null;
+            if (job.min_experience !== undefined && job.min_experience !== null && job.min_experience !== '') {
+                // Convert to number if it's a string
+                experienceValue = typeof job.min_experience === 'number' ? job.min_experience : parseInt(job.min_experience);
+                // If conversion failed, set to null
+                if (isNaN(experienceValue)) {
+                    experienceValue = null;
+                }
+            }
+            // Use min_experience directly (0 is valid and means "No experience needed")
+            document.getElementById('experienceLevel').textContent = formatExperience(experienceValue);
+            // Location Type in sidebar - show actual location if available, otherwise Remote/On-site
+            let locationTypeText = '';
+            if (job.location && job.location.trim() && job.location.toLowerCase() !== 'remote') {
+                locationTypeText = job.location;
+            } else {
+                locationTypeText = job.is_remote ? 'Remote' : 'On-site';
+            }
+            document.getElementById('locationType').textContent = locationTypeText;
+
+            // Phone Number - Only show if application_phone exists
+            const phoneNumberSection = document.getElementById('phoneNumberSection');
+            const phoneNumberLink = document.getElementById('phoneNumberLink');
+            if (job.application_phone && job.application_phone.trim()) {
+                const phoneNumber = job.application_phone.trim();
+                phoneNumberLink.textContent = phoneNumber;
+                phoneNumberLink.href = `tel:${phoneNumber}`;
+                phoneNumberSection.classList.remove('hidden');
+            } else {
+                phoneNumberSection.classList.add('hidden');
+            }
 
             // Save job button
             const saveBtn = document.getElementById('saveJobBtn');
@@ -999,14 +1041,31 @@
         }
 
         function formatExperience(level) {
-            const levels = {
-                'fresher': '0-1 years',
-                'junior': '2-4 years',
-                'mid': '3-5 years',
-                'senior': '5+ years',
-                'lead': '8+ years'
-            };
-            return levels[level] || level || 'Not specified';
+            // Use ONLY min_experience numeric values (0, 1, 2, etc.)
+            // Convert to number if needed
+            let numValue = null;
+            if (level !== null && level !== undefined && level !== '') {
+                if (typeof level === 'number') {
+                    numValue = level;
+                } else if (!isNaN(level)) {
+                    numValue = parseInt(level);
+                }
+            }
+            
+            // Format based on numeric value from min_experience
+            if (numValue !== null && !isNaN(numValue)) {
+                const years = numValue;
+                if (years === 0) {
+                    return 'No experience needed';
+                } else if (years === 1) {
+                    return '1 Year';
+                } else if (years > 1) {
+                    return `${years} Years`;
+                }
+            }
+            
+            // If no valid numeric value, show default
+            return 'Not specified';
         }
 
         // Check if job is saved (server-side)
@@ -1052,16 +1111,57 @@
             <?php endif; ?>
 
             try {
+                // Get CSRF token from meta tag or cookie
+                let csrfToken = '';
+                const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                if (csrfMeta) {
+                    csrfToken = csrfMeta.getAttribute('content');
+                } else {
+                    // Try to get from cookie
+                    const cookies = document.cookie.split(';');
+                    for (let cookie of cookies) {
+                        const [name, value] = cookie.trim().split('=');
+                        if (name === 'csrf_cookie_name' || name.includes('csrf')) {
+                            csrfToken = decodeURIComponent(value);
+                            break;
+                        }
+                    }
+                }
+
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                };
+
+                // Add CSRF token if available
+                if (csrfToken) {
+                    headers['X-CSRF-TOKEN'] = csrfToken;
+                }
+
                 const response = await fetch(`${baseUrl.replace(/\/$/, '')}/api/toggle-save-job`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
+                    headers: headers,
+                    credentials: 'same-origin', // Include cookies for session
                     body: JSON.stringify({ job_id: jobId })
                 });
 
+                // Check if response is OK
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('Save job API error:', response.status, errorText);
+                    let errorMessage = 'Failed to save job.';
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        errorMessage = errorData.message || errorMessage;
+                    } catch (e) {
+                        errorMessage = `Server error (${response.status}). Please try again.`;
+                    }
+                    alert(errorMessage);
+                    return;
+                }
+
                 const data = await response.json();
+                console.log('Save job response:', data);
 
                 if (data.success) {
                     updateSaveButton(btn, data.saved);
@@ -1070,16 +1170,33 @@
                 }
             } catch (error) {
                 console.error('Error toggling save job:', error);
-                alert('An error occurred. Please try again.');
+                console.error('Error details:', error.message, error.stack);
+                alert('An error occurred. Please try again. Check console for details.');
             }
         }
 
         function shareJob(job) {
             // Generate slug URL
             const jobSlug = job.slug || (job.company_name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + job.title.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + job.id);
-            // Remove /public/ from baseUrl if present for clean URLs (remove all occurrences)
-            const cleanBaseUrl = baseUrl.replace(/\/public\/?/g, '/').replace(/\/+/g, '/').replace(/\/$/, '');
-            const shareUrl = `${cleanBaseUrl}/job/${jobSlug}/`.replace(/\/+/g, '/');
+            
+            // Get current pathname and extract base path
+            let currentPath = window.location.pathname;
+            // Remove /public/ if present
+            currentPath = currentPath.replace(/\/public\/?/g, '/').replace(/\/+/g, '/');
+            
+            // Extract base path (everything before /job/)
+            const pathParts = currentPath.split('/job/');
+            let basePathOnly = (pathParts[0] || '').replace(/\/$/, '');
+            
+            // If basePathOnly is empty or just '/', use empty string
+            if (!basePathOnly || basePathOnly === '/') {
+                basePathOnly = '';
+            }
+            
+            // Construct absolute URL using only window.location.origin (no domain duplication)
+            const shareUrl = `${window.location.origin}${basePathOnly}/job/${jobSlug}/`.replace(/\/+/g, '/');
+            
+            console.log('Share URL:', shareUrl); // Debug log
             
             if (navigator.share) {
                 navigator.share({

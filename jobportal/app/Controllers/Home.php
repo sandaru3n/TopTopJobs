@@ -124,8 +124,26 @@ class Home extends BaseController
         }
 
         try {
+            // Get job URL before deletion for Google Indexing API
+            $jobSlug = $job['slug'] ?? '';
+            $jobUrl = null;
+            if ($jobSlug) {
+                $jobUrl = base_url('job/' . $jobSlug . '/');
+            }
+
             // Delete the job (company is NOT deleted)
             $this->jobModel->delete($id);
+
+            // Notify Google Indexing API that the job URL has been deleted
+            if ($jobUrl) {
+                try {
+                    $indexingService = new \App\Services\GoogleIndexingService();
+                    $indexingService->notifyUrlDeleted($jobUrl);
+                } catch (\Exception $e) {
+                    // Silently fail - don't break job deletion if indexing fails
+                    log_message('debug', 'Google Indexing API deletion notification failed: ' . $e->getMessage());
+                }
+            }
 
             return redirect()->to('/manage-jobs')
                 ->with('success', 'Job deleted successfully.');
@@ -1007,6 +1025,16 @@ class Home extends BaseController
                     // Add job to collection (will not add if already exists)
                     $this->collectionModel->addJobToCollection($collectionId, $jobId);
                 }
+            }
+
+            // Notify Google Indexing API about the new job (async - don't block on failure)
+            try {
+                $jobUrl = base_url('job/' . $finalSlug . '/');
+                $indexingService = new \App\Services\GoogleIndexingService();
+                $indexingService->notifyUrlUpdated($jobUrl);
+            } catch (\Exception $e) {
+                // Silently fail - don't break job posting if indexing fails
+                log_message('debug', 'Google Indexing API notification failed: ' . $e->getMessage());
             }
 
             return redirect()->to('/jobs')

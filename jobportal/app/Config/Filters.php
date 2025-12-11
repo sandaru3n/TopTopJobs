@@ -98,7 +98,8 @@ class Filters extends BaseFilters
      * @var array<string, list<string>>
      */
     public array $methods = [
-        'post' => ['csrf'], // CSRF protection for all POST requests
+        // CSRF protection is handled in globals with exceptions for API routes
+        // Removed from here to avoid conflicts with globals exception
     ];
 
     /**

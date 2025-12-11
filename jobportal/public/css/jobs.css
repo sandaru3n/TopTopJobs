@@ -413,6 +413,21 @@
     border-color: #2563eb;
 }
 
+.job-action-btn.share-btn {
+    background: #2bee79;
+    border-color: #2bee79;
+    color: #0e2016;
+}
+
+.job-action-btn.share-btn:hover {
+    background: #25d46a;
+    border-color: #25d46a;
+}
+
+.job-action-btn.share-btn .material-symbols-outlined {
+    color: #0e2016;
+}
+
 .job-action-btn .material-symbols-outlined {
     font-size: 1.25rem;
 }

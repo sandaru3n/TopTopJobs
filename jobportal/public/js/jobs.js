@@ -630,6 +630,8 @@ class JobSearch {
             }
 
             this.hasMore = data.has_more || false;
+            // Load saved jobs status from server for all jobs
+            await this.loadSavedJobsStatus();
             this.renderJobs();
             this.updateResultsCount(data.total || 0, data.page || 1, data.per_page || 20);
 
@@ -741,12 +743,6 @@ class JobSearch {
                                     title="Save job">
                                 <span class="material-symbols-outlined">${isSaved ? 'bookmark' : 'bookmark_border'}</span>
                             </button>
-                            <button class="job-action-btn apply-btn" 
-                                    onclick="event.stopPropagation(); jobSearch.applyToJob(${job.id})"
-                                    aria-label="Apply"
-                                    title="Apply">
-                                <span class="material-symbols-outlined">send</span>
-                            </button>
                             <button class="job-action-btn share-btn" 
                                     onclick="event.stopPropagation(); jobSearch.shareJob(${job.id})"
                                     aria-label="Share"
@@ -840,14 +836,129 @@ class JobSearch {
         }
     }
 
-    toggleSaveJob(jobId) {
-        if (this.savedJobs.has(jobId)) {
-            this.savedJobs.delete(jobId);
-        } else {
-            this.savedJobs.add(jobId);
+    async loadSavedJobsStatus() {
+        // Load saved jobs status from server for all displayed jobs
+        if (!this.jobs || this.jobs.length === 0) return;
+        
+        try {
+            // Check saved status for all jobs in parallel
+            const checkPromises = this.jobs.map(async (job) => {
+                try {
+                    let cleanBaseUrl = this.baseUrl.replace(/\/public\/?/g, '/').replace(/\/+/g, '/');
+                    if (!cleanBaseUrl || cleanBaseUrl === '/') {
+                        cleanBaseUrl = '';
+                    }
+                    const apiBaseUrl = window.location.origin + (cleanBaseUrl ? cleanBaseUrl.replace(/\/$/, '') + '/' : '/');
+                    
+                    const response = await fetch(`${apiBaseUrl.replace(/\/$/, '')}/api/check-saved-job/${job.id}`, {
+                        credentials: 'same-origin'
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.success && data.saved) {
+                            this.savedJobs.add(job.id);
+                        } else {
+                            this.savedJobs.delete(job.id);
+                        }
+                    }
+                } catch (error) {
+                    // Silently fail for individual job checks
+                    console.debug('Failed to check saved status for job', job.id, error);
+                }
+            });
+            
+            await Promise.all(checkPromises);
+            localStorage.setItem('savedJobs', JSON.stringify([...this.savedJobs]));
+        } catch (error) {
+            console.error('Error loading saved jobs status:', error);
         }
-        localStorage.setItem('savedJobs', JSON.stringify([...this.savedJobs]));
-        this.renderJobs();
+    }
+
+    async toggleSaveJob(jobId) {
+        try {
+            // Get CSRF token from meta tag or cookie
+            let csrfToken = '';
+            const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+            if (csrfMeta) {
+                csrfToken = csrfMeta.getAttribute('content');
+            } else {
+                // Try to get from cookie
+                const cookies = document.cookie.split(';');
+                for (let cookie of cookies) {
+                    const [name, value] = cookie.trim().split('=');
+                    if (name === 'csrf_cookie_name' || name.includes('csrf')) {
+                        csrfToken = decodeURIComponent(value);
+                        break;
+                    }
+                }
+            }
+
+            // Construct base URL for API
+            let cleanBaseUrl = this.baseUrl.replace(/\/public\/?/g, '/').replace(/\/+/g, '/');
+            if (!cleanBaseUrl || cleanBaseUrl === '/') {
+                cleanBaseUrl = '';
+            }
+            const apiBaseUrl = window.location.origin + (cleanBaseUrl ? cleanBaseUrl.replace(/\/$/, '') + '/' : '/');
+
+            const headers = {
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            };
+
+            // Add CSRF token if available
+            if (csrfToken) {
+                headers['X-CSRF-TOKEN'] = csrfToken;
+            }
+
+            const response = await fetch(`${apiBaseUrl.replace(/\/$/, '')}/api/toggle-save-job`, {
+                method: 'POST',
+                headers: headers,
+                credentials: 'same-origin', // Include cookies for session
+                body: JSON.stringify({ job_id: jobId })
+            });
+
+            // Check if response is OK
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Save job API error:', response.status, errorText);
+                let errorMessage = 'Failed to save job.';
+                try {
+                    const errorData = JSON.parse(errorText);
+                    errorMessage = errorData.message || errorMessage;
+                } catch (e) {
+                    errorMessage = `Server error (${response.status}). Please try again.`;
+                }
+                alert(errorMessage);
+                return;
+            }
+
+            const data = await response.json();
+            console.log('Save job response:', data);
+
+            if (data.success) {
+                // Update saved jobs set based on server response
+                if (data.saved) {
+                    this.savedJobs.add(jobId);
+                } else {
+                    this.savedJobs.delete(jobId);
+                }
+                localStorage.setItem('savedJobs', JSON.stringify([...this.savedJobs]));
+                this.renderJobs(); // Re-render to update button state
+            } else {
+                // Check if user needs to login
+                if (response.status === 401 || data.message?.includes('log in')) {
+                    const currentUrl = encodeURIComponent(window.location.href);
+                    window.location.href = `/login?redirect=${currentUrl}`;
+                } else {
+                    alert(data.message || 'An error occurred');
+                }
+            }
+        } catch (error) {
+            console.error('Error toggling save job:', error);
+            console.error('Error details:', error.message, error.stack);
+            alert('An error occurred. Please try again. Check console for details.');
+        }
     }
 
     applyToJob(jobId) {
