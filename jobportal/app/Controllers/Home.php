@@ -393,15 +393,23 @@ class Home extends BaseController
             'job_type' => 'required|in_list[full-time,part-time,contract,internship,remote]',
             'application_email' => 'permit_empty|valid_email',
             'application_url' => 'permit_empty|valid_url',
-            'application_phone' => 'permit_empty',
-            'monthly_salary' => 'permit_empty|numeric',
-            'job_category' => 'permit_empty',
+            'application_phone' => 'permit_empty|max_length[20]',
+            'salary_min' => 'permit_empty|numeric',
+            'salary_max' => 'permit_empty|numeric',
+            'category_id' => 'required|integer',
+            'subcategory_id' => 'permit_empty|integer',
+            'job_category' => 'permit_empty|max_length[100]', // Keep for backward compatibility
             'min_experience' => 'permit_empty|integer',
             'description' => 'permit_empty',
+            'responsibilities' => 'permit_empty',
+            'requirements' => 'permit_empty',
+            'skills' => 'permit_empty|max_length[500]',
             'valid_through' => 'required|valid_date',
             'company_name' => 'required|max_length[255]',
             'company_description' => 'permit_empty',
             'company_website' => 'permit_empty|valid_url',
+            'country' => 'permit_empty|max_length[100]',
+            'country_code' => 'permit_empty|max_length[2]',
         ];
 
         if (!$this->validate($rules)) {
@@ -425,13 +433,21 @@ class Home extends BaseController
         $description = $this->request->getPost('description');
         $location = $this->request->getPost('location');
         $jobType = $this->request->getPost('job_type');
-        $jobCategory = $this->request->getPost('job_category');
-        $monthlySalary = $this->request->getPost('monthly_salary') ?: null;
+        $jobCategory = $this->request->getPost('job_category'); // Keep for backward compatibility
+        $categoryId = $this->request->getPost('category_id');
+        $subcategoryId = $this->request->getPost('subcategory_id');
+        $salaryMin = $this->request->getPost('salary_min');
+        $salaryMax = $this->request->getPost('salary_max');
         $minExperience = $this->request->getPost('min_experience');
+        $responsibilities = $this->request->getPost('responsibilities');
+        $requirements = $this->request->getPost('requirements');
+        $skills = $this->request->getPost('skills');
         $applicationEmail = $this->request->getPost('application_email');
         $applicationUrl = $this->request->getPost('application_url');
         $applicationPhone = $this->request->getPost('application_phone');
-        // Determine if remote from job_type (checkbox removed from form)
+        $country = $this->request->getPost('country');
+        $countryCode = $this->request->getPost('country_code');
+        // Determine if remote from job_type
         $isRemote = ($jobType === 'remote');
         
         // Set default location for remote jobs if location is empty
@@ -455,6 +471,11 @@ class Home extends BaseController
         $companyId = $this->request->getPost('company_id');
         $companyDescription = $this->request->getPost('company_description');
         $companyWebsite = $this->request->getPost('company_website');
+        
+        // If company_id is not provided in POST, use the existing job's company_id
+        if (empty($companyId) && isset($job['company_id'])) {
+            $companyId = $job['company_id'];
+        }
 
         // Handle company logo upload
         $logoPath = null;
@@ -506,7 +527,19 @@ class Home extends BaseController
             }
             
             $company = $this->companyModel->findOrCreate($companyName, $companyData);
+            if (!$company || !isset($company['id'])) {
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', 'Failed to create or find company. Please try again.');
+            }
             $companyId = $company['id'];
+        }
+        
+        // Final check: ensure company_id is set
+        if (empty($companyId)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Company ID is required. Please ensure company name is provided.');
         }
 
         // Build job description
@@ -528,35 +561,94 @@ class Home extends BaseController
             $fullDescription .= "\n\n--- Application Information ---\n" . implode("\n", $contactInfo);
         }
 
-        // Generate slug
-        $slug = $this->jobModel->generateSlug($companyName, $jobTitle, $id);
+        // Generate slug only if title or company name changed, otherwise keep existing slug
+        $existingSlug = $job['slug'] ?? '';
+        $existingTitle = $job['title'] ?? '';
+        $existingCompany = null;
+        if (!empty($job['company_id'])) {
+            $existingCompanyData = $this->companyModel->find($job['company_id']);
+            $existingCompany = $existingCompanyData['name'] ?? null;
+        }
+        
+        // Only regenerate slug if title or company name has changed
+        if (trim($existingTitle) !== trim($jobTitle) || trim($existingCompany) !== trim($companyName)) {
+            $slug = $this->jobModel->generateSlug($companyName, $jobTitle, $id);
+        } else {
+            // Keep existing slug
+            $slug = $existingSlug;
+        }
 
-        // Prepare job data
+        // Calculate salary values
+        $finalSalaryMin = null;
+        $finalSalaryMax = null;
+        if (!empty($salaryMin) || !empty($salaryMax)) {
+            $finalSalaryMin = !empty($salaryMin) ? (float)$salaryMin : null;
+            $finalSalaryMax = !empty($salaryMax) ? (float)$salaryMax : null;
+            
+            // If only one value provided, use it for both min and max
+            if ($finalSalaryMin && !$finalSalaryMax) {
+                $finalSalaryMax = $finalSalaryMin;
+            } elseif ($finalSalaryMax && !$finalSalaryMin) {
+                $finalSalaryMin = $finalSalaryMax;
+            }
+        }
+
+        // Validate salary range (minimum must be less than maximum)
+        if ($finalSalaryMin && $finalSalaryMax && $finalSalaryMin >= $finalSalaryMax) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Minimum salary must be less than maximum salary.');
+        }
+
+        // Validate that required fields are present
+        if (empty($companyId)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Company information is required.');
+        }
+        
+        if (empty($jobTitle)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Job title is required.');
+        }
+        
+        if (empty($location)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Location is required.');
+        }
+        
+        if (empty($categoryId)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Category is required.');
+        }
+        
+        // Prepare job data (only include slug if it has changed)
         $jobData = [
-            'company_id' => $companyId,
-            'title' => $jobTitle,
-            'slug' => $slug,
-            'description' => $fullDescription,
-            'location' => $location,
+            'company_id' => (int)$companyId,
+            'category_id' => (int)$categoryId,
+            'subcategory_id' => $subcategoryId ? (int)$subcategoryId : null,
+            'title' => trim($jobTitle),
+            'description' => trim($fullDescription),
+            'responsibilities' => $responsibilities ? trim($responsibilities) : null,
+            'requirements' => $requirements ? trim($requirements) : null,
+            'location' => trim($location),
+            'country' => $country ? trim($country) : null,
+            'country_code' => $countryCode ? strtoupper(trim($countryCode)) : null,
             'job_type' => $jobType,
             'experience_level' => $minExperience ? $this->jobModel->mapExperienceLevel($minExperience) : 'junior',
             'min_experience' => $minExperience ? (int)$minExperience : 0,
+            'salary_min' => $finalSalaryMin,
+            'salary_max' => $finalSalaryMax,
+            'salary_currency' => ($finalSalaryMin || $finalSalaryMax) ? 'USD' : null,
+            'salary_period' => ($finalSalaryMin || $finalSalaryMax) ? 'monthly' : null,
+            'is_salary_disclosed' => ($finalSalaryMin || $finalSalaryMax) ? 1 : 0,
             'is_remote' => $isRemote ? 1 : 0,
+            'skills_required' => $skills ? trim($skills) : ($jobCategory ? trim($jobCategory) : null), // Use skills if provided, otherwise use category for backward compatibility
             'expires_at' => date('Y-m-d H:i:s', strtotime($validThroughInput)),
         ];
-
-        // Add salary if provided
-        if ($monthlySalary) {
-            $jobData['salary_min'] = (float)$monthlySalary;
-            $jobData['salary_max'] = (float)$monthlySalary;
-            $jobData['salary_currency'] = 'USD';
-            $jobData['salary_period'] = 'monthly';
-        }
-
-        // Add skills/category
-        if ($jobCategory) {
-            $jobData['skills_required'] = $jobCategory;
-        }
 
         // Add application fields if they exist in the database
         if ($applicationEmail) {
@@ -569,8 +661,90 @@ class Home extends BaseController
             $jobData['application_phone'] = $applicationPhone;
         }
 
-        // Update job
-        $this->jobModel->update($id, $jobData);
+        // Handle job image upload
+        $jobImagePath = null;
+        $jobImageFile = $this->request->getFile('job_image');
+        if ($jobImageFile && $jobImageFile->isValid() && !$jobImageFile->hasMoved()) {
+            $uploadPath = FCPATH . 'uploads/job_images/';
+            if (!is_dir($uploadPath)) {
+                mkdir($uploadPath, 0755, true);
+            }
+            $newName = $jobImageFile->getRandomName();
+            $jobImageFile->move($uploadPath, $newName);
+            helper('image');
+            $jobImagePath = upload_path('job_images/' . $newName);
+        }
+        
+        // Add job image if uploaded
+        if ($jobImagePath) {
+            $jobData['image'] = $jobImagePath;
+        }
+
+        // Handle collection (if job needs to be added to a collection)
+        $collectionId = $this->request->getPost('collection_id');
+        if ($collectionId && is_numeric($collectionId)) {
+            $collectionId = (int)$collectionId;
+            // Check if job is already in a collection, remove old association first
+            $db = \Config\Database::connect();
+            $builder = $db->table('collection_jobs');
+            $builder->where('job_id', $id)->delete();
+            // Add to new collection
+            $this->collectionModel->addJobToCollection($collectionId, $id);
+        }
+
+        // Update job - handle slug validation
+        // If slug has changed, add it to jobData and validate; otherwise skip it to avoid validation errors
+        if ($slug !== $existingSlug) {
+            // Slug has changed, add it to update data and validate uniqueness while excluding current record
+            $jobData['slug'] = $slug;
+            // Format: is_unique[table.field,primary_key,id_value] - use actual ID value (not placeholder)
+            $this->jobModel->setValidationRule('slug', 'required|max_length[255]|is_unique[jobs.slug,id,' . $id . ']');
+            log_message('debug', 'Slug changed from "' . $existingSlug . '" to "' . $slug . '", validating uniqueness with ID exclusion: ' . $id);
+        } else {
+            // Slug hasn't changed, don't include it in update (so validation is skipped)
+            log_message('debug', 'Slug unchanged: "' . $slug . '", skipping slug in update data');
+        }
+        
+        // Log the job data being updated for debugging
+        log_message('debug', 'Updating job ID: ' . $id);
+        log_message('debug', 'Job data keys: ' . implode(', ', array_keys($jobData)));
+        log_message('debug', 'Company ID: ' . ($jobData['company_id'] ?? 'NOT SET'));
+        log_message('debug', 'Category ID: ' . ($jobData['category_id'] ?? 'NOT SET'));
+        log_message('debug', 'Subcategory ID: ' . ($jobData['subcategory_id'] ?? 'NOT SET'));
+        log_message('debug', 'Slug: ' . ($jobData['slug'] ?? 'NOT SET'));
+        
+        // Update the job
+        $updateResult = $this->jobModel->update($id, $jobData);
+        
+        if (!$updateResult) {
+            // If update failed, get model errors
+            $modelErrors = $this->jobModel->errors();
+            $dbError = $this->jobModel->db->error();
+            
+            // Log the errors for debugging
+            log_message('error', 'Job update failed for ID: ' . $id);
+            log_message('error', 'Model errors: ' . json_encode($modelErrors));
+            if (!empty($dbError)) {
+                log_message('error', 'Database error: ' . json_encode($dbError));
+            }
+            
+            if (!empty($modelErrors)) {
+                return redirect()->back()
+                    ->withInput()
+                    ->with('errors', $modelErrors)
+                    ->with('error', 'Validation failed. Please check the errors below.');
+            }
+            
+            // Fallback error with more details
+            $errorMsg = 'Failed to update job. Please try again.';
+            if (!empty($dbError['message'])) {
+                $errorMsg .= ' Error: ' . $dbError['message'];
+            }
+            
+            return redirect()->back()
+                ->withInput()
+                ->with('error', $errorMsg);
+        }
 
         return redirect()->to('/manage-jobs')
             ->with('success', 'Job updated successfully!');
