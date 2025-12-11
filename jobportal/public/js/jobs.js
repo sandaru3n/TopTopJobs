@@ -678,6 +678,7 @@ class JobSearch {
         const skills = (job.skills || []).slice(0, 3);
         const postedTime = this.getTimeAgo(job.posted_at);
         const category = job.category || 'Other';
+        const subcategory = job.subcategory || null;
         const categoryColor = this.getCategoryColor(category);
 
         return `
@@ -712,6 +713,7 @@ class JobSearch {
                     <div class="job-card-body">
                         <div class="job-card-category">
                             <span class="job-category-tag ${categoryColor}">${this.escapeHtml(category)}</span>
+                            ${subcategory ? `<span class="job-category-tag ${this.getSubcategoryColorClass(subcategory)}">${this.escapeHtml(subcategory)}</span>` : ''}
                         </div>
                         <p class="job-card-description-modern">${this.escapeHtml(job.description || 'No description available.')}</p>
                         ${skills.length > 0 ? `
@@ -763,21 +765,85 @@ class JobSearch {
     }
     
     getCategoryColor(category) {
+        // Use predefined category colors or hash-based unique colors
+        if (typeof getCategoryColor === 'function') {
+            // If color-utils.js is loaded, use it
+            return getCategoryColor(category);
+        }
+        // Fallback for category class names (for CSS-based colors)
         const colorMap = {
-            'Cashier': 'category-blue',
-            'Data Entry': 'category-purple',
-            'IT/Software': 'category-indigo',
-            'Marketing': 'category-pink',
+            'IT & Software': 'category-indigo',
+            'Marketing & Advertising': 'category-pink',
             'Sales': 'category-orange',
             'Customer Service': 'category-teal',
-            'Design': 'category-rose',
+            'Finance & Accounting': 'category-emerald',
             'Engineering': 'category-cyan',
-            'Finance': 'category-emerald',
-            'Healthcare': 'category-red',
-            'Education': 'category-amber',
-            'Other': 'category-gray'
+            'Design & Creative': 'category-rose',
+            'Healthcare & Medical': 'category-red',
+            'Education & Training': 'category-amber',
+            'Hospitality & Tourism': 'category-yellow',
+            'Logistics & Supply Chain': 'category-lime',
+            'Construction & Skilled Trades': 'category-green',
+            'Human Resources': 'category-blue',
+            'Legal': 'category-violet',
+            'Media, Writing & Communications': 'category-fuchsia',
+            'Manufacturing & Production': 'category-slate',
+            'Real Estate': 'category-sky',
+            'Retail': 'category-purple',
+            'Agriculture & Environment': 'category-emerald',
+            'Security & Armed Forces': 'category-zinc',
+            'Administrative & Office': 'category-neutral',
+            'Creative, Entertainment & Arts': 'category-pink'
         };
         return colorMap[category] || 'category-gray';
+    }
+
+    getSubcategoryColor(subcategory) {
+        // Use hash-based unique colors for subcategories
+        if (typeof getSubcategoryColor === 'function') {
+            return getSubcategoryColor(subcategory);
+        }
+        // Fallback
+        return 'category-purple';
+    }
+
+    getSubcategoryColorClass(subcategoryName) {
+        // Generate unique color class based on subcategory name hash
+        const colorClasses = [
+            'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
+            'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400',
+            'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400',
+            'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-400',
+            'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400',
+            'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
+            'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400',
+            'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
+            'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
+            'bg-lime-100 dark:bg-lime-900/30 text-lime-700 dark:text-lime-400',
+            'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
+            'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
+            'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400',
+            'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400',
+            'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400',
+            'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400',
+            'bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-400',
+            'bg-slate-100 dark:bg-slate-900/30 text-slate-700 dark:text-slate-400',
+            'bg-zinc-100 dark:bg-zinc-900/30 text-zinc-700 dark:text-zinc-400',
+            'bg-neutral-100 dark:bg-neutral-900/30 text-neutral-700 dark:text-neutral-400',
+            'bg-stone-100 dark:bg-stone-900/30 text-stone-700 dark:text-stone-400'
+        ];
+        
+        if (!subcategoryName) return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300';
+        
+        // Hash the subcategory name to get consistent index
+        let hash = 0;
+        for (let i = 0; i < subcategoryName.length; i++) {
+            const char = subcategoryName.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        const index = Math.abs(hash) % colorClasses.length;
+        return colorClasses[index];
     }
 
     setupJobCardActions() {

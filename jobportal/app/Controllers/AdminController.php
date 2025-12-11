@@ -6,6 +6,7 @@ use App\Models\CollectionModel;
 use App\Models\JobModel;
 use App\Models\CompanyModel;
 use App\Models\SiteSettingsModel;
+use CodeIgniter\HTTP\RedirectResponse;
 
 class AdminController extends BaseController
 {
@@ -129,17 +130,44 @@ class AdminController extends BaseController
 
     /**
      * Show edit collection form
+     * @return string|RedirectResponse
      */
-    public function editCollection($id = null): string
+    public function editCollection($id = null)
     {
-        // Get ID from parameter or URI segment if not provided
-        if ($id === null) {
-            $id = $this->request->getUri()->getSegment(3); // /admin/collections/{id}/edit
+        // CodeIgniter should pass the (:num) parameter automatically
+        // If not received or invalid, extract from URI segments
+        // For URL /admin/collections/1/edit:
+        // - getSegment(1) = 'admin'
+        // - getSegment(2) = 'collections'
+        // - getSegment(3) = '1' (the ID we need)
+        // - getSegment(4) = 'edit'
+        if ($id === null || $id === '' || !is_numeric($id)) {
+            // Try getSegment(3) directly - this should be the ID
+            $id = $this->request->getUri()->getSegment(3);
+            
+            // If still not found, try finding 'collections' in segments array
+            if (empty($id) || !is_numeric($id)) {
+                $segments = $this->request->getUri()->getSegments();
+                // $segments array: [0] => 'admin', [1] => 'collections', [2] => '1', [3] => 'edit'
+                if (isset($segments[2]) && is_numeric($segments[2])) {
+                    $id = $segments[2];
+                } else {
+                    // Alternative: Find 'collections' and get next segment
+                    $collectionsIndex = array_search('collections', $segments);
+                    if ($collectionsIndex !== false && isset($segments[$collectionsIndex + 1])) {
+                        $id = $segments[$collectionsIndex + 1];
+                    }
+                }
+            }
         }
         
-        if (!$id || !is_numeric($id)) {
+        // Validate ID
+        if (empty($id) || !is_numeric($id)) {
+            $segments = $this->request->getUri()->getSegments();
+            $path = $this->request->getUri()->getPath();
+            error_log('EditCollection: Could not extract ID. Param received: ' . var_export(func_get_args(), true) . ', Segments: ' . json_encode($segments) . ', Path: ' . $path);
             return redirect()->to('/admin/collections')
-                ->with('error', 'Invalid collection ID.');
+                ->with('error', 'Invalid collection ID. Please check the URL.');
         }
         
         $id = (int) $id;
@@ -168,14 +196,30 @@ class AdminController extends BaseController
      */
     public function updateCollection($id = null)
     {
-        // Get ID from parameter or URI segment if not provided
-        if ($id === null) {
-            $id = $this->request->getUri()->getSegment(3); // /admin/collections/{id}/update
+        // Get ID from route parameter, POST data, or URI segment
+        // CodeIgniter should pass the (:num) parameter automatically
+        if (empty($id) || !is_numeric($id)) {
+            // Try POST data first (hidden field)
+            $id = $this->request->getPost('collection_id');
+            
+            // If still not found, try URI segments
+            // For route /admin/collections/{id}/update, segments are: admin=1, collections=2, id=3, update=4
+            if (empty($id) || !is_numeric($id)) {
+                $segments = $this->request->getUri()->getSegments();
+                // Find 'collections' in segments and get the next segment (should be the ID)
+                $collectionsIndex = array_search('collections', $segments);
+                if ($collectionsIndex !== false && isset($segments[$collectionsIndex + 1])) {
+                    $id = $segments[$collectionsIndex + 1];
+                } else {
+                    // Fallback to segment 3
+                    $id = $this->request->getUri()->getSegment(3);
+                }
+            }
         }
         
-        if (!$id || !is_numeric($id)) {
+        if (empty($id) || !is_numeric($id)) {
             return redirect()->to('/admin/collections')
-                ->with('error', 'Invalid collection ID.');
+                ->with('error', 'Invalid collection ID. ID: ' . ($id ?? 'null'));
         }
         
         $id = (int) $id;
@@ -206,11 +250,10 @@ class AdminController extends BaseController
         }
 
         $name = esc($this->request->getPost('name'));
-        $slug = $this->collectionModel->generateSlug($name);
         
-        // If name changed, regenerate slug
+        // If name changed, regenerate slug (excluding current ID)
         if ($collection['name'] !== $name) {
-            $slug = $this->collectionModel->generateSlug($name);
+            $slug = $this->collectionModel->generateSlug($name, $id);
         } else {
             $slug = $collection['slug'];
         }
@@ -225,11 +268,25 @@ class AdminController extends BaseController
             'status' => esc($this->request->getPost('status')),
         ];
 
+        // Temporarily set validation rule to exclude current ID for slug uniqueness
+        $this->collectionModel->setValidationRule('slug', 'required|max_length[255]|is_unique[collections.slug,id,' . $id . ']');
+        
+        // Update the collection
         if ($this->collectionModel->update($id, $data)) {
             return redirect()->to('/admin/collections')
                 ->with('success', 'Collection updated successfully!');
         }
 
+        // If update failed, get model errors
+        $modelErrors = $this->collectionModel->errors();
+        if (!empty($modelErrors)) {
+            return redirect()->back()
+                ->withInput()
+                ->with('errors', $modelErrors)
+                ->with('error', 'Validation failed. Please check the errors below.');
+        }
+
+        // Fallback error
         return redirect()->back()
             ->withInput()
             ->with('error', 'Failed to update collection. Please try again.');
@@ -270,11 +327,16 @@ class AdminController extends BaseController
     /**
      * Manage jobs in a collection
      */
-    public function manageCollectionJobs($id = null): string
+    /**
+     * Manage collection jobs
+     * @return string|RedirectResponse
+     */
+    public function manageCollectionJobs($id = null)
     {
         // Get ID from parameter or URI segment if not provided
         if ($id === null) {
-            $id = $this->request->getUri()->getSegment(3); // /admin/collections/{id}/jobs
+            // Try segment 4 (admin=1, collections=2, id=3, jobs=4) or segment 3 as fallback
+            $id = $this->request->getUri()->getSegment(4) ?? $this->request->getUri()->getSegment(3);
         }
         
         if (!$id || !is_numeric($id)) {

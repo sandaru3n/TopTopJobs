@@ -218,31 +218,52 @@
                         </div>
 
                         <!-- Job Category -->
-                        <div>
-                            <label for="job_category" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
-                                Job Category <span class="text-red-500">*</span>
-                            </label>
-                            <select 
-                                id="job_category" 
-                                name="job_category" 
-                                required
-                                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors cursor-pointer"
-                            >
-                                <option value="">Select Category</option>
-                                <option value="Cashier" <?= old('job_category') === 'Cashier' ? 'selected' : '' ?>>Cashier</option>
-                                <option value="Data Entry" <?= old('job_category') === 'Data Entry' ? 'selected' : '' ?>>Data Entry</option>
-                                <option value="IT/Software" <?= old('job_category') === 'IT/Software' ? 'selected' : '' ?>>IT/Software</option>
-                                <option value="Marketing" <?= old('job_category') === 'Marketing' ? 'selected' : '' ?>>Marketing</option>
-                                <option value="Sales" <?= old('job_category') === 'Sales' ? 'selected' : '' ?>>Sales</option>
-                                <option value="Customer Service" <?= old('job_category') === 'Customer Service' ? 'selected' : '' ?>>Customer Service</option>
-                                <option value="Design" <?= old('job_category') === 'Design' ? 'selected' : '' ?>>Design</option>
-                                <option value="Engineering" <?= old('job_category') === 'Engineering' ? 'selected' : '' ?>>Engineering</option>
-                                <option value="Finance" <?= old('job_category') === 'Finance' ? 'selected' : '' ?>>Finance</option>
-                                <option value="Healthcare" <?= old('job_category') === 'Healthcare' ? 'selected' : '' ?>>Healthcare</option>
-                                <option value="Education" <?= old('job_category') === 'Education' ? 'selected' : '' ?>>Education</option>
-                                <option value="Other" <?= old('job_category') === 'Other' ? 'selected' : '' ?>>Other</option>
-                            </select>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="category_id" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
+                                    Category <span class="text-red-500">*</span>
+                                </label>
+                                <select 
+                                    id="category_id" 
+                                    name="category_id" 
+                                    required
+                                    class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors cursor-pointer"
+                                >
+                                    <option value="">Select Category</option>
+                                    <?php if (!empty($categories)): ?>
+                                        <?php foreach ($categories as $category): ?>
+                                            <option value="<?= esc($category['id']) ?>" <?= old('category_id') == $category['id'] ? 'selected' : '' ?>>
+                                                <?= esc($category['name']) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </select>
+                                <?php if (session()->getFlashdata('errors')['category_id'] ?? false): ?>
+                                    <p class="mt-1 text-xs text-red-600 dark:text-red-400"><?= esc(session()->getFlashdata('errors')['category_id']) ?></p>
+                                <?php endif; ?>
+                            </div>
+                            <div>
+                                <label for="subcategory_id" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
+                                    Subcategory <span class="text-xs font-normal text-gray-500 dark:text-gray-400">(Optional)</span>
+                                </label>
+                                <select 
+                                    id="subcategory_id" 
+                                    name="subcategory_id" 
+                                    class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled
+                                >
+                                    <option value="">Select Category First</option>
+                                </select>
+                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    <span id="subcategoryHint">Select a category above to see subcategories</span>
+                                </p>
+                                <?php if (session()->getFlashdata('errors')['subcategory_id'] ?? false): ?>
+                                    <p class="mt-1 text-xs text-red-600 dark:text-red-400"><?= esc(session()->getFlashdata('errors')['subcategory_id']) ?></p>
+                                <?php endif; ?>
+                            </div>
                         </div>
+                        <!-- Legacy job_category field for backward compatibility (hidden) -->
+                        <input type="hidden" id="job_category" name="job_category" value="">
 
                         <!-- Collection (Optional) -->
                         <?php if (!empty($collections) && count($collections) > 0): ?>
@@ -1019,6 +1040,106 @@
                         countryMsg.innerHTML = 'Selected: <strong>' + countryName + '</strong>';
                     }
                 });
+            }
+        })();
+
+        // Handle Category and Subcategory dynamic loading
+        (function() {
+            const categorySelect = document.getElementById('category_id');
+            const subcategorySelect = document.getElementById('subcategory_id');
+            const jobCategoryHidden = document.getElementById('job_category');
+            
+            if (!categorySelect || !subcategorySelect) return;
+            
+            // Get API URL
+            const baseUrl = window.location.origin;
+            const apiUrl = baseUrl + '/api/subcategories.php';
+            
+            // Store selected subcategory ID if form was submitted with errors
+            const oldSubcategoryId = <?= old('subcategory_id') ? (int)old('subcategory_id') : 'null' ?>;
+            const oldCategoryId = <?= old('category_id') ? (int)old('category_id') : 'null' ?>;
+            
+            // Function to load subcategories
+            function loadSubcategories(categoryId, preselectedSubcategoryId = null) {
+                const subcategoryHint = document.getElementById('subcategoryHint');
+                
+                // Reset subcategory
+                subcategorySelect.innerHTML = '<option value="">Loading...</option>';
+                subcategorySelect.disabled = true;
+                
+                if (subcategoryHint) {
+                    subcategoryHint.textContent = 'Loading subcategories...';
+                }
+                
+                // Update hidden job_category field for backward compatibility
+                if (jobCategoryHidden && categoryId) {
+                    const selectedCategoryOption = categorySelect.options[categorySelect.selectedIndex];
+                    if (selectedCategoryOption) {
+                        jobCategoryHidden.value = selectedCategoryOption.text;
+                    }
+                }
+                
+                if (!categoryId) {
+                    subcategorySelect.innerHTML = '<option value="">Select Category First</option>';
+                    subcategorySelect.disabled = true;
+                    if (subcategoryHint) {
+                        subcategoryHint.textContent = 'Select a category above to see subcategories';
+                    }
+                    return;
+                }
+                
+                // Fetch subcategories
+                fetch(`${apiUrl}?category_id=${encodeURIComponent(categoryId)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.subcategories.length > 0) {
+                            subcategorySelect.innerHTML = '<option value="">Select Subcategory (Optional)</option>';
+                            
+                            data.subcategories.forEach(subcategory => {
+                                const option = document.createElement('option');
+                                option.value = subcategory.id;
+                                option.textContent = subcategory.name;
+                                
+                                // Select previously selected subcategory if form had errors
+                                if (preselectedSubcategoryId && subcategory.id == preselectedSubcategoryId) {
+                                    option.selected = true;
+                                }
+                                
+                                subcategorySelect.appendChild(option);
+                            });
+                            
+                            subcategorySelect.disabled = false;
+                            if (subcategoryHint) {
+                                subcategoryHint.textContent = `${data.count} subcategories available (optional)`;
+                            }
+                        } else {
+                            subcategorySelect.innerHTML = '<option value="">No subcategories available</option>';
+                            subcategorySelect.disabled = false;
+                            if (subcategoryHint) {
+                                subcategoryHint.textContent = 'No subcategories available for this category';
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching subcategories:', error);
+                        subcategorySelect.innerHTML = '<option value="">Error loading subcategories</option>';
+                        subcategorySelect.disabled = false;
+                        if (subcategoryHint) {
+                            subcategoryHint.textContent = 'Error loading subcategories. Please try again.';
+                            subcategoryHint.classList.add('text-red-600', 'dark:text-red-400');
+                        }
+                    });
+            }
+            
+            // Load subcategories when category changes
+            categorySelect.addEventListener('change', function() {
+                loadSubcategories(this.value, oldSubcategoryId);
+            });
+            
+            // Load subcategories on page load if category is already selected
+            if (categorySelect.value || oldCategoryId) {
+                const categoryIdToLoad = categorySelect.value || oldCategoryId;
+                loadSubcategories(categoryIdToLoad, oldSubcategoryId);
             }
         })();
     </script>

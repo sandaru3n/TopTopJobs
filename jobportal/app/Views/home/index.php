@@ -149,21 +149,69 @@
             if (!category) return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300';
             
             const colorMap = {
-                'Cashier': 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300',
-                'Data Entry': 'bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300',
-                'IT/Software': 'bg-indigo-100 dark:bg-indigo-900/50 text-indigo-800 dark:text-indigo-300',
-                'Marketing': 'bg-pink-100 dark:bg-pink-900/50 text-pink-800 dark:text-pink-300',
-                'Sales': 'bg-orange-100 dark:bg-orange-900/50 text-orange-800 dark:text-orange-300',
-                'Customer Service': 'bg-teal-100 dark:bg-teal-900/50 text-teal-800 dark:text-teal-300',
-                'Design': 'bg-rose-100 dark:bg-rose-900/50 text-rose-800 dark:text-rose-300',
-                'Engineering': 'bg-cyan-100 dark:bg-cyan-900/50 text-cyan-800 dark:text-cyan-300',
-                'Finance': 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-300',
-                'Healthcare': 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300',
-                'Education': 'bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-300',
-                'Other': 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                'IT & Software': 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400',
+                'Marketing & Advertising': 'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-400',
+                'Sales': 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400',
+                'Customer Service': 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400',
+                'Finance & Accounting': 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
+                'Engineering': 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400',
+                'Design & Creative': 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400',
+                'Healthcare & Medical': 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
+                'Education & Training': 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
+                'Hospitality & Tourism': 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
+                'Logistics & Supply Chain': 'bg-lime-100 dark:bg-lime-900/30 text-lime-700 dark:text-lime-400',
+                'Construction & Skilled Trades': 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
+                'Human Resources': 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
+                'Legal': 'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400',
+                'Media, Writing & Communications': 'bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-400',
+                'Manufacturing & Production': 'bg-slate-100 dark:bg-slate-900/30 text-slate-700 dark:text-slate-400',
+                'Real Estate': 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400',
+                'Retail': 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400',
+                'Agriculture & Environment': 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
+                'Security & Armed Forces': 'bg-zinc-100 dark:bg-zinc-900/30 text-zinc-700 dark:text-zinc-400',
+                'Administrative & Office': 'bg-neutral-100 dark:bg-neutral-900/30 text-neutral-700 dark:text-neutral-400',
+                'Creative, Entertainment & Arts': 'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-400'
             };
             
             return colorMap[category] || 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300';
+        }
+
+        // Get unique subcategory color based on hash
+        function getSubcategoryColor(subcategory) {
+            if (!subcategory) return 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300';
+            
+            const colors = [
+                'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400',
+                'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400',
+                'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400',
+                'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-400',
+                'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400',
+                'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400',
+                'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400',
+                'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400',
+                'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400',
+                'bg-lime-100 dark:bg-lime-900/30 text-lime-700 dark:text-lime-400',
+                'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400',
+                'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400',
+                'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400',
+                'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400',
+                'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-400',
+                'bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-400',
+                'bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-400',
+                'bg-slate-100 dark:bg-slate-900/30 text-slate-700 dark:text-slate-400',
+                'bg-zinc-100 dark:bg-zinc-900/30 text-zinc-700 dark:text-zinc-400',
+                'bg-neutral-100 dark:bg-neutral-900/30 text-neutral-700 dark:text-neutral-400'
+            ];
+            
+            // Hash the subcategory name for consistent color assignment
+            let hash = 0;
+            for (let i = 0; i < subcategory.length; i++) {
+                const char = subcategory.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            const index = Math.abs(hash) % colors.length;
+            return colors[index];
         }
 
         function renderJobs(jobs) {
@@ -186,7 +234,8 @@
                         ${job.badge ? `<span class="inline-flex items-center rounded-full ${job.badge_class || 'bg-green-100 dark:bg-green-900/50'} px-2.5 py-0.5 text-xs font-medium ${job.badge === 'New' ? 'text-green-800 dark:text-green-300' : 'text-orange-800 dark:text-orange-300'}">${job.badge}</span>` : ''}
                     </div>
                     <div class="flex flex-wrap gap-2">
-                        <span class="inline-flex items-center rounded-full ${getCategoryColor(job.category || 'Other')} px-3 py-1 text-xs font-medium">${job.category || 'Other'}</span>
+                        ${job.category ? `<span class="inline-flex items-center rounded-full ${getCategoryColor(job.category || 'Other')} px-3 py-1 text-xs font-medium">${escapeHtml(job.category)}</span>` : ''}
+                        ${job.subcategory ? `<span class="inline-flex items-center rounded-full ${getSubcategoryColor(job.subcategory)} px-3 py-1 text-xs font-medium">${escapeHtml(job.subcategory)}</span>` : ''}
                     </div>
                     <p class="text-sm text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-3">${job.description || ''}</p>
                     <div class="flex flex-wrap gap-2">
@@ -330,6 +379,13 @@
             
             // Load jobs for the new page
             loadJobs();
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
 
         function getTimeAgo(dateString) {

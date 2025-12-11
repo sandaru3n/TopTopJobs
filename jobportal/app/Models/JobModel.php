@@ -14,6 +14,8 @@ class JobModel extends Model
     protected $protectFields   = true;
     protected $allowedFields    = [
         'company_id',
+        'category_id',
+        'subcategory_id',
         'title',
         'slug',
         'description',

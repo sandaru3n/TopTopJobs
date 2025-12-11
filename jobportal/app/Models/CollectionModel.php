@@ -61,19 +61,34 @@ class CollectionModel extends Model
 
     /**
      * Generate slug from collection name
+     * @param string $name Collection name
+     * @param int|null $excludeId ID to exclude when checking uniqueness (for updates)
      */
-    public function generateSlug($name)
+    public function generateSlug($name, $excludeId = null)
     {
         $slug = strtolower($name);
         $slug = preg_replace('/[^a-z0-9]+/', '-', $slug);
         $slug = trim($slug, '-');
         
-        // Ensure uniqueness
+        // Ensure uniqueness (excluding current ID if updating)
         $originalSlug = $slug;
         $counter = 1;
-        while ($this->where('slug', $slug)->first()) {
+        
+        // Build query
+        $query = $this->where('slug', $slug);
+        
+        // Exclude current ID if updating
+        if ($excludeId !== null) {
+            $query->where('id !=', $excludeId);
+        }
+        
+        while ($query->first()) {
             $slug = $originalSlug . '-' . $counter;
             $counter++;
+            $query = $this->where('slug', $slug);
+            if ($excludeId !== null) {
+                $query->where('id !=', $excludeId);
+            }
         }
         
         return $slug;
@@ -160,9 +175,11 @@ class CollectionModel extends Model
     {
         $db = \Config\Database::connect();
         $builder = $db->table('collection_jobs');
-        $builder->select('jobs.*, companies.name as company_name, companies.slug as company_slug, companies.logo as company_logo, collection_jobs.sort_order');
+        $builder->select('jobs.*, companies.name as company_name, companies.slug as company_slug, companies.logo as company_logo, collection_jobs.sort_order, categories.name as category_name, subcategories.name as subcategory_name');
         $builder->join('jobs', 'jobs.id = collection_jobs.job_id');
         $builder->join('companies', 'companies.id = jobs.company_id');
+        $builder->join('categories', 'categories.id = jobs.category_id', 'left');
+        $builder->join('subcategories', 'subcategories.id = jobs.subcategory_id', 'left');
         $builder->where('collection_jobs.collection_id', $collectionId);
         $builder->where('jobs.status', 'active');
         $builder->orderBy('collection_jobs.sort_order', 'ASC');

@@ -90,8 +90,11 @@
 
             <!-- Form -->
             <div class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                <form method="POST" action="<?= $collection ? base_url('/admin/collections/' . $collection['id'] . '/update') : base_url('/admin/collections/store') ?>">
+                <form method="POST" action="<?= $collection ? base_url('/admin/collections/' . $collection['id'] . '/update') : base_url('/admin/collections/store') ?>" id="collectionForm">
                     <?= csrf_field() ?>
+                    <?php if ($collection): ?>
+                        <input type="hidden" name="collection_id" value="<?= esc($collection['id']) ?>">
+                    <?php endif; ?>
                     
                     <!-- Collection Name -->
                     <div class="mb-6">
@@ -198,6 +201,7 @@
                     <div class="flex items-center gap-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                         <button 
                             type="submit" 
+                            id="submitBtn"
                             class="flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-white font-medium hover:bg-blue-700 transition-colors"
                         >
                             <span class="material-symbols-outlined">save</span>
@@ -213,6 +217,32 @@
                 </form>
             </div>
         </main>
+
+        <script>
+            // Form submission handler - ensure form submits correctly
+            document.addEventListener('DOMContentLoaded', function() {
+                const form = document.getElementById('collectionForm');
+                const submitBtn = document.getElementById('submitBtn');
+                
+                if (form && submitBtn) {
+                    form.addEventListener('submit', function(e) {
+                        // Check if form is valid
+                        if (!form.checkValidity()) {
+                            e.preventDefault();
+                            form.reportValidity();
+                            return false;
+                        }
+                        
+                        // Disable button to prevent double submission
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<span class="material-symbols-outlined">hourglass_empty</span> Processing...';
+                        
+                        // Allow form to submit
+                        return true;
+                    });
+                }
+            });
+        </script>
 
         <!-- Footer -->
         <footer class="bg-white dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-800 mt-auto">

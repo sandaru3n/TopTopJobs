@@ -263,9 +263,11 @@ if ($jobId || $jobSlug) {
             if ($jobId) {
                 // Find by ID
                 $stmt = $conn->prepare("
-                    SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website, c.maps_url as company_maps_url, c.industry as company_industry
+                    SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website, c.maps_url as company_maps_url, c.industry as company_industry, cat.name as category_name, subcat.name as subcategory_name
                     FROM jobs j
                     INNER JOIN companies c ON j.company_id = c.id
+                    LEFT JOIN categories cat ON j.category_id = cat.id
+                    LEFT JOIN subcategories subcat ON j.subcategory_id = subcat.id
                     WHERE j.id = ? AND j.status = 'active'
                 ");
                 if ($stmt) {
@@ -340,9 +342,11 @@ if ($jobId || $jobSlug) {
                     error_log('Trying to match by slug directly: ' . $jobSlug);
                     // First try with active status
                     $stmt = $conn->prepare("
-                        SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website, c.maps_url as company_maps_url, c.industry as company_industry
+                        SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website, c.maps_url as company_maps_url, c.industry as company_industry, cat.name as category_name, subcat.name as subcategory_name
                         FROM jobs j
                         INNER JOIN companies c ON j.company_id = c.id
+                        LEFT JOIN categories cat ON j.category_id = cat.id
+                        LEFT JOIN subcategories subcat ON j.subcategory_id = subcat.id
                         WHERE j.slug = ? AND j.status = 'active'
                     ");
                     if ($stmt) {
@@ -357,9 +361,11 @@ if ($jobId || $jobSlug) {
                                 // Try without status filter as fallback
                                 $stmt->close();
                                 $stmt = $conn->prepare("
-                                    SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website, c.maps_url as company_maps_url, c.industry as company_industry
+                                    SELECT j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, c.rating as company_rating, c.website as company_website, c.maps_url as company_maps_url, c.industry as company_industry, cat.name as category_name, subcat.name as subcategory_name
                                     FROM jobs j
                                     INNER JOIN companies c ON j.company_id = c.id
+                                    LEFT JOIN categories cat ON j.category_id = cat.id
+                                    LEFT JOIN subcategories subcat ON j.subcategory_id = subcat.id
                                     WHERE j.slug = ?
                                 ");
                                 if ($stmt) {
@@ -642,9 +648,13 @@ function getJobsFromDatabase() {
                         c.description as company_description,
                         c.website as company_website,
                         c.maps_url as company_maps_url,
-                        c.industry as company_industry
+                        c.industry as company_industry,
+                        cat.name as category_name,
+                        subcat.name as subcategory_name
                     FROM jobs j
                     INNER JOIN companies c ON j.company_id = c.id
+                    LEFT JOIN categories cat ON j.category_id = cat.id
+                    LEFT JOIN subcategories subcat ON j.subcategory_id = subcat.id
                     WHERE j.status = 'active'
                     ORDER BY j.posted_at DESC
                 ";
@@ -719,12 +729,15 @@ function formatJobData($job) {
         $badgeClass = 'bg-orange-100 text-orange-800';
     }
     
-    // Parse skills and extract category
+    // Get category and subcategory from database joins
+    $category = $job['category_name'] ?? null;
+    $subcategory = $job['subcategory_name'] ?? null;
+    
+    // Fallback: Parse skills and extract category if not in database
     $skills = [];
-    $category = null;
     $categoryList = ['Cashier', 'Data Entry', 'IT/Software', 'Marketing', 'Sales', 'Customer Service', 'Design', 'Engineering', 'Finance', 'Healthcare', 'Education', 'Other'];
     
-    if (!empty($job['skills_required'])) {
+    if (!$category && !empty($job['skills_required'])) {
         if (is_string($job['skills_required'])) {
             $parsed = array_map('trim', explode(',', $job['skills_required']));
             // Check if first item is a category
@@ -734,6 +747,13 @@ function formatJobData($job) {
             } else {
                 $skills = $parsed;
             }
+        } else {
+            $skills = $job['skills_required'];
+        }
+    } else if (!empty($job['skills_required'])) {
+        // Category exists from DB, just parse skills
+        if (is_string($job['skills_required'])) {
+            $skills = array_map('trim', explode(',', $job['skills_required']));
         } else {
             $skills = $job['skills_required'];
         }
@@ -806,6 +826,7 @@ function formatJobData($job) {
         'is_remote' => !empty($job['is_remote']) ? (int)$job['is_remote'] : 0,
         'skills' => $skills,
         'category' => $category,
+        'subcategory' => $subcategory,
         'description' => $description,
         'responsibilities' => !empty($job['responsibilities']) ? (is_string($job['responsibilities']) ? array_filter(array_map('trim', explode("\n", $job['responsibilities']))) : $job['responsibilities']) : null,
         'requirements' => !empty($job['requirements']) ? (is_string($job['requirements']) ? array_filter(array_map('trim', explode("\n", $job['requirements']))) : $job['requirements']) : null,

@@ -88,35 +88,46 @@
                             </div>
                         </div>
 
-                        <!-- Location and Remote -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label for="location" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
-                                    Location <span class="text-red-500">*</span>
-                                </label>
-                                <input 
-                                    type="text" 
-                                    id="location" 
-                                    name="location" 
-                                    required
-                                    value="<?= esc(old('location', $job['location'])) ?>"
-                                    class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                                    placeholder="e.g., New York, NY"
-                                />
-                            </div>
-                            <div class="flex items-end">
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input 
-                                        type="checkbox" 
-                                        id="is_remote" 
-                                        name="is_remote" 
-                                        value="1"
-                                        <?= (old('is_remote') || $job['is_remote']) ? 'checked' : '' ?>
-                                        class="w-5 h-5 rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary/50 cursor-pointer"
-                                    />
-                                    <span class="text-sm font-medium text-[#111318] dark:text-gray-300">Remote Job</span>
-                                </label>
-                            </div>
+                        <!-- Location -->
+                        <div id="locationContainer">
+                            <label for="location" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
+                                Location <span class="text-red-500 location-required">*</span>
+                            </label>
+                            <input 
+                                type="text" 
+                                id="location" 
+                                name="location" 
+                                value="<?= esc(old('location', $job['location'])) ?>"
+                                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                                placeholder="e.g., New York, NY"
+                            />
+                        </div>
+
+                        <!-- Country -->
+                        <div>
+                            <label for="country_code" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
+                                Country <span class="text-xs text-gray-500 dark:text-gray-400">(Auto-detected from your location)</span>
+                            </label>
+                            <select 
+                                id="country_code" 
+                                name="country_code" 
+                                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors cursor-pointer"
+                            >
+                                <?php 
+                                $selectedCountryCode = old('country_code', $detectedCountry['country_code'] ?? 'LK');
+                                $selectedCountry = old('country', $detectedCountry['country'] ?? 'Sri Lanka');
+                                foreach ($countryList as $code => $name): 
+                                    $selected = ($code === $selectedCountryCode) ? 'selected' : '';
+                                ?>
+                                    <option value="<?= esc($code) ?>" <?= $selected ?> data-country="<?= esc($name) ?>">
+                                        <?= esc($name) ?> (<?= esc($code) ?>)
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <input type="hidden" id="country" name="country" value="<?= esc($selectedCountry) ?>">
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                <span id="countryAutoDetectMsg">Selected: <strong><?= esc($selectedCountry) ?></strong></span>
+                            </p>
                         </div>
 
                         <!-- Job Type -->
@@ -154,48 +165,118 @@
                             />
                         </div>
 
-                        <!-- Monthly Salary -->
+                        <!-- Monthly Salary Range -->
                         <div>
-                            <label for="monthly_salary" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
-                                Monthly Salary (Optional)
+                            <label class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
+                                Monthly Salary Range (Optional)
                             </label>
-                            <div class="flex items-center gap-2">
-                                <span class="text-gray-500 dark:text-gray-400">$</span>
-                                <input 
-                                    type="number" 
-                                    id="monthly_salary" 
-                                    name="monthly_salary" 
-                                    min="0"
-                                    step="100"
-                                    value="<?= esc(old('monthly_salary', $monthlySalary ?? '')) ?>"
-                                    class="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
-                                    placeholder="5000"
-                                />
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="salary_min" class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Minimum</label>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-gray-500 dark:text-gray-400">$</span>
+                                        <input 
+                                            type="number" 
+                                            id="salary_min" 
+                                            name="salary_min" 
+                                            min="0"
+                                            step="any"
+                                            value="<?= esc(old('salary_min', $job['salary_min'] ?? '')) ?>"
+                                            class="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                                            placeholder="3000"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="salary_max" class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Maximum</label>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-gray-500 dark:text-gray-400">$</span>
+                                        <input 
+                                            type="number" 
+                                            id="salary_max" 
+                                            name="salary_max" 
+                                            min="0"
+                                            step="any"
+                                            value="<?= esc(old('salary_max', $job['salary_max'] ?? '')) ?>"
+                                            class="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                                            placeholder="6000"
+                                        />
+                                    </div>
+                                </div>
                             </div>
                             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Leave blank if salary is not disclosed</p>
+                            <p id="salaryError" class="mt-1 text-xs text-red-600 dark:text-red-400 hidden">Minimum salary must be less than maximum salary</p>
                         </div>
 
                         <!-- Job Category -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="category_id" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
+                                    Category <span class="text-red-500">*</span>
+                                </label>
+                                <select 
+                                    id="category_id" 
+                                    name="category_id" 
+                                    required
+                                    class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors cursor-pointer"
+                                >
+                                    <option value="">Select Category</option>
+                                    <?php if (!empty($categories)): ?>
+                                        <?php 
+                                        $selectedCategoryId = old('category_id', $job['category_id'] ?? '');
+                                        foreach ($categories as $category): 
+                                        ?>
+                                            <option value="<?= esc($category['id']) ?>" <?= $selectedCategoryId == $category['id'] ? 'selected' : '' ?>>
+                                                <?= esc($category['name']) ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="subcategory_id" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
+                                    Subcategory <span class="text-xs font-normal text-gray-500 dark:text-gray-400">(Optional)</span>
+                                </label>
+                                <select 
+                                    id="subcategory_id" 
+                                    name="subcategory_id" 
+                                    class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled
+                                >
+                                    <option value="">Select Category First</option>
+                                </select>
+                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    <span id="subcategoryHint">Select a category above to see subcategories</span>
+                                </p>
+                            </div>
+                        </div>
+                        <!-- Legacy job_category field for backward compatibility (hidden) -->
+                        <input type="hidden" id="job_category" name="job_category" value="">
+
+                        <!-- Collection (Optional) -->
+                        <?php if (!empty($collections) && count($collections) > 0): ?>
                         <div>
-                            <label for="job_category" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
-                                Job Category <span class="text-red-500">*</span>
+                            <label for="collection_id" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
+                                Add to Collection (Optional)
                             </label>
                             <select 
-                                id="job_category" 
-                                name="job_category" 
-                                required
+                                id="collection_id" 
+                                name="collection_id" 
                                 class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors cursor-pointer"
                             >
-                                <option value="">Select Category</option>
+                                <option value="">None - Don't add to any collection</option>
                                 <?php 
-                                $categories = ['Cashier', 'Data Entry', 'IT/Software', 'Marketing', 'Sales', 'Customer Service', 'Design', 'Engineering', 'Finance', 'Healthcare', 'Education', 'Other'];
-                                $selectedCategory = old('job_category', $jobCategory ?? '');
-                                foreach ($categories as $cat): 
+                                $selectedCollectionId = old('collection_id', $currentCollectionId ?? '');
+                                foreach ($collections as $collection): 
                                 ?>
-                                    <option value="<?= esc($cat) ?>" <?= ($selectedCategory === $cat) ? 'selected' : '' ?>><?= esc($cat) ?></option>
+                                    <option value="<?= esc($collection['id']) ?>" <?= $selectedCollectionId == $collection['id'] ? 'selected' : '' ?>>
+                                        <?= esc($collection['name']) ?>
+                                    </option>
                                 <?php endforeach; ?>
                             </select>
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Optionally add this job to an existing collection page</p>
                         </div>
+                        <?php endif; ?>
 
                         <!-- Minimum Years of Experience -->
                         <div>
@@ -228,6 +309,47 @@
                             ><?= esc(old('description', $description ?? '')) ?></textarea>
                         </div>
 
+                        <!-- Job Image (Optional) -->
+                        <div>
+                            <label for="job_image" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
+                                Job Image (Optional)
+                            </label>
+                            <?php if (!empty($jobImageUrl)): ?>
+                                <div class="mb-3">
+                                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">Current Image:</p>
+                                    <img src="<?= esc($jobImageUrl) ?>" alt="Job Image" class="h-32 w-auto object-contain rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 p-2">
+                                </div>
+                            <?php endif; ?>
+                            <div class="flex items-center gap-4">
+                                <label for="job_image" id="jobImageUploadArea" class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                    <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                        <span class="material-symbols-outlined text-3xl text-gray-400 dark:text-gray-500 mb-2">image</span>
+                                        <p class="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                                            <span class="font-semibold">Click to upload</span> or drag and drop
+                                        </p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">PNG, JPG, GIF up to 5MB</p>
+                                    </div>
+                                    <input 
+                                        type="file" 
+                                        id="job_image" 
+                                        name="job_image" 
+                                        accept="image/png,image/jpeg,image/jpg,image/gif"
+                                        class="hidden"
+                                        onchange="handleJobImageUpload(this)"
+                                    />
+                                </label>
+                            </div>
+                            <div id="jobImagePreview" class="mt-3 hidden">
+                                <div class="flex items-center gap-3">
+                                    <img id="jobImagePreviewImg" src="" alt="Job image preview" class="h-32 w-auto object-contain rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 p-2">
+                                    <div>
+                                        <p class="text-sm font-medium text-[#111318] dark:text-white" id="jobImageFileName"></p>
+                                        <button type="button" onclick="removeJobImage()" class="mt-1 text-xs text-red-600 dark:text-red-400 hover:underline">Remove image</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Responsibilities -->
                         <div>
                             <label for="responsibilities" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
@@ -256,6 +378,22 @@
                                 placeholder="Enter each requirement on a new line..."
                             ><?= esc(old('requirements', is_array($job['requirements'] ?? null) ? implode("\n", $job['requirements']) : ($job['requirements'] ?? ''))) ?></textarea>
                             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Enter each requirement on a separate line</p>
+                        </div>
+
+                        <!-- Required Skills -->
+                        <div>
+                            <label for="skills" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">
+                                Required Skills
+                            </label>
+                            <input 
+                                type="text" 
+                                id="skills" 
+                                name="skills" 
+                                value="<?= esc(old('skills', $job['skills_required'] ?? '')) ?>"
+                                class="w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#111318] dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-colors"
+                                placeholder="e.g., JavaScript, React, Node.js, Python (comma-separated)"
+                            />
+                            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Enter skills separated by commas</p>
                         </div>
 
                         <!-- Valid Through -->
@@ -396,7 +534,7 @@
     </div>
 
     <script>
-        // Handle logo upload preview (same as post-job.php)
+        // Handle logo upload preview
         function handleLogoUpload(input) {
             if (input.files && input.files[0]) {
                 processLogoFile(input.files[0], input);
@@ -432,6 +570,252 @@
             document.getElementById('logoPreviewImg').src = '';
             document.getElementById('logoFileName').textContent = '';
         }
+
+        // Handle job image upload preview
+        function handleJobImageUpload(input) {
+            if (input.files && input.files[0]) {
+                processJobImageFile(input.files[0], input);
+            }
+        }
+        
+        function processJobImageFile(file, input) {
+            if (file.size > 5 * 1024 * 1024) {
+                alert('File size must be less than 5MB');
+                if (input) input.value = '';
+                return;
+            }
+            
+            const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif'];
+            if (!validTypes.includes(file.type)) {
+                alert('Please upload a valid image file (PNG, JPG, GIF)');
+                if (input) input.value = '';
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('jobImagePreviewImg').src = e.target.result;
+                document.getElementById('jobImageFileName').textContent = file.name;
+                document.getElementById('jobImagePreview').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function removeJobImage() {
+            document.getElementById('job_image').value = '';
+            document.getElementById('jobImagePreview').classList.add('hidden');
+            document.getElementById('jobImagePreviewImg').src = '';
+            document.getElementById('jobImageFileName').textContent = '';
+        }
+
+        // Handle Job Type and Location visibility
+        (function() {
+            const jobTypeSelect = document.getElementById('job_type');
+            const locationContainer = document.getElementById('locationContainer');
+            const locationInput = document.getElementById('location');
+            const locationLabel = locationInput ? locationInput.previousElementSibling : null;
+            const locationRequiredSpan = locationLabel ? locationLabel.querySelector('.location-required') : null;
+            
+            function toggleLocationField() {
+                if (!jobTypeSelect || !locationContainer || !locationInput) return;
+                
+                const selectedJobType = jobTypeSelect.value;
+                const isRemote = selectedJobType === 'remote';
+                
+                if (isRemote) {
+                    locationContainer.style.display = 'none';
+                    locationInput.removeAttribute('required');
+                    if (locationRequiredSpan) {
+                        locationRequiredSpan.style.display = 'none';
+                    }
+                    locationInput.value = '';
+                } else {
+                    locationContainer.style.display = 'block';
+                    locationInput.setAttribute('required', 'required');
+                    if (locationRequiredSpan) {
+                        locationRequiredSpan.style.display = 'inline';
+                    }
+                }
+            }
+            
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', toggleLocationField);
+            } else {
+                toggleLocationField();
+            }
+            
+            if (jobTypeSelect) {
+                jobTypeSelect.addEventListener('change', toggleLocationField);
+            }
+        })();
+
+        // Update country name when country code changes
+        (function() {
+            const countryCodeSelect = document.getElementById('country_code');
+            const countryInput = document.getElementById('country');
+            const countryMsg = document.getElementById('countryAutoDetectMsg');
+            
+            if (countryCodeSelect && countryInput && countryMsg) {
+                countryCodeSelect.addEventListener('change', function() {
+                    const selectedOption = this.options[this.selectedIndex];
+                    const countryName = selectedOption.getAttribute('data-country');
+                    if (countryName) {
+                        countryInput.value = countryName;
+                        countryMsg.innerHTML = 'Selected: <strong>' + countryName + '</strong>';
+                    }
+                });
+            }
+        })();
+
+        // Handle Category and Subcategory dynamic loading
+        (function() {
+            const categorySelect = document.getElementById('category_id');
+            const subcategorySelect = document.getElementById('subcategory_id');
+            const jobCategoryHidden = document.getElementById('job_category');
+            
+            if (!categorySelect || !subcategorySelect) return;
+            
+            const baseUrl = window.location.origin;
+            const apiUrl = baseUrl + '/api/subcategories.php';
+            
+            const oldSubcategoryId = <?= old('subcategory_id') ? (int)old('subcategory_id') : ($job['subcategory_id'] ?? 'null') ?>;
+            const currentCategoryId = <?= old('category_id') ? (int)old('category_id') : ($job['category_id'] ?? 'null') ?>;
+            
+            function loadSubcategories(categoryId, preselectedSubcategoryId = null) {
+                const subcategoryHint = document.getElementById('subcategoryHint');
+                
+                subcategorySelect.innerHTML = '<option value="">Loading...</option>';
+                subcategorySelect.disabled = true;
+                
+                if (subcategoryHint) {
+                    subcategoryHint.textContent = 'Loading subcategories...';
+                }
+                
+                if (jobCategoryHidden && categoryId) {
+                    const selectedCategoryOption = categorySelect.options[categorySelect.selectedIndex];
+                    if (selectedCategoryOption) {
+                        jobCategoryHidden.value = selectedCategoryOption.text;
+                    }
+                }
+                
+                if (!categoryId) {
+                    subcategorySelect.innerHTML = '<option value="">Select Category First</option>';
+                    subcategorySelect.disabled = true;
+                    if (subcategoryHint) {
+                        subcategoryHint.textContent = 'Select a category above to see subcategories';
+                    }
+                    return;
+                }
+                
+                fetch(`${apiUrl}?category_id=${encodeURIComponent(categoryId)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.subcategories.length > 0) {
+                            subcategorySelect.innerHTML = '<option value="">Select Subcategory (Optional)</option>';
+                            
+                            data.subcategories.forEach(subcategory => {
+                                const option = document.createElement('option');
+                                option.value = subcategory.id;
+                                option.textContent = subcategory.name;
+                                
+                                if (preselectedSubcategoryId && subcategory.id == preselectedSubcategoryId) {
+                                    option.selected = true;
+                                }
+                                
+                                subcategorySelect.appendChild(option);
+                            });
+                            
+                            subcategorySelect.disabled = false;
+                            if (subcategoryHint) {
+                                subcategoryHint.textContent = `${data.count} subcategories available (optional)`;
+                            }
+                        } else {
+                            subcategorySelect.innerHTML = '<option value="">No subcategories available</option>';
+                            subcategorySelect.disabled = false;
+                            if (subcategoryHint) {
+                                subcategoryHint.textContent = 'No subcategories available for this category';
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching subcategories:', error);
+                        subcategorySelect.innerHTML = '<option value="">Error loading subcategories</option>';
+                        subcategorySelect.disabled = false;
+                        if (subcategoryHint) {
+                            subcategoryHint.textContent = 'Error loading subcategories. Please try again.';
+                            subcategoryHint.classList.add('text-red-600', 'dark:text-red-400');
+                        }
+                    });
+            }
+            
+            categorySelect.addEventListener('change', function() {
+                loadSubcategories(this.value, oldSubcategoryId);
+            });
+            
+            // Load subcategories on page load if category is already selected
+            if (categorySelect.value || currentCategoryId) {
+                const categoryIdToLoad = categorySelect.value || currentCategoryId;
+                loadSubcategories(categoryIdToLoad, oldSubcategoryId);
+            }
+        })();
+
+        // Salary Range Validation
+        (function() {
+            const salaryMinInput = document.getElementById('salary_min');
+            const salaryMaxInput = document.getElementById('salary_max');
+            const salaryError = document.getElementById('salaryError');
+            
+            function validateSalaryRange() {
+                const min = parseFloat(salaryMinInput.value);
+                const max = parseFloat(salaryMaxInput.value);
+                
+                if (salaryMinInput.value.trim() && salaryMaxInput.value.trim()) {
+                    if (min >= max) {
+                        salaryError.classList.remove('hidden');
+                        salaryMinInput.classList.add('border-red-500', 'dark:border-red-500');
+                        salaryMinInput.classList.remove('border-gray-300', 'dark:border-gray-600');
+                        salaryMaxInput.classList.add('border-red-500', 'dark:border-red-500');
+                        salaryMaxInput.classList.remove('border-gray-300', 'dark:border-gray-600');
+                        return false;
+                    } else {
+                        salaryError.classList.add('hidden');
+                        salaryMinInput.classList.remove('border-red-500', 'dark:border-red-500');
+                        salaryMinInput.classList.add('border-gray-300', 'dark:border-gray-600');
+                        salaryMaxInput.classList.remove('border-red-500', 'dark:border-red-500');
+                        salaryMaxInput.classList.add('border-gray-300', 'dark:border-gray-600');
+                        return true;
+                    }
+                } else {
+                    salaryError.classList.add('hidden');
+                    salaryMinInput.classList.remove('border-red-500', 'dark:border-red-500');
+                    salaryMinInput.classList.add('border-gray-300', 'dark:border-gray-600');
+                    salaryMaxInput.classList.remove('border-red-500', 'dark:border-red-500');
+                    salaryMaxInput.classList.add('border-gray-300', 'dark:border-gray-600');
+                    return true;
+                }
+            }
+            
+            if (salaryMinInput) {
+                salaryMinInput.addEventListener('input', validateSalaryRange);
+                salaryMinInput.addEventListener('blur', validateSalaryRange);
+            }
+            
+            if (salaryMaxInput) {
+                salaryMaxInput.addEventListener('input', validateSalaryRange);
+                salaryMaxInput.addEventListener('blur', validateSalaryRange);
+            }
+            
+            const editJobForm = document.getElementById('editJobForm');
+            if (editJobForm) {
+                editJobForm.addEventListener('submit', function(e) {
+                    if (!validateSalaryRange()) {
+                        e.preventDefault();
+                        salaryMinInput.focus();
+                        return false;
+                    }
+                });
+            }
+        })();
     </script>
 </body>
 </html>

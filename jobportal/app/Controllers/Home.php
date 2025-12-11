@@ -6,6 +6,8 @@ use App\Models\CompanyModel;
 use App\Models\JobModel;
 use App\Models\SavedJobModel;
 use App\Models\CollectionModel;
+use App\Models\CategoryModel;
+use App\Models\SubcategoryModel;
 
 class Home extends BaseController
 {
@@ -14,6 +16,8 @@ class Home extends BaseController
     protected $jobModel;
     protected $savedJobModel;
     protected $collectionModel;
+    protected $categoryModel;
+    protected $subcategoryModel;
 
     public function __construct()
     {
@@ -21,6 +25,8 @@ class Home extends BaseController
         $this->jobModel = new JobModel();
         $this->savedJobModel = new SavedJobModel();
         $this->collectionModel = new CollectionModel();
+        $this->categoryModel = new CategoryModel();
+        $this->subcategoryModel = new SubcategoryModel();
     }
 
     public function index()
@@ -249,7 +255,7 @@ class Home extends BaseController
             }
         }
 
-        // Extract category from skills_required
+        // Extract category from skills_required (legacy support)
         $jobCategory = null;
         if (!empty($job['skills_required'])) {
             $categoryList = ['Cashier', 'Data Entry', 'IT/Software', 'Marketing', 'Sales', 'Customer Service', 'Design', 'Engineering', 'Finance', 'Healthcare', 'Education', 'Other'];
@@ -259,7 +265,7 @@ class Home extends BaseController
             }
         }
 
-        // Extract monthly salary
+        // Extract monthly salary (for backward compatibility with old form, but we now use salary_min/salary_max)
         $monthlySalary = null;
         if (!empty($job['salary_min']) && !empty($job['salary_max'])) {
             if ($job['salary_min'] == $job['salary_max']) {
@@ -267,6 +273,62 @@ class Home extends BaseController
             }
         } elseif (!empty($job['salary_min'])) {
             $monthlySalary = $job['salary_min'];
+        }
+
+        // Get categories for dropdown
+        $categories = $this->categoryModel->where('status', 'active')
+            ->orderBy('sort_order', 'ASC')
+            ->orderBy('name', 'ASC')
+            ->findAll();
+
+        // Get collections for dropdown
+        $collections = $this->collectionModel->where('status', 'active')
+            ->orderBy('name', 'ASC')
+            ->findAll();
+
+        // Get current collection ID if job is in a collection
+        $currentCollectionId = null;
+        if (!empty($job['collection_id'])) {
+            $currentCollectionId = $job['collection_id'];
+        } else {
+            // Check if job is in any collection via collection_jobs table
+            $db = \Config\Database::connect();
+            $builder = $db->table('collection_jobs');
+            $collectionJob = $builder->where('job_id', $id)->get()->getRowArray();
+            if ($collectionJob) {
+                $currentCollectionId = $collectionJob['collection_id'];
+            }
+        }
+
+        // Country list for dropdown
+        $countryList = [
+            'LK' => 'Sri Lanka', 'US' => 'United States', 'GB' => 'United Kingdom',
+            'CA' => 'Canada', 'AU' => 'Australia', 'IN' => 'India', 'PK' => 'Pakistan',
+            'BD' => 'Bangladesh', 'NP' => 'Nepal', 'MY' => 'Malaysia', 'SG' => 'Singapore',
+            'PH' => 'Philippines', 'TH' => 'Thailand', 'VN' => 'Vietnam', 'ID' => 'Indonesia',
+            'JP' => 'Japan', 'KR' => 'South Korea', 'CN' => 'China', 'DE' => 'Germany',
+            'FR' => 'France', 'IT' => 'Italy', 'ES' => 'Spain', 'NL' => 'Netherlands',
+            'BE' => 'Belgium', 'CH' => 'Switzerland', 'AT' => 'Austria', 'SE' => 'Sweden',
+            'NO' => 'Norway', 'DK' => 'Denmark', 'FI' => 'Finland', 'PL' => 'Poland',
+            'IE' => 'Ireland', 'PT' => 'Portugal', 'GR' => 'Greece', 'CZ' => 'Czech Republic',
+            'RO' => 'Romania', 'HU' => 'Hungary', 'SK' => 'Slovakia', 'BG' => 'Bulgaria',
+            'HR' => 'Croatia', 'SI' => 'Slovenia', 'EE' => 'Estonia', 'LV' => 'Latvia',
+            'LT' => 'Lithuania', 'NZ' => 'New Zealand', 'ZA' => 'South Africa', 'AE' => 'UAE',
+            'SA' => 'Saudi Arabia', 'EG' => 'Egypt', 'NG' => 'Nigeria', 'KE' => 'Kenya',
+            'GH' => 'Ghana', 'BR' => 'Brazil', 'MX' => 'Mexico', 'AR' => 'Argentina',
+            'CL' => 'Chile', 'CO' => 'Colombia', 'PE' => 'Peru', 'VE' => 'Venezuela',
+        ];
+
+        // Detect country from job data
+        $detectedCountry = [
+            'country_code' => $job['country_code'] ?? 'LK',
+            'country' => $job['country'] ?? 'Sri Lanka'
+        ];
+
+        // Fix job image URL if exists
+        $jobImageUrl = null;
+        if (!empty($job['image'])) {
+            $jobImageUrl = fix_image_url($job['image']);
         }
 
         return view('home/edit-job', [
@@ -278,6 +340,12 @@ class Home extends BaseController
             'applicationPhone' => $applicationPhone,
             'jobCategory' => $jobCategory,
             'monthlySalary' => $monthlySalary,
+            'categories' => $categories,
+            'collections' => $collections,
+            'currentCollectionId' => $currentCollectionId,
+            'countryList' => $countryList,
+            'detectedCountry' => $detectedCountry,
+            'jobImageUrl' => $jobImageUrl,
         ]);
     }
 
@@ -709,12 +777,16 @@ class Home extends BaseController
             ->orderBy('name', 'ASC')
             ->findAll();
         
+        // Get active categories for dropdown
+        $categories = $this->categoryModel->getActiveCategories();
+        
         // Auto-detect country from IP
         $detectedCountry = getCountryFromIP();
         $countryList = getCountryList();
         
         $data = [
             'collections' => $collections ?? [],
+            'categories' => $categories ?? [],
             'detectedCountry' => $detectedCountry,
             'countryList' => $countryList
         ];
@@ -756,7 +828,9 @@ class Home extends BaseController
             'application_phone' => 'permit_empty|max_length[20]',
             'salary_min' => 'permit_empty|numeric',
             'salary_max' => 'permit_empty|numeric',
-            'job_category' => 'required|max_length[100]',
+            'category_id' => 'required|integer',
+            'subcategory_id' => 'permit_empty|integer',
+            'job_category' => 'permit_empty|max_length[100]', // Keep for backward compatibility
             'min_experience' => 'permit_empty|integer',
             'description' => 'permit_empty',
             'responsibilities' => 'permit_empty',
@@ -862,7 +936,9 @@ class Home extends BaseController
             $jobTitle = $this->request->getPost('job_title');
             $location = $this->request->getPost('location');
             $jobType = $this->request->getPost('job_type');
-            $jobCategory = $this->request->getPost('job_category');
+            $jobCategory = $this->request->getPost('job_category'); // Keep for backward compatibility
+            $categoryId = $this->request->getPost('category_id');
+            $subcategoryId = $this->request->getPost('subcategory_id');
             $description = $this->request->getPost('description');
             $responsibilities = $this->request->getPost('responsibilities');
             $requirements = $this->request->getPost('requirements');
@@ -986,6 +1062,8 @@ class Home extends BaseController
             // Prepare job data
             $jobData = [
                 'company_id' => $companyId,
+                'category_id' => $categoryId ? (int)$categoryId : null,
+                'subcategory_id' => $subcategoryId ? (int)$subcategoryId : null,
                 'title' => $jobTitle,
                 'slug' => $tempSlug, // Temporary slug
                 'description' => trim($fullDescription),
