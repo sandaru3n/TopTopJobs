@@ -790,6 +790,9 @@ class Home extends BaseController
 
     public function jobDetails($slug = null): string
     {
+        $job = null;
+        $jobId = null;
+        
         // If slug is provided, extract ID from it
         // Slug format: company-title-id
         // Also handle if slug contains "public/" prefix (fallback for /public/job/... URLs)
@@ -800,12 +803,85 @@ class Home extends BaseController
             // Extract ID from end of slug (e.g., "google-senior-product-designer-1" -> 1)
             if (preg_match('/-(\d+)$/', $slug, $matches)) {
                 $jobId = (int)$matches[1];
-                // Pass the ID to the view via query parameter
-                $_GET['id'] = $jobId;
             }
         }
         
-        return view('home/job-details');
+        // Also check query parameter for ID
+        if (!$jobId && isset($_GET['id'])) {
+            $jobId = (int)$_GET['id'];
+        }
+        
+        // Fetch job data server-side for SEO
+        if ($jobId) {
+            $db = \Config\Database::connect();
+            $builder = $db->table('jobs j');
+            $builder->select('j.*, c.name as company_name, c.logo as company_logo, c.description as company_description, cat.name as category_name, subcat.name as subcategory_name');
+            $builder->join('companies c', 'c.id = j.company_id', 'inner');
+            $builder->join('categories cat', 'cat.id = j.category_id', 'left');
+            $builder->join('subcategories subcat', 'subcat.id = j.subcategory_id', 'left');
+            $builder->where('j.id', $jobId);
+            $builder->where('j.status', 'active');
+            $job = $builder->get()->getRowArray();
+        }
+        
+        // Prepare SEO data
+        $seoData = [
+            'title' => 'Job Details - TopTopJobs',
+            'meta_description' => 'Find your dream job on TopTopJobs. Browse thousands of job listings.',
+            'meta_keywords' => '',
+            'og_title' => '',
+            'og_description' => '',
+            'og_type' => 'article',
+            'og_url' => current_url(),
+            'og_image' => '',
+            'canonical_url' => current_url()
+        ];
+        
+        if ($job) {
+            // Build SEO-friendly title
+            $seoData['title'] = esc($job['title']) . ' at ' . esc($job['company_name']) . ' - TopTopJobs';
+            
+            // Build meta description from job description
+            $description = strip_tags($job['description'] ?? '');
+            $description = preg_replace('/\s+/', ' ', $description);
+            $description = trim($description);
+            if (strlen($description) > 160) {
+                $description = substr($description, 0, 157) . '...';
+            }
+            $seoData['meta_description'] = $description ?: 'Apply for ' . esc($job['title']) . ' at ' . esc($job['company_name']) . ' on TopTopJobs.';
+            
+            // Build keywords
+            $keywords = [];
+            if (!empty($job['category_name'])) {
+                $keywords[] = $job['category_name'];
+            }
+            if (!empty($job['subcategory_name'])) {
+                $keywords[] = $job['subcategory_name'];
+            }
+            $keywords[] = $job['job_type'];
+            if (!empty($job['location'])) {
+                $keywords[] = $job['location'];
+            }
+            $seoData['meta_keywords'] = implode(', ', $keywords);
+            
+            // Open Graph data
+            $seoData['og_title'] = esc($job['title']) . ' at ' . esc($job['company_name']);
+            $seoData['og_description'] = $seoData['meta_description'];
+            $seoData['og_url'] = current_url();
+            
+            // Set OG image if job has image
+            if (!empty($job['image'])) {
+                $seoData['og_image'] = base_url($job['image']);
+            } elseif (!empty($job['company_logo'])) {
+                $seoData['og_image'] = base_url($job['company_logo']);
+            }
+        }
+        
+        // Pass data to view
+        return view('home/job-details', [
+            'job' => $job,
+            'seoData' => $seoData
+        ]);
     }
 
     /**

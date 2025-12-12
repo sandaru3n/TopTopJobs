@@ -1,4 +1,101 @@
-<?= view('partials/head', ['title' => 'Job Details - TopTopJobs']) ?>
+<?php
+// Build SEO meta tags from server-side data
+$seoData = $seoData ?? [
+    'title' => 'Job Details - TopTopJobs',
+    'meta_description' => 'Find your dream job on TopTopJobs. Browse thousands of job listings.',
+    'meta_keywords' => '',
+    'og_title' => '',
+    'og_description' => '',
+    'og_type' => 'article',
+    'og_url' => current_url(),
+    'og_image' => '',
+    'canonical_url' => current_url()
+];
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-017G3E1N5V"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-017G3E1N5V');
+    </script>
+    <title><?= esc($seoData['title']) ?></title>
+    
+    <!-- SEO Meta Tags -->
+    <?php if (!empty($seoData['meta_description'])): ?>
+    <meta name="description" content="<?= esc($seoData['meta_description']) ?>">
+    <?php endif; ?>
+    
+    <?php if (!empty($seoData['meta_keywords'])): ?>
+    <meta name="keywords" content="<?= esc($seoData['meta_keywords']) ?>">
+    <?php endif; ?>
+    
+    <!-- Open Graph Meta Tags -->
+    <?php if (!empty($seoData['og_title'])): ?>
+    <meta property="og:title" content="<?= esc($seoData['og_title']) ?>">
+    <?php endif; ?>
+    
+    <?php if (!empty($seoData['og_description'])): ?>
+    <meta property="og:description" content="<?= esc($seoData['og_description']) ?>">
+    <?php endif; ?>
+    
+    <?php if (!empty($seoData['og_type'])): ?>
+    <meta property="og:type" content="<?= esc($seoData['og_type']) ?>">
+    <?php endif; ?>
+    
+    <?php if (!empty($seoData['og_url'])): ?>
+    <meta property="og:url" content="<?= esc($seoData['og_url']) ?>">
+    <?php endif; ?>
+    
+    <?php if (!empty($seoData['og_image'])): ?>
+    <meta property="og:image" content="<?= esc($seoData['og_image']) ?>">
+    <?php endif; ?>
+    
+    <!-- Canonical URL -->
+    <?php if (!empty($seoData['canonical_url'])): ?>
+    <link rel="canonical" href="<?= esc($seoData['canonical_url']) ?>">
+    <?php endif; ?>
+    
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="<?= base_url('apple-touch-icon.png') ?>">
+    <link rel="icon" type="image/png" sizes="32x32" href="<?= base_url('favicon-32x32.png') ?>">
+    <link rel="icon" type="image/png" sizes="16x16" href="<?= base_url('favicon-16x16.png') ?>">
+    <link rel="manifest" href="<?= base_url('site.webmanifest') ?>">
+    
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2b6cee",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+</head>
 <style>
     /* Hide header on scroll down */
     #mainHeader.header-hidden {
