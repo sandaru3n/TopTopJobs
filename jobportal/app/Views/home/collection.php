@@ -66,17 +66,10 @@ $headData = [
     <?php endif; ?>
     
     <!-- Favicon -->
-    <?php
-    // Load site settings for favicon
-    $siteSettingsModel = new \App\Models\SiteSettingsModel();
-    $favicon = $siteSettingsModel->getSetting('site_favicon');
-    if ($favicon && file_exists(ROOTPATH . 'public/' . $favicon)): ?>
-        <link rel="icon" type="image/x-icon" href="<?= base_url($favicon) ?>">
-        <link rel="shortcut icon" type="image/x-icon" href="<?= base_url($favicon) ?>">
-    <?php else: ?>
-        <!-- Default favicon fallback -->
-        <link rel="icon" type="image/x-icon" href="<?= base_url('favicon.ico') ?>">
-    <?php endif; ?>
+    <link rel="apple-touch-icon" sizes="180x180" href="<?= base_url('apple-touch-icon.png') ?>">
+    <link rel="icon" type="image/png" sizes="32x32" href="<?= base_url('favicon-32x32.png') ?>">
+    <link rel="icon" type="image/png" sizes="16x16" href="<?= base_url('favicon-16x16.png') ?>">
+    <link rel="manifest" href="<?= base_url('site.webmanifest') ?>">
     
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
