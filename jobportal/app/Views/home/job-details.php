@@ -1450,10 +1450,35 @@ $seoData = $seoData ?? [
                 existingScript.remove();
             }
 
-            // Format description in HTML
-            let description = (job.description || '').replace(/\n/g, '<br>');
+            // Helper function to clean text for JSON-LD (decode HTML entities and remove bad escape sequences)
+            function cleanTextForJSON(text) {
+                if (!text) return '';
+                
+                // Create a temporary DOM element to decode HTML entities
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = text;
+                let cleaned = tempDiv.textContent || tempDiv.innerText || '';
+                
+                // Remove any remaining HTML tags
+                cleaned = cleaned.replace(/<[^>]*>/g, '');
+                
+                // Replace common problematic characters
+                cleaned = cleaned.replace(/[\x00-\x1F\x7F]/g, ''); // Remove control characters
+                // Remove \x escape sequences (not valid in JSON, only \u is valid for unicode)
+                cleaned = cleaned.replace(/\\x[0-9A-Fa-f]{0,2}/g, '');
+                // Remove invalid escape sequences (keep valid JSON escapes: \\, \/, \", \b, \f, \n, \r, \t, \uXXXX)
+                cleaned = cleaned.replace(/\\[^"\\\/bfnrtu]/g, '');
+                
+                // Normalize whitespace
+                cleaned = cleaned.replace(/\s+/g, ' ').trim();
+                
+                return cleaned;
+            }
+
+            // Format description - use plain text for JSON-LD (not HTML)
+            let description = cleanTextForJSON(job.description || '');
             
-            // Add responsibilities
+            // Add responsibilities (plain text format for JSON-LD)
             if (job.responsibilities) {
                 let responsibilities = [];
                 if (Array.isArray(job.responsibilities)) {
@@ -1462,18 +1487,17 @@ $seoData = $seoData ?? [
                     responsibilities = job.responsibilities.split('\n').filter(r => r && typeof r === 'string' && r.trim());
                 }
                 if (responsibilities.length > 0) {
-                    description += '<p><strong>Responsibilities:</strong></p><ul>';
+                    description += '\n\nResponsibilities:\n';
                     responsibilities.forEach(resp => {
-                        const respText = typeof resp === 'string' ? resp.trim() : String(resp || '').trim();
+                        const respText = cleanTextForJSON(String(resp || '').trim());
                         if (respText) {
-                            description += `<li>${respText}</li>`;
+                            description += '• ' + respText + '\n';
                         }
                     });
-                    description += '</ul>';
                 }
             }
             
-            // Add requirements
+            // Add requirements (plain text format for JSON-LD)
             if (job.requirements) {
                 let requirements = [];
                 if (Array.isArray(job.requirements)) {
@@ -1482,26 +1506,29 @@ $seoData = $seoData ?? [
                     requirements = job.requirements.split('\n').filter(r => r && typeof r === 'string' && r.trim());
                 }
                 if (requirements.length > 0) {
-                    description += '<p><strong>Requirements:</strong></p><ul>';
+                    description += '\n\nRequirements:\n';
                     requirements.forEach(req => {
-                        const reqText = typeof req === 'string' ? req.trim() : String(req || '').trim();
+                        const reqText = cleanTextForJSON(String(req || '').trim());
                         if (reqText) {
-                            description += `<li>${reqText}</li>`;
+                            description += '• ' + reqText + '\n';
                         }
                     });
-                    description += '</ul>';
                 }
             }
             
-            // Add skills
+            // Add skills (plain text format for JSON-LD)
             if (job.skills && job.skills.length > 0) {
-                description += `<p><strong>Required Skills:</strong> ${job.skills.join(', ')}</p>`;
+                description += '\n\nRequired Skills: ' + job.skills.map(s => cleanTextForJSON(String(s))).join(', ');
             }
             
-            // Ensure description is not empty
+            // Clean and ensure description is not empty
+            description = cleanTextForJSON(description);
             if (!description || description.trim() === '') {
-                description = job.title || 'Job posting';
+                description = cleanTextForJSON(job.title || 'Job posting');
             }
+            
+            // Clean title as well
+            const cleanTitle = cleanTextForJSON(job.title || 'Job Posting');
 
             // Format datePosted
             const postedDate = new Date(job.posted_at);
@@ -1510,7 +1537,7 @@ $seoData = $seoData ?? [
             // Build hiring organization
             const hiringOrganization = {
                 "@type": "Organization",
-                "name": job.company_name || "Unknown Company"
+                "name": cleanTextForJSON(job.company_name || "Unknown Company")
             };
 
             if (job.company_website) {
@@ -1541,10 +1568,10 @@ $seoData = $seoData ?? [
                 const countryName = job.country || 'Sri Lanka';
                 
                 // Parse location (assuming format like "City, State" or "City, Country")
-                const locationParts = job.location.split(',').map(s => s.trim());
+                const locationParts = job.location.split(',').map(s => cleanTextForJSON(s.trim()));
                 const address = {
                     "@type": "PostalAddress",
-                    "addressLocality": locationParts[0] || job.location,
+                    "addressLocality": locationParts[0] || cleanTextForJSON(job.location),
                     "addressCountry": countryCode
                 };
                 if (locationParts.length > 2) {
@@ -1561,13 +1588,13 @@ $seoData = $seoData ?? [
             const structuredData = {
                 "@context": "https://schema.org/",
                 "@type": "JobPosting",
-                "title": job.title,
+                "title": cleanTitle,
                 "description": description,
                 "datePosted": datePosted,
                 "hiringOrganization": hiringOrganization,
                 "identifier": {
                     "@type": "PropertyValue",
-                    "name": job.company_name || "Unknown",
+                    "name": cleanTextForJSON(job.company_name || "Unknown"),
                     "value": job.id.toString()
                 }
             };
@@ -1580,7 +1607,7 @@ $seoData = $seoData ?? [
                 const countryName = job.country || 'Sri Lanka';
                 structuredData.applicantLocationRequirements = {
                     "@type": "Country",
-                    "name": countryName
+                    "name": cleanTextForJSON(countryName)
                 };
             } else if (jobLocation) {
                 structuredData.jobLocation = jobLocation;

@@ -314,46 +314,6 @@ $headData = [
         <?= view('partials/footer') ?>
     </div>
 
-    <!-- Structured Data for SEO -->
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "CollectionPage",
-        "name": "<?= esc($collection['name'], 'js') ?>",
-        "description": "<?= esc($collection['description'] ?? $collection['meta_description'] ?? '', 'js') ?>",
-        "url": "<?= esc(current_url(), 'js') ?>",
-        "mainEntity": {
-            "@type": "ItemList",
-            "numberOfItems": <?= count($jobs) ?>,
-            "itemListElement": [
-                <?php foreach ($jobs as $index => $job): ?>
-                {
-                    "@type": "ListItem",
-                    "position": <?= $index + 1 ?>,
-                    "item": {
-                        "@type": "JobPosting",
-                        "title": "<?= esc($job['title'], 'js') ?>",
-                        "description": "<?= esc(strip_tags($job['description'] ?? ''), 'js') ?>",
-                        "datePosted": "<?= esc($job['posted_at'] ?? date('Y-m-d'), 'js') ?>",
-                        "employmentType": "<?= esc($job['job_type'] ?? 'FULL_TIME', 'js') ?>",
-                        "jobLocation": {
-                            "@type": "Place",
-                            "address": {
-                                "@type": "PostalAddress",
-                                "addressLocality": "<?= esc($job['location'] ?? '', 'js') ?>"
-                            }
-                        },
-                        "hiringOrganization": {
-                            "@type": "Organization",
-                            "name": "<?= esc($job['company_name'] ?? '', 'js') ?>"
-                        }
-                    }
-                }<?= $index < count($jobs) - 1 ? ',' : '' ?>
-                <?php endforeach; ?>
-            ]
-        }
-    }
-    </script>
 </body>
 </html>
 
