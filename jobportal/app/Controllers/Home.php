@@ -483,13 +483,32 @@ class Home extends BaseController
         if ($logoFile && $logoFile->isValid() && !$logoFile->hasMoved()) {
             $uploadPath = FCPATH . 'uploads/company_logos/';
             if (!is_dir($uploadPath)) {
-                mkdir($uploadPath, 0755, true);
+                if (!mkdir($uploadPath, 0755, true)) {
+                    log_message('error', 'Failed to create upload directory: ' . $uploadPath);
+                }
             }
-            $newName = $logoFile->getRandomName();
-            $logoFile->move($uploadPath, $newName);
-            // Store relative path in database (e.g., /uploads/company_logos/filename.png)
-            helper('image');
-            $logoPath = upload_path('company_logos/' . $newName);
+            
+            // Check if directory is writable
+            if (!is_writable($uploadPath)) {
+                log_message('error', 'Upload directory is not writable: ' . $uploadPath);
+            } else {
+                $newName = $logoFile->getRandomName();
+                if ($logoFile->move($uploadPath, $newName)) {
+                    // Verify file was actually moved
+                    $fullPath = $uploadPath . $newName;
+                    if (file_exists($fullPath) && is_readable($fullPath)) {
+                        // Store relative path in database (e.g., /uploads/company_logos/filename.png)
+                        helper('image');
+                        $logoPath = upload_path('company_logos/' . $newName);
+                        log_message('debug', 'Company logo uploaded successfully: ' . $logoPath);
+                    } else {
+                        log_message('error', 'File move reported success but file not found: ' . $fullPath);
+                    }
+                } else {
+                    $errors = $logoFile->getErrors();
+                    log_message('error', 'Failed to move company logo: ' . implode(', ', $errors));
+                }
+            }
         }
 
         // If company_id is provided (existing company selected), use it
@@ -667,12 +686,31 @@ class Home extends BaseController
         if ($jobImageFile && $jobImageFile->isValid() && !$jobImageFile->hasMoved()) {
             $uploadPath = FCPATH . 'uploads/job_images/';
             if (!is_dir($uploadPath)) {
-                mkdir($uploadPath, 0755, true);
+                if (!mkdir($uploadPath, 0755, true)) {
+                    log_message('error', 'Failed to create upload directory: ' . $uploadPath);
+                }
             }
-            $newName = $jobImageFile->getRandomName();
-            $jobImageFile->move($uploadPath, $newName);
-            helper('image');
-            $jobImagePath = upload_path('job_images/' . $newName);
+            
+            // Check if directory is writable
+            if (!is_writable($uploadPath)) {
+                log_message('error', 'Upload directory is not writable: ' . $uploadPath);
+            } else {
+                $newName = $jobImageFile->getRandomName();
+                if ($jobImageFile->move($uploadPath, $newName)) {
+                    // Verify file was actually moved
+                    $fullPath = $uploadPath . $newName;
+                    if (file_exists($fullPath) && is_readable($fullPath)) {
+                        helper('image');
+                        $jobImagePath = upload_path('job_images/' . $newName);
+                        log_message('debug', 'Job image uploaded successfully: ' . $jobImagePath);
+                    } else {
+                        log_message('error', 'File move reported success but file not found: ' . $fullPath);
+                    }
+                } else {
+                    $errors = $jobImageFile->getErrors();
+                    log_message('error', 'Failed to move job image: ' . implode(', ', $errors));
+                }
+            }
         }
         
         // Add job image if uploaded
@@ -1070,16 +1108,33 @@ class Home extends BaseController
             // Create uploads directory in public folder if it doesn't exist
             $uploadPath = FCPATH . 'uploads/company_logos/';
             if (!is_dir($uploadPath)) {
-                mkdir($uploadPath, 0755, true);
+                if (!mkdir($uploadPath, 0755, true)) {
+                    log_message('error', 'Failed to create upload directory: ' . $uploadPath);
+                }
             }
             
-            // Generate unique filename
-            $newName = $file->getRandomName();
-            $file->move($uploadPath, $newName);
-            
-            // Store relative path in database (e.g., /uploads/company_logos/filename.png)
-            helper('image');
-            $logoPath = upload_path('company_logos/' . $newName);
+            // Check if directory is writable
+            if (!is_writable($uploadPath)) {
+                log_message('error', 'Upload directory is not writable: ' . $uploadPath);
+            } else {
+                // Generate unique filename
+                $newName = $file->getRandomName();
+                if ($file->move($uploadPath, $newName)) {
+                    // Verify file was actually moved
+                    $fullPath = $uploadPath . $newName;
+                    if (file_exists($fullPath) && is_readable($fullPath)) {
+                        // Store relative path in database (e.g., /uploads/company_logos/filename.png)
+                        helper('image');
+                        $logoPath = upload_path('company_logos/' . $newName);
+                        log_message('debug', 'Company logo uploaded successfully: ' . $logoPath);
+                    } else {
+                        log_message('error', 'File move reported success but file not found: ' . $fullPath);
+                    }
+                } else {
+                    $errors = $file->getErrors();
+                    log_message('error', 'Failed to move company logo: ' . implode(', ', $errors));
+                }
+            }
         }
 
         // Handle job image upload
@@ -1090,16 +1145,33 @@ class Home extends BaseController
             // Create uploads directory in public folder if it doesn't exist
             $uploadPath = FCPATH . 'uploads/job_images/';
             if (!is_dir($uploadPath)) {
-                mkdir($uploadPath, 0755, true);
+                if (!mkdir($uploadPath, 0755, true)) {
+                    log_message('error', 'Failed to create upload directory: ' . $uploadPath);
+                }
             }
             
-            // Generate unique filename
-            $newName = $jobImageFile->getRandomName();
-            $jobImageFile->move($uploadPath, $newName);
-            
-            // Store relative path in database (e.g., /uploads/job_images/filename.png)
-            helper('image');
-            $jobImagePath = upload_path('job_images/' . $newName);
+            // Check if directory is writable
+            if (!is_writable($uploadPath)) {
+                log_message('error', 'Upload directory is not writable: ' . $uploadPath);
+            } else {
+                // Generate unique filename
+                $newName = $jobImageFile->getRandomName();
+                if ($jobImageFile->move($uploadPath, $newName)) {
+                    // Verify file was actually moved
+                    $fullPath = $uploadPath . $newName;
+                    if (file_exists($fullPath) && is_readable($fullPath)) {
+                        // Store relative path in database (e.g., /uploads/job_images/filename.png)
+                        helper('image');
+                        $jobImagePath = upload_path('job_images/' . $newName);
+                        log_message('debug', 'Job image uploaded successfully: ' . $jobImagePath);
+                    } else {
+                        log_message('error', 'File move reported success but file not found: ' . $fullPath);
+                    }
+                } else {
+                    $errors = $jobImageFile->getErrors();
+                    log_message('error', 'Failed to move job image: ' . implode(', ', $errors));
+                }
+            }
         }
 
         try {
