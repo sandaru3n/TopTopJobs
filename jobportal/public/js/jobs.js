@@ -1,4 +1,5 @@
 // Job Search & Listing JavaScript
+console.log('[DEBUG] jobs.js file loaded');
 
 class JobSearch {
     constructor() {
@@ -61,8 +62,13 @@ class JobSearch {
     }
 
     init() {
+        console.log('[DEBUG] JobSearch.init() called');
+        console.log('[DEBUG] baseUrl:', this.baseUrl);
+        console.log('[DEBUG] apiUrl:', this.apiUrl);
+        
         this.setupEventListeners();
         this.setupMobileFeatures();
+        console.log('[DEBUG] Calling loadCategories()...');
         this.loadCategories(); // Load categories on init
         this.loadInitialJobs();
         this.setupInfiniteScroll();
@@ -1114,25 +1120,58 @@ class JobSearch {
      * Load categories from API and render them
      */
     async loadCategories() {
+        console.log('[DEBUG] loadCategories() called');
+        console.log('[DEBUG] baseUrl:', this.baseUrl);
+        
         try {
             const categoriesUrl = this.baseUrl ? `${this.baseUrl}/api/categories.php` : '/api/categories.php';
+            console.log('[DEBUG] Categories URL:', categoriesUrl);
+            console.log('[DEBUG] Fetching categories from:', categoriesUrl);
+            
             const response = await fetch(categoriesUrl);
+            console.log('[DEBUG] Response status:', response.status);
+            console.log('[DEBUG] Response ok:', response.ok);
+            console.log('[DEBUG] Response headers:', Object.fromEntries(response.headers.entries()));
+            
             if (!response.ok) {
-                throw new Error('Failed to load categories');
+                const errorText = await response.text();
+                console.error('[DEBUG] Response not OK. Status:', response.status);
+                console.error('[DEBUG] Response text:', errorText);
+                throw new Error(`Failed to load categories: ${response.status} ${response.statusText}`);
             }
+            
             const data = await response.json();
+            console.log('[DEBUG] Response data:', data);
+            console.log('[DEBUG] Data success:', data.success);
+            console.log('[DEBUG] Categories count:', data.categories ? data.categories.length : 0);
+            console.log('[DEBUG] Categories:', data.categories);
+            
             if (data.success && data.categories) {
+                console.log('[DEBUG] Calling renderCategories with', data.categories.length, 'categories');
                 this.renderCategories(data.categories);
+            } else {
+                console.warn('[DEBUG] Categories not loaded. Success:', data.success, 'Categories:', data.categories);
+                const categoryContainer = document.getElementById('categoryFilters');
+                const categoryContainerMobile = document.getElementById('categoryFiltersMobile');
+                if (categoryContainer) {
+                    categoryContainer.innerHTML = '<div class="w-full text-sm text-yellow-500 text-center py-2">No categories available</div>';
+                }
+                if (categoryContainerMobile) {
+                    categoryContainerMobile.innerHTML = '<div class="w-full text-sm text-yellow-500 text-center py-2">No categories available</div>';
+                }
             }
         } catch (error) {
-            console.error('Error loading categories:', error);
+            console.error('[DEBUG] Error loading categories:', error);
+            console.error('[DEBUG] Error name:', error.name);
+            console.error('[DEBUG] Error message:', error.message);
+            console.error('[DEBUG] Error stack:', error.stack);
             const categoryContainer = document.getElementById('categoryFilters');
             const categoryContainerMobile = document.getElementById('categoryFiltersMobile');
             if (categoryContainer) {
-                categoryContainer.innerHTML = '<div class="w-full text-sm text-red-500 text-center py-2">Failed to load categories</div>';
+                categoryContainer.innerHTML = '<div class="w-full text-sm text-red-500 text-center py-2">Failed to load categories: ' + error.message + '</div>';
             }
             if (categoryContainerMobile) {
-                categoryContainerMobile.innerHTML = '<div class="w-full text-sm text-red-500 text-center py-2">Failed to load categories</div>';
+                categoryContainerMobile.innerHTML = '<div class="w-full text-sm text-red-500 text-center py-2">Failed to load categories: ' + error.message + '</div>';
             }
         }
     }
@@ -1141,10 +1180,21 @@ class JobSearch {
      * Render category buttons
      */
     renderCategories(categories) {
+        console.log('[DEBUG] renderCategories() called with', categories ? categories.length : 0, 'categories');
+        console.log('[DEBUG] Categories data:', categories);
+        
         const categoryContainer = document.getElementById('categoryFilters');
         const categoryContainerMobile = document.getElementById('categoryFiltersMobile');
         
-        if (!categoryContainer || !categoryContainerMobile) return;
+        console.log('[DEBUG] categoryContainer found:', !!categoryContainer);
+        console.log('[DEBUG] categoryContainerMobile found:', !!categoryContainerMobile);
+        
+        if (!categoryContainer || !categoryContainerMobile) {
+            console.error('[DEBUG] Category containers not found!');
+            console.error('[DEBUG] categoryContainer:', categoryContainer);
+            console.error('[DEBUG] categoryContainerMobile:', categoryContainerMobile);
+            return;
+        }
         
         // Store categories with IDs for later use
         this.categoriesMap = {};
@@ -1164,13 +1214,18 @@ class JobSearch {
             : null;
         
         const renderButtons = (container) => {
+            console.log('[DEBUG] renderButtons() called for container:', container.id);
             container.innerHTML = '';
-            categories.forEach(category => {
+            console.log('[DEBUG] Rendering', categories.length, 'category buttons');
+            
+            categories.forEach((category, index) => {
+                console.log(`[DEBUG] Rendering category ${index + 1}:`, category);
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 
                 // Check if this category is selected
                 const isSelected = selectedCategory === category.name;
+                console.log(`[DEBUG] Category "${category.name}" isSelected:`, isSelected);
                 
                 // Set button classes based on selection state
                 if (isSelected) {
@@ -1184,10 +1239,15 @@ class JobSearch {
                 btn.dataset.categoryId = category.id || '';
                 btn.textContent = category.name;
                 container.appendChild(btn);
+                console.log(`[DEBUG] Added button for category:`, category.name);
             });
+            
+            console.log('[DEBUG] Total buttons added to', container.id, ':', container.children.length);
         };
         
+        console.log('[DEBUG] Rendering buttons for desktop container');
         renderButtons(categoryContainer);
+        console.log('[DEBUG] Rendering buttons for mobile container');
         renderButtons(categoryContainerMobile);
         
         // If a category is selected, hide other categories
@@ -1374,6 +1434,26 @@ class JobSearch {
 // Initialize on page load
 let jobSearch;
 document.addEventListener('DOMContentLoaded', () => {
-    jobSearch = new JobSearch();
+    console.log('[DEBUG] DOMContentLoaded event fired');
+    console.log('[DEBUG] Creating new JobSearch instance...');
+    try {
+        jobSearch = new JobSearch();
+        console.log('[DEBUG] JobSearch instance created:', jobSearch);
+        // Make it globally accessible for debugging
+        window.jobSearch = jobSearch;
+    } catch (error) {
+        console.error('[DEBUG] Error creating JobSearch:', error);
+    }
 });
+
+// Manual test function for debugging - can be called from console: testCategories()
+window.testCategories = async function() {
+    console.log('[DEBUG] Manual testCategories() called');
+    if (!jobSearch) {
+        console.error('[DEBUG] jobSearch not initialized yet');
+        return;
+    }
+    console.log('[DEBUG] Calling loadCategories() manually...');
+    await jobSearch.loadCategories();
+};
 
