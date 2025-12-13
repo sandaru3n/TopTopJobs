@@ -17,7 +17,7 @@
             <!-- Job Listings Section -->
             <div class="container mx-auto px-4 md:px-6 py-4 md:py-6">
                 <div class="flex flex-wrap justify-between gap-4 mb-6 items-baseline">
-                    <p class="text-[#111318] dark:text-white tracking-light text-[32px] font-bold leading-tight min-w-72">Recent Job Postings</p>
+                    <h1 class="text-[#111318] dark:text-white tracking-light text-[32px] font-bold leading-tight min-w-72">Recent Job Postings</h1>
                     <p id="resultsCount" class="text-gray-500 dark:text-gray-400 text-sm">Loading...</p>
                 </div>
                 <div id="jobGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

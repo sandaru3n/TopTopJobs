@@ -252,6 +252,9 @@
 
             <!-- Job Listings (Right) -->
             <section class="flex-1 p-4 md:p-6">
+                <!-- Page Title -->
+                <h1 class="text-3xl font-bold text-[#111318] dark:text-white mb-6">Browse Jobs</h1>
+                
                 <!-- Sort and View Controls -->
                 <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
                     <!-- Mobile Filter Button (Left on mobile only) -->
