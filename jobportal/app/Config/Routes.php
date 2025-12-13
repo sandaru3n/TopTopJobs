@@ -6,6 +6,7 @@ use CodeIgniter\Router\RouteCollection;
  * @var RouteCollection $routes
  */
 $routes->get('/', 'Home::index');
+$routes->get('sitemap.xml', 'SitemapController::index');
 $routes->get('/dashboard', 'Home::dashboard', ['filter' => 'auth']);
 $routes->get('/dashboard/', 'Home::dashboard', ['filter' => 'auth']);
 $routes->get('/jobs', 'Home::jobs');

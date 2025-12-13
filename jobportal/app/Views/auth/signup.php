@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <meta name="description" content="Create your free TopTopJobs account to start your career journey. Sign up now to browse thousands of job opportunities, save favorite jobs, and manage your applications in one place."/>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-017G3E1N5V"></script>
     <script>

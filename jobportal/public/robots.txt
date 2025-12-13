@@ -1,2 +1,10 @@
 User-agent: *
-Disallow: 
+Allow: /
+Disallow: /admin/
+Disallow: /auth/
+Disallow: /profile
+Disallow: /manage-jobs
+Disallow: /saved-jobs
+Disallow: /dashboard
+
+Sitemap: https://toptopjobs.com/sitemap.xml

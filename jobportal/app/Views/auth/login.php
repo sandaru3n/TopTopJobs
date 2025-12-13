@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <meta name="description" content="Sign in to your TopTopJobs account to access your profile, manage job applications, and explore career opportunities. Login securely to continue your job search journey."/>
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-017G3E1N5V"></script>
     <script>
