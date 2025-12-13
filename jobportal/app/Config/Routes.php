@@ -30,9 +30,14 @@ $routes->group('auth', ['filter' => 'guest'], function($routes) {
     $routes->post('processSignup', 'AuthController::processSignup');
 });
 
+// Google Sign-In route (no filter - handled by AJAX)
+$routes->post('auth/google', 'AuthController::google');
+
 // Alternative routes (without auth prefix)
 $routes->get('login', 'AuthController::login', ['filter' => 'guest']);
 $routes->get('signup', 'AuthController::signup', ['filter' => 'guest']);
+$routes->get('forgot-password', 'AuthController::forgotPassword', ['filter' => 'guest']);
+$routes->post('forgot-password', 'AuthController::forgotPassword', ['filter' => 'guest']); // Form submission (no functionality)
 $routes->get('logout', 'AuthController::logout', ['filter' => 'auth']);
 
 // Profile routes (protected)

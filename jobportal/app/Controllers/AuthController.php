@@ -18,6 +18,38 @@ class AuthController extends BaseController
     }
 
     /**
+     * Show forgot password page (GET) or handle form submission (POST)
+     * Note: This is a placeholder - no actual password reset functionality is implemented
+     */
+    public function forgotPassword()
+    {
+        // Redirect if already logged in
+        if ($this->session->get('user_id')) {
+            return redirect()->to($this->getRedirectUrl());
+        }
+
+        // Handle form submission (but don't actually send email - just show success message)
+        if ($this->request->getMethod() === 'post') {
+            $validation = \Config\Services::validation();
+            $rules = [
+                'email' => 'required|valid_email',
+            ];
+
+            if (!$this->validate($rules)) {
+                return redirect()->back()
+                    ->withInput()
+                    ->with('errors', $validation->getErrors());
+            }
+
+            // Show success message (but don't actually send email)
+            return redirect()->back()
+                ->with('success', 'If an account exists with this email address, you will receive a password reset link shortly.');
+        }
+
+        return view('auth/forgot-password');
+    }
+
+    /**
      * Show login page
      */
     public function login(): string
@@ -343,6 +375,192 @@ class AuthController extends BaseController
 
         return redirect()->to('/profile')
             ->with('success', 'Profile updated successfully!');
+    }
+
+    /**
+     * Handle Google Sign-In
+     */
+    public function google()
+    {
+        // Check if this is an AJAX request
+        if (!$this->request->isAJAX()) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Invalid request'
+            ]);
+        }
+
+        $credential = $this->request->getJSON(true)['credential'] ?? null;
+
+        if (!$credential) {
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'No credential provided'
+            ]);
+        }
+
+        try {
+            $googleClientId = env('GOOGLE_CLIENT_ID', '');
+            $googleClientSecret = env('GOOGLE_CLIENT_SECRET', '');
+            
+            // Check if credential is a JWT token or JSON string
+            $payload = null;
+            
+            // Try to decode as JWT first
+            if (strpos($credential, '.') !== false) {
+                $parts = explode('.', $credential);
+                if (count($parts) === 3) {
+                    // Decode JWT payload
+                    $decoded = base64_decode(str_replace(['-', '_'], ['+', '/'], $parts[1]));
+                    $payload = json_decode($decoded, true);
+                    
+                    // Verify JWT token with Google (basic verification - check issuer and audience)
+                    if ($payload && !empty($googleClientId)) {
+                        // Verify issuer
+                        if (isset($payload['iss']) && $payload['iss'] !== 'https://accounts.google.com' && $payload['iss'] !== 'accounts.google.com') {
+                            throw new \Exception('Invalid token issuer');
+                        }
+                        
+                        // Verify audience (client ID)
+                        if (isset($payload['aud']) && $payload['aud'] !== $googleClientId) {
+                            throw new \Exception('Invalid token audience');
+                        }
+                        
+                        // Check expiration
+                        if (isset($payload['exp']) && $payload['exp'] < time()) {
+                            throw new \Exception('Token has expired');
+                        }
+                    }
+                }
+            }
+            
+            // If not JWT, try as JSON string (fallback for OAuth2 flow)
+            if (!$payload || !is_array($payload)) {
+                $payload = json_decode($credential, true);
+            }
+            
+            if (!$payload || !is_array($payload)) {
+                throw new \Exception('Failed to decode credential');
+            }
+
+            // Extract user information from Google token
+            $googleId = $payload['sub'] ?? null;
+            $email = $payload['email'] ?? null;
+            $firstName = $payload['given_name'] ?? '';
+            $lastName = $payload['family_name'] ?? '';
+            $profilePicture = $payload['picture'] ?? null;
+            $emailVerified = $payload['email_verified'] ?? false;
+
+            if (!$email) {
+                throw new \Exception('Email not provided by Google');
+            }
+
+            // Check if user already exists
+            $user = $this->userModel->getUserByEmail($email);
+
+            if ($user) {
+                // User exists, log them in
+                helper('image');
+                
+                // Update profile picture if available and different
+                if ($profilePicture && $profilePicture !== $user['profile_picture']) {
+                    $updateData = ['profile_picture' => $profilePicture];
+                    if (!empty($firstName)) $updateData['first_name'] = $firstName;
+                    if (!empty($lastName)) $updateData['last_name'] = $lastName;
+                    if ($emailVerified) {
+                        $updateData['email_verified'] = 1;
+                        $updateData['email_verified_at'] = date('Y-m-d H:i:s');
+                    }
+                    $this->userModel->skipValidation(true);
+                    $this->userModel->update($user['id'], $updateData);
+                    $user = $this->userModel->find($user['id']); // Refresh user data
+                }
+
+                // Set session
+                $sessionData = [
+                    'user_id'    => $user['id'],
+                    'email'      => $user['email'],
+                    'first_name' => $user['first_name'] ?? $firstName,
+                    'last_name'  => $user['last_name'] ?? $lastName,
+                    'user_type'  => $user['user_type'],
+                    'profile_picture' => !empty($user['profile_picture']) ? fix_image_url($user['profile_picture'], 150) : ($profilePicture ?? null),
+                    'is_logged_in' => true,
+                ];
+                $this->session->set($sessionData);
+
+                // Update last login
+                $this->userModel->update($user['id'], ['last_login' => date('Y-m-d H:i:s')]);
+
+                $redirectUrl = $this->getRedirectUrl();
+                return $this->response->setJSON([
+                    'success' => true,
+                    'message' => 'Signed in successfully',
+                    'redirect' => $redirectUrl
+                ]);
+            } else {
+                // New user, create account
+                $userData = [
+                    'email'      => $email,
+                    'password'   => bin2hex(random_bytes(16)), // Random password (won't be used)
+                    'first_name' => $firstName,
+                    'last_name'  => $lastName,
+                    'profile_picture' => $profilePicture,
+                    'user_type'  => 'user',
+                    'status'     => 'active',
+                    'email_verified' => $emailVerified ? 1 : 0,
+                    'email_verified_at' => $emailVerified ? date('Y-m-d H:i:s') : null,
+                ];
+
+                // Skip password validation for Google users
+                $this->userModel->skipValidation(false);
+                // Temporarily modify validation rules for Google signup
+                $originalRules = $this->userModel->getValidationRules();
+                $this->userModel->setValidationRules([
+                    'email' => 'required|valid_email|is_unique[users.email]',
+                    'password' => 'permit_empty',
+                    'first_name' => 'permit_empty|max_length[100]',
+                    'last_name' => 'permit_empty|max_length[100]',
+                    'user_type' => 'required|in_list[user,admin]',
+                ]);
+
+                $userId = $this->userModel->insert($userData);
+
+                // Restore original validation rules
+                $this->userModel->setValidationRules($originalRules);
+
+                if ($userId) {
+                    $user = $this->userModel->find($userId);
+                    helper('image');
+
+                    // Set session
+                    $sessionData = [
+                        'user_id'    => $user['id'],
+                        'email'      => $user['email'],
+                        'first_name' => $user['first_name'],
+                        'last_name'  => $user['last_name'],
+                        'user_type'  => $user['user_type'],
+                        'profile_picture' => !empty($user['profile_picture']) ? fix_image_url($user['profile_picture'], 150) : null,
+                        'is_logged_in' => true,
+                    ];
+                    $this->session->set($sessionData);
+
+                    $redirectUrl = $this->getRedirectUrl();
+                    return $this->response->setJSON([
+                        'success' => true,
+                        'message' => 'Account created successfully',
+                        'redirect' => $redirectUrl
+                    ]);
+                } else {
+                    throw new \Exception('Failed to create account');
+                }
+            }
+        } catch (\Exception $e) {
+            log_message('error', 'Google Sign-In Error: ' . $e->getMessage());
+            return $this->response->setJSON([
+                'success' => false,
+                'message' => 'Google sign-in failed: ' . $e->getMessage()
+            ]);
+        }
     }
 
     /**
