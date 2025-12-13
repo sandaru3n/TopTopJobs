@@ -237,9 +237,26 @@
                 <!-- Logged in user menu -->
                 <div class="mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
                     <div class="flex items-center gap-3 mb-4">
-                        <div class="flex items-center justify-center size-12 rounded-full bg-primary text-white">
-                            <span class="material-symbols-outlined text-2xl">person</span>
-                        </div>
+                        <?php 
+                        helper('image');
+                        $mobileProfilePic = session()->get('profile_picture');
+                        if ($mobileProfilePic): 
+                            $fixedMobileProfilePic = fix_image_url($mobileProfilePic, 48);
+                        ?>
+                            <div class="relative size-12 rounded-full overflow-hidden bg-primary">
+                                <img 
+                                    src="<?= esc($fixedMobileProfilePic) ?>" 
+                                    alt="Profile" 
+                                    class="w-full h-full rounded-full object-cover"
+                                    onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                                />
+                                <span class="material-symbols-outlined text-2xl text-white pointer-events-none absolute inset-0 flex items-center justify-center" style="display: none;">person</span>
+                            </div>
+                        <?php else: ?>
+                            <div class="flex items-center justify-center size-12 rounded-full bg-primary text-white">
+                                <span class="material-symbols-outlined text-2xl">person</span>
+                            </div>
+                        <?php endif; ?>
                         <div>
                             <p class="text-base font-semibold text-[#111318] dark:text-white">
                                 <?= esc(session()->get('first_name') ? session()->get('first_name') . ' ' . session()->get('last_name') : session()->get('email')) ?>

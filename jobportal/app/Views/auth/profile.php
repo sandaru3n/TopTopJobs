@@ -60,6 +60,7 @@
                                     />
                                 </div>
                                 <form action="<?= base_url('profile/update') ?>" method="POST" enctype="multipart/form-data" id="profilePictureForm">
+                                    <?= csrf_field() ?>
                                     <input type="file" name="profile_picture" id="profilePictureInput" accept="image/png,image/jpg,image/jpeg,image/gif" class="hidden" />
                                     <label for="profilePictureInput" class="cursor-pointer inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-colors" style="background-color: #2bee79; color: #0e2016;" onmouseover="this.style.backgroundColor='#25d46a'" onmouseout="this.style.backgroundColor='#2bee79'">
                                         <span class="material-symbols-outlined text-lg">photo_camera</span>
@@ -77,6 +78,7 @@
                         <div class="bg-white dark:bg-gray-800/50 rounded-lg p-6 border border-gray-200 dark:border-gray-700/50">
                             <h2 class="text-lg font-bold text-[#111318] dark:text-white mb-6">Personal Information</h2>
                             <form action="<?= base_url('profile/update') ?>" method="POST" enctype="multipart/form-data">
+                                <?= csrf_field() ?>
                                 <div class="space-y-4">
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
@@ -134,6 +136,7 @@
                         <div class="bg-white dark:bg-gray-800/50 rounded-lg p-6 border border-gray-200 dark:border-gray-700/50">
                             <h2 class="text-lg font-bold text-[#111318] dark:text-white mb-6">Change Password</h2>
                             <form action="<?= base_url('profile/password') ?>" method="POST" id="passwordForm">
+                                <?= csrf_field() ?>
                                 <div class="space-y-4">
                                     <div>
                                         <label for="current_password" class="block text-sm font-medium text-[#111318] dark:text-gray-300 mb-2">Current Password</label>
